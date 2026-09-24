@@ -69,6 +69,17 @@ try {
     assert.match(text(res), /inside the directory Vexryn was started in/);
   }
 
+  // Started from the filesystem root, a subdirectory is still "inside".
+  const rootTransport = new StdioClientTransport({ command: "node", args: [path.resolve("dist/cli.js"), "mcp"], cwd: "/", env: { ...process.env, VEXRYN_HOME: home } });
+  const rootClient = new Client({ name: "mcp-check-root", version: "0.0.1" }, { capabilities: {} });
+  await rootClient.connect(rootTransport);
+  try {
+    res = await rootClient.callTool({ name: "agent_load_report", arguments: { path: "tmp", includeGlobal: false } });
+    assert.ok(!res.isError, `a subdirectory of the launch dir is inside it: ${text(res)}`);
+  } finally {
+    await rootClient.close().catch(() => {});
+  }
+
   console.log("mcp-check: all assertions passed");
 } finally {
   await client.close().catch(() => {});

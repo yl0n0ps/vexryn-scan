@@ -72,7 +72,8 @@ async function insideCwd(p: string | undefined): Promise<string> {
   const cwd = await fs.realpath(process.cwd());
   const target = path.resolve(cwd, p ?? ".");
   const real = await fs.realpath(target).catch(() => target);
-  if (real !== cwd && !real.startsWith(cwd + path.sep)) {
+  const rel = path.relative(cwd, real);
+  if (rel.startsWith("..") || path.isAbsolute(rel)) {
     throw new Error(`path must be inside the directory Vexryn was started in (${cwd})`);
   }
   return real;
