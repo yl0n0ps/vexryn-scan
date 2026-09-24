@@ -111,6 +111,19 @@ inject links or @mentions, and likely secrets in commands, URLs and hooks are
 masked. Exits 0 whatever it finds — it informs, it doesn't block (1 on a git
 error, 2 on a usage error).
 
+**Exact rules, no AI judge.** On a server the change adds or modifies, the
+review states: a credential written in the file (named, never shown — use
+`${VAR}`), a shell launched with inline code or a pipe, a whole filesystem or
+home or a credential path handed to it, plain `http://` to a remote host, a
+credential inside its command or URL, a long encoded argument; and a server
+name now defined in two files with different commands. On any agent file the
+change adds text to — including ones not reviewed for load, like `AGENTS.md`
+or Cursor rules — it counts invisible characters (zero-width, bidi, tag) and
+quotes phrases such as "ignore previous instructions" or "do not tell the
+user", reported as *contains the phrase*, never as malicious. An issue already
+present and unchanged is never repeated. `vexryn scan` shows the same server
+facts under each server.
+
 In CI, the GitHub Action posts it as a single comment it keeps up to date
 (on a fork PR, whose token is read-only, it writes to the job summary instead):
 

@@ -43,7 +43,11 @@ put(path.join(home, ".claude.json"), {
   },
 });
 put(path.join(appSupport, "Claude", "claude_desktop_config.json"), {
-  mcpServers: { filesystem: { command: "npx", args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"] } },
+  mcpServers: {
+    filesystem: { command: "npx", args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"] },
+    risky: { command: "bash", args: ["-c", "echo setup"], env: { API_KEY: "sk-abcdefghijklmnop1234567890" } },
+    rootfs: { command: "npx", args: ["-y", "@modelcontextprotocol/server-filesystem", "/"] },
+  },
 });
 put(path.join(home, ".codeium", "windsurf", "mcp_config.json"), {
   mcpServers: { "remote-docs": { serverUrl: "https://mcp.example.com/docs" } },
@@ -85,7 +89,14 @@ try {
   assert.match(cc, /sentry .*\.mcp\.json · project/, "project .mcp.json still included");
   assert.ok(!out.includes("other-project-server"), "another project's local scope is ignored");
 
-  assert.match(section(out, "CLAUDE DESKTOP"), /filesystem/);
+  const desktop = section(out, "CLAUDE DESKTOP");
+  assert.match(desktop, /filesystem/);
+  // Exact config facts shown under the server; values never printed.
+  assert.match(desktop, /risky[\s\S]*⚠ runs a shell with inline code or a pipe/);
+  assert.match(desktop, /⚠ API_KEY is a literal secret written in the file \(not shown\)/);
+  assert.match(desktop, /rootfs[\s\S]*⚠ is given \/ — a whole filesystem\/home or a credential path/);
+  assert.ok(!out.includes("sk-abcdefghijklmnop"), "a secret value is never printed");
+  assert.ok(!/filesystem[^\n]*\n\s+⚠/.test(desktop), "a server rooted at /tmp has no fact line");
   assert.match(section(out, "WINDSURF"), /remote-docs/, "Windsurf serverUrl parsed");
   assert.match(section(out, "WINDSURF"), /not measured/, "an unmeasured agent says so");
   assert.ok(!/~0%/.test(section(out, "WINDSURF")), "an unmeasured agent never shows a fake 0%");

@@ -6,6 +6,7 @@
 
 import type { AgentClient, AgentLoad, ContextItem, DiscoveredConfig, LoadReport, McpServer, Scope, ToolSearch } from "../types.js";
 import { countTokens } from "./tokens.js";
+import { plainHttpRemote, secretInText, sensitivePaths, shellInline } from "../diff/rules.js";
 
 // Rough size of a typical model context window, for the "% of window" figure.
 export const CONTEXT_WINDOW_TOKENS = 200_000;
@@ -166,6 +167,7 @@ export function renderText(report: LoadReport): string {
     }
     for (const s of a.servers) {
       lines.push(`    ${padEnd(s.name, 20)} ${padEnd(renderServerCost(s), 34)} ${dim(`${s.fromRelPath} · ${s.scope}`)}`);
+      for (const f of serverFacts(s)) lines.push(`      ⚠ ${f}`);
     }
     lines.push("");
   }
@@ -193,6 +195,24 @@ export function renderText(report: LoadReport): string {
   lines.push("  the agent's own system prompt, hook output, and your conversation as it grows.");
   lines.push("");
   return lines.join("\n");
+}
+
+/** Exact facts about a server's launch config (rules.ts). Never a secret value. */
+export function serverFacts(s: McpServer): string[] {
+  const args = s.args ?? [];
+  const facts: string[] = [];
+  if (s.command && shellInline(s.command, args)) facts.push("runs a shell with inline code or a pipe");
+  const paths = sensitivePaths(args);
+  if (paths.length) facts.push(`is given ${paths.map(plain).join(", ")} — a whole filesystem/home or a credential path`);
+  if (s.url && plainHttpRemote(s.url)) facts.push(`connects over plain http:// (unencrypted) to ${plain(new URL(s.url).hostname)}`);
+  for (const name of s.literalSecrets ?? []) facts.push(`${plain(name)} is a literal secret written in the file (not shown)`);
+  if (secretInText(s.target)) facts.push("its command or URL contains a credential (not shown)");
+  return facts;
+}
+
+/** Strip control characters so a hostile config value can't drive the terminal. */
+function plain(s: string): string {
+  return s.replace(/[\u0000-\u001f\u007f]/g, "");
 }
 
 function renderServerCost(s: McpServer): string {
