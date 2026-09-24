@@ -40,7 +40,7 @@ export function isUnreviewedAgentPath(p: string): boolean {
 }
 
 export interface Side {
-  /** Temp dir holding the reviewed files; the caller deletes it. */
+  /** Temp dir holding every agent file (reviewed ones feed the scan, all feed the text rules); the caller deletes it. */
   dir: string;
   /** Content hash of every agent file (reviewed or not), for change detection. */
   hashes: Record<string, string>;
@@ -82,7 +82,6 @@ export async function snapshot(root: string, sha: string | null): Promise<Side> 
       }
       if (content == null) continue; // tracked but deleted on disk, or not a file
       side.hashes[rel] = createHash("sha256").update(content).digest("hex");
-      if (!reviewed) continue;
       const dest = path.resolve(dir, rel);
       if (!dest.startsWith(dir + path.sep)) continue; // never write outside the snapshot
       await fs.mkdir(path.dirname(dest), { recursive: true });

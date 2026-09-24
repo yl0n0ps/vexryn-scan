@@ -77,6 +77,8 @@ export interface McpServer {
   url?: string;
   /** NAMES of the env vars / headers the server receives — never their values. */
   receives?: string[];
+  /** Of those, the names whose value is a credential written in the file (value never kept). */
+  literalSecrets?: string[];
   /**
    * Distinct tools of this server actually called, from the local usage store
    * (populated by `vexryn wrap`). `null` = no usage data recorded yet.

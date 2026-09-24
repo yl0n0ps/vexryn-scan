@@ -4,6 +4,7 @@
 
 import { promises as fs } from "node:fs";
 import type { DiscoveredConfig, McpServer, Scope } from "../types.js";
+import { secretLiteral } from "../diff/rules.js";
 
 /** Config kinds that can declare MCP servers (rules/markdown files cannot). */
 const SERVER_KINDS = new Set([
@@ -127,7 +128,7 @@ function stripJsonc(text: string): string {
   return out.replace(/,(\s*[}\]])/g, "$1");
 }
 
-type BareServer = Pick<McpServer, "name" | "transport" | "target" | "command" | "args" | "url" | "receives">;
+type BareServer = Pick<McpServer, "name" | "transport" | "target" | "command" | "args" | "url" | "receives" | "literalSecrets">;
 
 /** A `{ name: definition }` map → servers. Remote URL keys differ per app. */
 export function extractServers(map: unknown): BareServer[] {
@@ -136,8 +137,11 @@ export function extractServers(map: unknown): BareServer[] {
   for (const [name, def] of Object.entries(map as Record<string, unknown>)) {
     if (typeof def !== "object" || def === null) continue;
     const d = def as Record<string, unknown>;
-    // Names only: env/header values are often secrets and are never kept.
-    const receives = [d.env, d.headers].flatMap((m) => (typeof m === "object" && m !== null ? Object.keys(m) : []));
+    // Names only: env/header values are often secrets and are never kept —
+    // we only remember WHICH names hold a literal credential.
+    const entries = [d.env, d.headers].flatMap((m) => (typeof m === "object" && m !== null ? Object.entries(m) : []));
+    const receives = entries.map(([k]) => k);
+    const literalSecrets = entries.filter(([k, v]) => typeof v === "string" && secretLiteral(k, v)).map(([k]) => k);
     // url (most apps), serverUrl (Windsurf), httpUrl (Gemini streamable HTTP)
     const url = [d.url, d.serverUrl, d.httpUrl].find((v): v is string => typeof v === "string");
     if (typeof d.command === "string") {
@@ -151,11 +155,12 @@ export function extractServers(map: unknown): BareServer[] {
         command: d.command,
         args,
         receives,
+        literalSecrets,
       });
     } else if (url) {
-      out.push({ name, transport: "http", target: url, url, receives });
+      out.push({ name, transport: "http", target: url, url, receives, literalSecrets });
     } else {
-      out.push({ name, transport: "unknown", target: "", receives });
+      out.push({ name, transport: "unknown", target: "", receives, literalSecrets });
     }
   }
   return out;

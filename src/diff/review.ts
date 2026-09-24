@@ -13,6 +13,7 @@ import { claudeCodeContext } from "../scan/claude.js";
 import { readClaudeSettings, type ClaudeSettings, type Hook } from "../scan/settings.js";
 import { promises as fs } from "node:fs";
 import { gitRoot, isAgentConfigPath, resolveRef, snapshot, type Side } from "./snapshot.js";
+import { TOKEN_SHAPE, blobs, hiddenChars, overridePhrases, plainHttpRemote, secretInText, sensitivePaths, shellInline } from "./rules.js";
 
 export const MARKER = "<!-- vexryn-pr-review -->";
 export const NO_CHANGE = "No agent config file changed.";
@@ -35,6 +36,8 @@ export interface Snapshot {
   hashes: Record<string, string>;
   /** Reviewed files that are symlinks the review won't follow. */
   unresolved: string[];
+  /** Content of every agent file (reviewed or not), for the text rules. */
+  texts: Record<string, string>;
 }
 
 export interface Review {
@@ -73,6 +76,10 @@ export async function readSnapshot(side: Side): Promise<Snapshot> {
   for (const c of configs) {
     if (c.relPath.endsWith(".json") && (await readJsonLoose(c.path)) === null) unreadable.push(posix(c.relPath));
   }
+  const texts: Record<string, string> = {};
+  for (const rel of Object.keys(side.hashes)) {
+    texts[rel] = await fs.readFile(path.join(side.dir, rel), "utf8").catch(() => "");
+  }
   return {
     servers: (await parseServers(configs, side.dir)).map((s) => ({ ...s, fromRelPath: posix(s.fromRelPath) })),
     context: (await claudeCodeContext(side.dir, false)).items,
@@ -80,6 +87,7 @@ export async function readSnapshot(side: Side): Promise<Snapshot> {
     unreadable,
     hashes: side.hashes,
     unresolved: side.unresolved,
+    texts,
   };
 }
 
@@ -89,6 +97,9 @@ export function compare(base: Snapshot, head: Snapshot): Review {
   const powers = [
     ...unreadableLines(base, head),
     ...serverLines(base, head),
+    ...serverFactLines(base, head),
+    ...shadowLines(base, head),
+    ...textLines(base, head),
     ...(settingsComparable
       ? [
           ...permissionLines(base.settings, head.settings),
@@ -157,7 +168,7 @@ export function code(s: string): string {
 // --- Secrets ---------------------------------------------------------------
 
 const SECRET_NAME = /token|key|secret|passw|auth|credential/i;
-const TOKEN_SHAPE = /\b(?:gh[pousr]_\w{8,}|github_pat_\w{8,}|sk-[\w-]{8,}|xox[abeoprs]-[\w-]{8,}|AKIA[0-9A-Z]{12,})/g;
+const TOKEN_SHAPE_G = new RegExp(TOKEN_SHAPE.source, "g");
 const MASK = "***";
 
 /**
@@ -185,7 +196,7 @@ export function redact(s: string): string {
         maskNext = true;
         return w;
       }
-      return maskUrls(w).replace(TOKEN_SHAPE, MASK);
+      return maskUrls(w).replace(TOKEN_SHAPE_G, MASK);
     })
     .join("");
 }
@@ -219,10 +230,23 @@ function unreadableLines(base: Snapshot, head: Snapshot): string[] {
   ];
 }
 
+const serverKey = (s: McpServer) => `${s.fromRelPath}\u0000${s.name}`;
+/** Raw launch facts: display text is truncated, so it can't decide "changed". */
+const facts = (s: McpServer) =>
+  JSON.stringify([s.transport, s.command ?? "", s.args ?? [], s.url ?? "", [...(s.receives ?? [])].sort(), [...(s.literalSecrets ?? [])].sort()]);
+
+/** Head servers that are new or changed, in files readable on both sides. */
+function newOrChanged(base: Snapshot, head: Snapshot): McpServer[] {
+  const unknown = (f: string) => base.unreadable.includes(f) || head.unreadable.includes(f);
+  const before = new Map(base.servers.map((s) => [serverKey(s), s]));
+  return head.servers.filter((s) => {
+    const was = before.get(serverKey(s));
+    return !unknown(s.fromRelPath) && (!was || facts(was) !== facts(s));
+  });
+}
+
 function serverLines(base: Snapshot, head: Snapshot): string[] {
-  const key = (s: McpServer) => `${s.fromRelPath}\u0000${s.name}`;
-  // Raw launch facts: display text is truncated, so it can't decide "changed".
-  const facts = (s: McpServer) => JSON.stringify([s.transport, s.command ?? "", s.args ?? [], s.url ?? "", [...(s.receives ?? [])].sort()]);
+  const key = serverKey;
   const unknown = (f: string) => base.unreadable.includes(f) || head.unreadable.includes(f);
   const before = new Map(base.servers.map((s) => [key(s), s]));
   const after = new Map(head.servers.map((s) => [key(s), s]));
@@ -242,6 +266,65 @@ function serverLines(base: Snapshot, head: Snapshot): string[] {
     if (!after.has(k) && !unknown(s.fromRelPath)) {
       lines.push(`MCP server ${code(s.name)} removed from ${code(s.fromRelPath)} (${s.client})`);
     }
+  }
+  return lines;
+}
+
+/** Exact facts about a new/changed server's launch config (rules.ts), one line each. */
+function serverFactLines(base: Snapshot, head: Snapshot): string[] {
+  const lines: string[] = [];
+  for (const s of newOrChanged(base, head)) {
+    const who = `MCP server ${code(s.name)} (${code(s.fromRelPath)})`;
+    const args = s.args ?? [];
+    if (s.command && shellInline(s.command, args)) lines.push(`${WARN}${who} runs a shell with inline code or a pipe: ${code(s.target)}`);
+    const paths = sensitivePaths(args);
+    if (paths.length) lines.push(`${WARN}${who} is given ${list(paths)} — a whole filesystem/home or a credential path`);
+    if (s.url && plainHttpRemote(s.url)) lines.push(`${WARN}${who} connects over plain ${code("http://")} (unencrypted) to ${code(new URL(s.url).hostname)}`);
+    for (const name of s.literalSecrets ?? []) {
+      lines.push(`${WARN}${who}: ${code(name)} is a literal secret written in the file (not shown) — use ${code(`\${${name}}`)}`);
+    }
+    if (secretInText(s.target)) lines.push(`${WARN}${who}: its command or URL contains a credential (masked)`);
+    const blob = Math.max(0, ...blobs(args.join(" ")));
+    if (blob) lines.push(`${WARN}${who}: an argument contains a ${blob}-char base64/hex-looking string`);
+  }
+  return lines;
+}
+
+/** A name newly defined in several files with different launch commands. */
+function shadowLines(base: Snapshot, head: Snapshot): string[] {
+  const shadowed = (snap: Snapshot) => {
+    const byName = new Map<string, Map<string, string>>(); // name → facts → file
+    for (const s of snap.servers) {
+      const m = byName.get(s.name) ?? new Map<string, string>();
+      if (!m.has(facts(s))) m.set(facts(s), s.fromRelPath);
+      byName.set(s.name, m);
+    }
+    return new Map([...byName].filter(([, m]) => m.size > 1).map(([name, m]) => [name, [...m.values()].sort()]));
+  };
+  const before = shadowed(base);
+  return [...shadowed(head)]
+    .filter(([name]) => !before.has(name))
+    .map(([name, files]) => {
+      const where = files.length === 2 ? `both ${code(files[0])} and ${code(files[1])}` : list(files);
+      return `${WARN}${code(name)} is now defined in ${where} with different launch commands`;
+    });
+}
+
+/** Text rules over what this change ADDS to any agent file. */
+function textLines(base: Snapshot, head: Snapshot): string[] {
+  const lines: string[] = [];
+  for (const file of Object.keys(head.texts).sort()) {
+    const after = head.texts[file];
+    const before = base.texts[file] ?? "";
+    if (after === before) continue;
+    const seen = new Set(before.split("\n"));
+    const added = after.split("\n").filter((l) => !seen.has(l)).join("\n");
+    const hidden = hiddenChars(after) - hiddenChars(before);
+    if (hidden > 0) lines.push(`${WARN}${code(file)} adds ${hidden} invisible character${plural(hidden)} (zero-width/bidi/tag) a reviewer cannot see`);
+    const phrases = overridePhrases(added);
+    if (phrases.length) lines.push(`${WARN}${code(file)} adds text containing the phrase ${list(phrases)}`);
+    const blob = Math.max(0, ...blobs(added));
+    if (blob) lines.push(`${WARN}${code(file)} adds a ${blob}-char base64/hex-looking string`);
   }
   return lines;
 }
@@ -306,7 +389,10 @@ function permissionLines(base: ClaudeSettings, head: ClaudeSettings): string[] {
   for (const r of ask.added) lines.push(`Claude Code now asks before ${code(r)}`);
   for (const r of ask.removed) lines.push(`${WARN}Claude Code no longer forced to ask before ${code(r)}`);
   const dirs = delta(base.additionalDirectories, head.additionalDirectories);
-  for (const d of dirs.added) lines.push(`${WARN}Claude Code may access directory ${code(d)}`);
+  for (const d of dirs.added) {
+    const note = sensitivePaths([d]).length ? " — a whole filesystem/home or a credential path" : "";
+    lines.push(`${WARN}Claude Code may access directory ${code(d)}${note}`);
+  }
   for (const d of dirs.removed) lines.push(`Claude Code no longer has access to directory ${code(d)}`);
 
   // `manual` is an alias of `default`. Of the modes a project file can set,
@@ -404,6 +490,10 @@ function fmt(n: number): string {
 
 function signed(n: number): string {
   return `${n > 0 ? "+" : ""}${fmt(n)}`;
+}
+
+function plural(n: number): string {
+  return n === 1 ? "" : "s";
 }
 
 function posix(p: string): string {
