@@ -16,7 +16,7 @@
     "build": "tsc -p tsconfig.json",
     "dev": "node --loader tsx src/cli.ts",
     "scan": "npm run build && node dist/cli.js scan",
-    "test": "npm run build && node test/global-check.mjs && node test/wire-check.mjs && node test/proxy-check.mjs && node test/context-check.mjs",
+    "test": "npm run build && node test/global-check.mjs && node test/wire-check.mjs && node test/proxy-check.mjs && node test/context-check.mjs && node test/snapshot-check.mjs",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
