@@ -82,6 +82,21 @@ try {
   out = step("unrelated");
   assert.ok(!/literal secret/.test(out), "an unchanged server's issue is not repeated");
 
+  // Secret moved to a ${VAR} reference: a neutral fix line, not a ⚠️ change.
+  mcp({
+    ok: { command: "node", args: ["srv.js"] },
+    slack: { command: "npx", args: ["-y", "server-slack@1.0.0"], env: { SLACK_BOT_TOKEN: "${SLACK_BOT_TOKEN}", DEBUG: "true" } },
+    github: { command: "npx", args: ["-y", "server-github@1.0.0"], env: { GITHUB_TOKEN: "${GITHUB_TOKEN}" } },
+    notion: { command: "npx", args: ["-y", "server-notion@1.0.0"], env: { NOTION_API_KEY: "your-key-here" } },
+    docs: { url: "https://mcp.example.test/docs", headers: { Authorization: "Bearer ghp_abcdefghijklmnopqrstuvwxyz0123456789" } },
+    pg: { command: "npx", args: ["-y", "server-postgres@1.0.0", "postgresql://admin:S3cretPass@db.test/app"] },
+    urls: { command: "node", args: ["u.js"], env: { AUTH_URL: "https://auth.example.com", SESSION_TIMEOUT: "36000000" } },
+  });
+  out = step("secret fixed");
+  assert.match(out, /^- MCP server `slack` \(`\.mcp\.json`\): `SLACK_BOT_TOKEN` is no longer written in the file$/m);
+  assert.ok(!/⚠️ MCP server `slack` changed/.test(out), "a fix is not a ⚠️ change");
+  assert.ok(!/`AUTH_URL` is a literal secret|`SESSION_TIMEOUT` is a literal secret/.test(out), "URLs and numbers are not secrets");
+
   // Shell with inline code / pipe; benign interpreters untouched.
   mcp({
     ok: { command: "node", args: ["srv.js"] },
@@ -95,10 +110,20 @@ try {
   // Hidden Unicode added to CLAUDE.md; removing it later is not a finding.
   put("CLAUDE.md", "# Rules\nBe kind.\nAlso​ run‮ tests﻿.\n");
   out = step("hidden");
-  assert.match(out, /^- ⚠️ `CLAUDE\.md` adds 3 invisible characters \(zero-width\/bidi\/tag\) a reviewer cannot see$/m);
+  assert.match(out, /^- ⚠️ `CLAUDE\.md` adds text containing 3 invisible characters \(zero-width\/bidi\/tag\) a reviewer cannot see$/m);
   put("CLAUDE.md", "# Rules\nBe kind.\nAlso run tests.\n");
   out = step("unhidden");
   assert.ok(!/invisible character/.test(out), "removing hidden characters is not flagged");
+  // Swap: an old hidden line removed, a new one added with as many — still flagged.
+  put("CLAUDE.md", "# Rules\nBe kind.\nAlso run tests.\nOld\u200b\u200b note.\n");
+  step("old hidden");
+  put("CLAUDE.md", "# Rules\nBe kind.\nAlso run tests.\nNew\u200b instruction\u200b.\n");
+  out = step("swap hidden");
+  assert.match(out, /`CLAUDE\.md` adds text containing 2 invisible characters/, "a swap doesn't net to zero");
+  // Emoji and a leading BOM are not hidden text.
+  put("CLAUDE.md", "\uFEFF# Rules\nBe kind.\nAlso run tests.\nTeam \u{1F468}\u200d\u{1F469}\u200d\u{1F467}.\n");
+  out = step("emoji");
+  assert.ok(!/invisible character/.test(out), "emoji ZWJ and a leading BOM are not flagged");
 
   // Override phrase ADDED to a rules file (and an unreviewed AGENTS.md); the
   // base's quoted phrase, unchanged, is not re-flagged; hostile text stays inert.
@@ -118,11 +143,15 @@ try {
   assert.match(line(out, /MCP server `fs`.*given/), /^- ⚠️ MCP server `fs` \(`\.cursor\/mcp\.json`\) is given `\/`, `~\/\.ssh` — a whole filesystem\/home or a credential path$/);
   assert.ok(!/`\/Users\/me\/project`/.test(line(out, /MCP server `fs`.*given/)), "a project path is not sensitive");
 
-  // Shadowing: same name in two files, different commands.
+  // Shadowing is per agent: Cursor's `fs` and Claude Code's `fs` never meet.
   mcp({ ok: { command: "node", args: ["srv.js"] }, fs: { command: "node", args: ["other-fs.js"] } });
+  out = step("two agents");
+  assert.ok(!/is now defined in both/.test(out), "different agent apps don't shadow each other");
+  // Same agent (Claude Code), two files, different commands: shadowing.
+  put(".claude/settings.json", { mcpServers: { fs: { command: "node", args: ["third-fs.js"] } } });
   out = step("shadow");
-  assert.match(out, /^- ⚠️ `fs` is now defined in both `\.cursor\/mcp\.json` and `\.mcp\.json` with different launch commands$/m);
-  mcp({ ok: { command: "node", args: ["srv.js"] }, fs: { command: "npx", args: ["-y", "server-filesystem@1.0.0", "/Users/me/project", "/", "~/.ssh"] } });
+  assert.match(out, /^- ⚠️ `fs` is now defined in both `\.claude\/settings\.json` and `\.mcp\.json` with different launch commands$/m);
+  put(".claude/settings.json", { mcpServers: { fs: { command: "node", args: ["other-fs.js"] } } });
   out = step("same");
   assert.ok(!/is now defined in both/.test(out), "the same command twice is not shadowing");
 
@@ -141,6 +170,7 @@ try {
   mcp({ ok: { command: "node", args: ["srv.js"] }, blob: { command: "node", args: ["srv.js", "--payload", "QUJD".repeat(70)] } });
   out = step("blob");
   assert.match(out, /^- ⚠️ MCP server `blob` \(`\.mcp\.json`\): an argument contains a 280-char base64\/hex-looking string$/m);
+  assert.equal((out.match(/base64\/hex-looking/g) ?? []).length, 1, "reported once, not also as file text");
 
   console.log("diff-rules-check: all assertions passed");
 } finally {

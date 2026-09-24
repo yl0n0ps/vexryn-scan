@@ -13,7 +13,7 @@ import { claudeCodeContext } from "../scan/claude.js";
 import { readClaudeSettings, type ClaudeSettings, type Hook } from "../scan/settings.js";
 import { promises as fs } from "node:fs";
 import { gitRoot, isAgentConfigPath, resolveRef, snapshot, type Side } from "./snapshot.js";
-import { TOKEN_SHAPE, blobs, hiddenChars, overridePhrases, plainHttpRemote, secretInText, sensitivePaths, shellInline } from "./rules.js";
+import { TOKEN_SHAPE, secretName, blobs, hiddenChars, overridePhrases, plainHttpRemote, secretInText, sensitivePaths, shellInline } from "./rules.js";
 
 export const MARKER = "<!-- vexryn-pr-review -->";
 export const NO_CHANGE = "No agent config file changed.";
@@ -167,7 +167,6 @@ export function code(s: string): string {
 
 // --- Secrets ---------------------------------------------------------------
 
-const SECRET_NAME = /token|key|secret|passw|auth|credential/i;
 const TOKEN_SHAPE_G = new RegExp(TOKEN_SHAPE.source, "g");
 const MASK = "***";
 
@@ -189,9 +188,9 @@ export function redact(s: string): string {
         return MASK;
       }
       const assign = w.match(/^(["']?-{0,2}[\w.-]*)=(.+)$/);
-      if (assign && SECRET_NAME.test(assign[1])) return `${assign[1]}=${MASK}`;
-      const secretFlag = /^-{1,2}[\w.-]+$/.test(w) && SECRET_NAME.test(w);
-      const secretHeader = /^["']?[\w-]+:["']?$/.test(w) && SECRET_NAME.test(w);
+      if (assign && secretName(assign[1])) return `${assign[1]}=${MASK}`;
+      const secretFlag = /^-{1,2}[\w.-]+$/.test(w) && secretName(w);
+      const secretHeader = /^["']?[\w-]+:["']?$/.test(w) && secretName(w);
       if (secretFlag || secretHeader || /^bearer$/i.test(w)) {
         maskNext = true;
         return w;
@@ -232,8 +231,9 @@ function unreadableLines(base: Snapshot, head: Snapshot): string[] {
 
 const serverKey = (s: McpServer) => `${s.fromRelPath}\u0000${s.name}`;
 /** Raw launch facts: display text is truncated, so it can't decide "changed". */
-const facts = (s: McpServer) =>
-  JSON.stringify([s.transport, s.command ?? "", s.args ?? [], s.url ?? "", [...(s.receives ?? [])].sort(), [...(s.literalSecrets ?? [])].sort()]);
+const launch = (s: McpServer) => JSON.stringify([s.transport, s.command ?? "", s.args ?? [], s.url ?? "", [...(s.receives ?? [])].sort()]);
+/** Launch facts + which names hold a literal secret: what makes a server worth re-checking. */
+const facts = (s: McpServer) => launch(s) + JSON.stringify([...(s.literalSecrets ?? [])].sort());
 
 /** Head servers that are new or changed, in files readable on both sides. */
 function newOrChanged(base: Snapshot, head: Snapshot): McpServer[] {
@@ -256,7 +256,13 @@ function serverLines(base: Snapshot, head: Snapshot): string[] {
     if (unknown(s.fromRelPath)) continue; // reported once as unreadable
     if (!was) {
       lines.push(`${WARN}New MCP server ${code(s.name)} for ${s.client} in ${code(s.fromRelPath)}: ${describe(s)}`);
-    } else if (facts(was) !== facts(s)) {
+    } else if (launch(was) === launch(s)) {
+      // Only literal secrets changed: a new one is a fact line; one moved out is a fix.
+      const gone = (was.literalSecrets ?? []).filter((n) => !(s.literalSecrets ?? []).includes(n));
+      if (gone.length) {
+        lines.push(`MCP server ${code(s.name)} (${code(s.fromRelPath)}): ${list(gone)} ${gone.length === 1 ? "is" : "are"} no longer written in the file`);
+      }
+    } else {
       const [now, then] = [describe(s), describe(was)];
       const hidden = now === then ? ` — ${argDelta(was.args, s.args) || "details changed beyond what is shown"}` : "";
       lines.push(`${WARN}MCP server ${code(s.name)} changed in ${code(s.fromRelPath)} (${s.client}): now ${now} (before: ${then})${hidden}`);
@@ -293,18 +299,20 @@ function serverFactLines(base: Snapshot, head: Snapshot): string[] {
 /** A name newly defined in several files with different launch commands. */
 function shadowLines(base: Snapshot, head: Snapshot): string[] {
   const shadowed = (snap: Snapshot) => {
-    const byName = new Map<string, Map<string, string>>(); // name → facts → file
+    // Per agent app: only servers one agent loads together can shadow each other.
+    const byName = new Map<string, { name: string; launches: Map<string, string> }>(); // client+name → launch → file
     for (const s of snap.servers) {
-      const m = byName.get(s.name) ?? new Map<string, string>();
-      if (!m.has(facts(s))) m.set(facts(s), s.fromRelPath);
-      byName.set(s.name, m);
+      const k = `${s.client}\u0000${s.name}`;
+      const e = byName.get(k) ?? { name: s.name, launches: new Map<string, string>() };
+      if (!e.launches.has(launch(s))) e.launches.set(launch(s), s.fromRelPath);
+      byName.set(k, e);
     }
-    return new Map([...byName].filter(([, m]) => m.size > 1).map(([name, m]) => [name, [...m.values()].sort()]));
+    return new Map([...byName].filter(([, e]) => e.launches.size > 1).map(([k, e]) => [k, { name: e.name, files: [...e.launches.values()].sort() }]));
   };
   const before = shadowed(base);
   return [...shadowed(head)]
-    .filter(([name]) => !before.has(name))
-    .map(([name, files]) => {
+    .filter(([k]) => !before.has(k))
+    .map(([, { name, files }]) => {
       const where = files.length === 2 ? `both ${code(files[0])} and ${code(files[1])}` : list(files);
       return `${WARN}${code(name)} is now defined in ${where} with different launch commands`;
     });
@@ -319,11 +327,13 @@ function textLines(base: Snapshot, head: Snapshot): string[] {
     if (after === before) continue;
     const seen = new Set(before.split("\n"));
     const added = after.split("\n").filter((l) => !seen.has(l)).join("\n");
-    const hidden = hiddenChars(after) - hiddenChars(before);
-    if (hidden > 0) lines.push(`${WARN}${code(file)} adds ${hidden} invisible character${plural(hidden)} (zero-width/bidi/tag) a reviewer cannot see`);
+    // Counted on the added lines, so removing hidden text elsewhere can't offset it.
+    const hidden = hiddenChars(added);
+    if (hidden > 0) lines.push(`${WARN}${code(file)} adds text containing ${hidden} invisible character${plural(hidden)} (zero-width/bidi/tag) a reviewer cannot see`);
     const phrases = overridePhrases(added);
     if (phrases.length) lines.push(`${WARN}${code(file)} adds text containing the phrase ${list(phrases)}`);
-    const blob = Math.max(0, ...blobs(added));
+    // In a JSON config, a long argument is already reported as a server fact.
+    const blob = file.endsWith(".json") ? 0 : Math.max(0, ...blobs(added));
     if (blob) lines.push(`${WARN}${code(file)} adds a ${blob}-char base64/hex-looking string`);
   }
   return lines;

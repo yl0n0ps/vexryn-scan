@@ -8,12 +8,19 @@ import path from "node:path";
 
 // --- Hidden text --------------------------------------------------------------
 
-/** Zero-width, BOM, bidi controls/isolates, Unicode tag characters. */
-const HIDDEN = /[\u200B-\u200F\u2060\uFEFF\u202A-\u202E\u2066-\u2069]|[\u{E0000}-\u{E007F}]/gu;
+/**
+ * Zero-width, BOM, bidi embeddings/overrides/isolates (the "Trojan Source"
+ * set), Unicode tag characters. Not LRM/RLM (U+200E/F): ordinary marks in
+ * right-to-left text.
+ */
+const HIDDEN = /[\u200B-\u200D\u2060\uFEFF\u202A-\u202E\u2066-\u2069]|[\u{E0000}-\u{E007F}]/gu;
+/** A zero-width joiner inside an emoji sequence (👨‍👩‍👧) is how emoji are written. */
+const EMOJI_ZWJ = /(\p{Extended_Pictographic}\uFE0F?)\u200D(?=\p{Extended_Pictographic})/gu;
 
-/** Count of characters a reviewer cannot see. */
+/** Count of characters a reviewer cannot see (a file's leading BOM and emoji joiners excluded). */
 export function hiddenChars(text: string): number {
-  return (text.match(HIDDEN) ?? []).length;
+  const t = text.replace(/^\uFEFF/, "").replace(EMOJI_ZWJ, "$1");
+  return (t.match(HIDDEN) ?? []).length;
 }
 
 /** Instruction-override / hidden-behaviour phrases. Reported as "contains the phrase". */
@@ -46,21 +53,22 @@ export function blobs(text: string): number[] {
 
 const SHELLS = /^(?:(?:ba|z|da|k|fi)?sh|cmd|pwsh|powershell|python(?:\d+(?:\.\d+)?)?|node|deno|bun)$/i;
 const INLINE_FLAG = /^-{1,2}(?:c|e|eval|command|lc|ic|ec)$/i;
-const FETCHERS = /\b(?:curl|wget|base64|nc|telnet)\b/i;
-const CHAINING = /(?:^|\s)(?:&&|\|\||;)(?:\s|$)|\|\s*(?:ba|z|da|k)?sh\b/;
 
-/** A shell/interpreter given inline code, a fetcher, or any command chaining. */
+/**
+ * A shell/interpreter told to run inline code (`bash -c`, `node -e`,
+ * `pwsh -Command`), or `npx -c`. MCP clients spawn servers without a shell,
+ * so `&&` or `|` in the args of any other program is passed to it literally
+ * and runs nothing.
+ */
 export function shellInline(command: string, args: string[]): boolean {
-  const joined = args.join(" ");
-  if (CHAINING.test(joined)) return true;
   const bin = path.posix.basename(command.replace(/\\/g, "/")).replace(/\.(?:exe|cmd|bat)$/i, "");
-  if (!SHELLS.test(bin)) return false;
-  return args.some((a) => INLINE_FLAG.test(a)) || FETCHERS.test(joined);
+  if (bin === "npx") return args.some((a) => a === "-c" || a === "--call");
+  return SHELLS.test(bin) && args.some((a) => INLINE_FLAG.test(a));
 }
 
 const ROOTS = new Set(["/", "~", "~/", "$HOME", "${HOME}", "C:\\", "C:/"]);
 const SENSITIVE =
-  /(?:^|\/)\.ssh(?:\/|$)|id_(?:rsa|ed25519|ecdsa|dsa)(?:\.pub)?$|(?:^|\/)\.aws(?:\/|$)|(?:^|\/)\.env(?:\.|$)|\.(?:pem|key|p12|pfx|jks)$|credentials\.json$|(?:^|\/)\.gnupg(?:\/|$)|(?:^|\/)\.kube(?:\/|$)|(?:^|\/)\.docker\/config\.json$|(?:^|\/)\.netrc$/i;
+  /(?:^|\/)\.ssh(?:\/|$)|id_(?:rsa|ed25519|ecdsa|dsa)(?:\.pub)?$|(?:^|\/)\.aws(?:\/|$)|(?:^|\/)\.env(?:\.(?!(?:example|sample|template|dist)$)[\w.-]+)?$|\.(?:pem|key|p12|pfx|jks)$|credentials\.json$|(?:^|\/)\.gnupg(?:\/|$)|(?:^|\/)\.kube(?:\/|$)|(?:^|\/)\.docker\/config\.json$|(?:^|\/)\.netrc$/i;
 
 /** Args that name a whole filesystem/home, or a credential-bearing path. */
 export function sensitivePaths(args: string[]): string[] {
@@ -81,7 +89,18 @@ export function plainHttpRemote(url: string): boolean {
 
 // --- Secrets ------------------------------------------------------------------
 
-export const SECRET_NAME = /token|key|secret|passw|auth|credential|cookie|session/i;
+/**
+ * A name (env var, header, flag) that says it holds a secret: one of its words
+ * is TOKEN/KEY/SECRET/PASSWORD… or ends with one (APIKEY), or is exactly
+ * AUTH/AUTHORIZATION/CREDENTIAL(S)/COOKIE/SESSION/PASS. Word-based, so
+ * KEYBOARD and TOKENIZER are not secrets.
+ */
+export function secretName(name: string): boolean {
+  return name
+    .split(/[^A-Za-z0-9]+|(?<=[a-z0-9])(?=[A-Z])/)
+    .filter(Boolean)
+    .some((w) => /^(?:\w*(?:TOKEN|KEY|SECRET|PASSWORD|PASSWD|PWD)|AUTH|AUTHORIZATION|CREDENTIALS?|COOKIE|SESSION|PASS)$/.test(w.toUpperCase()));
+}
 
 /** Well-known credential formats (public prefixes), matched anywhere in text. */
 export const TOKEN_SHAPE =
@@ -94,11 +113,19 @@ const REFERENCE = /^(?:\$\{[^}]+\}|\$[A-Za-z_][A-Za-z0-9_]*|%[A-Za-z_][A-Za-z0-9
 const PLACEHOLDER =
   /^(?:<.*>|\[.*\]|\{\{.*\}\}|x+|\*+|\.{3,}|change[-_ ]?me|placeholder|todo|tbd|example|dummy|sample|redacted|none|null|undefined)$|your[-_ ]|[-_ ]here$|paste|replace[-_ ]?me|insert[-_ ]/i;
 
+/** Values that are clearly not credentials even under a secret-sounding name. */
+const NOT_SECRET = [
+  /^[a-z][a-z0-9+.-]*:\/\/[^\s@]+$/i, // a URL without userinfo
+  /^(?:[.~]?\/|[A-Za-z]:[\\/])/, // a path
+  /^\d+(?:\.\d+)?[a-z]{0,3}$/i, // a number, maybe with a unit (30s, 512mb)
+  /^(?:true|false|yes|no|on|off)$/i, // a boolean
+];
+
 /** An env/header value that is a credential written into the file. */
 export function secretLiteral(name: string, value: string): boolean {
   if (!value || REFERENCE.test(value) || PLACEHOLDER.test(value)) return false;
   if (TOKEN_SHAPE.test(value)) return true;
-  if (!SECRET_NAME.test(name)) return false;
+  if (!secretName(name) || NOT_SECRET.some((re) => re.test(value))) return false;
   // A secret-named var holding a long literal with more than plain lowercase words.
   return value.length >= 8 && /\d|[A-Z]|[^\w\s]/.test(value);
 }
