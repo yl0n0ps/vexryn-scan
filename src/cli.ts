@@ -4,6 +4,7 @@
 //   vexryn scan [path] [--deep] [--html]
 //   vexryn wrap --name <server> -- <command...>
 //   vexryn usage
+//   vexryn diff [path] --base <ref> [--head <ref>]
 
 import path from "node:path";
 import type { McpServer, ServerEstimate } from "./types.js";
@@ -17,6 +18,9 @@ import { runWrap } from "./proxy/wrap.js";
 import { loadUsage, usedToolCount } from "./usage/store.js";
 import { wireConfigs, unwireConfigs, type WireChange } from "./wire/wire.js";
 import { computeTrim, renderTrim, writeTrimmed } from "./trim/trim.js";
+import { gitRoot, resolveRef, snapshot } from "./diff/snapshot.js";
+import { compare, readSnapshot, renderReview } from "./diff/review.js";
+import { promises as fs } from "node:fs";
 
 const VERSION = "0.0.1";
 
@@ -37,6 +41,7 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "wire") return runWire(rest, "wire");
   if (cmd === "unwire") return runWire(rest, "unwire");
   if (cmd === "trim") return runTrim(rest);
+  if (cmd === "diff") return runDiff(rest);
 
   process.stderr.write(`Unknown command: ${cmd}\n\n`);
   printHelp();
@@ -205,6 +210,34 @@ async function runTrim(args: string[]): Promise<number> {
   return 0;
 }
 
+async function runDiff(args: string[]): Promise<number> {
+  const value = (flag: string) => {
+    const i = args.indexOf(flag);
+    return i === -1 ? undefined : args[i + 1];
+  };
+  const base = value("--base");
+  const head = value("--head");
+  if (!base) {
+    process.stderr.write("usage: vexryn diff [path] --base <ref> [--head <ref>]   (head defaults to the working tree)\n");
+    return 2;
+  }
+  const target = args.find((a, i) => !a.startsWith("-") && args[i - 1] !== "--base" && args[i - 1] !== "--head") ?? ".";
+  const root = await gitRoot(path.resolve(process.cwd(), target));
+  const baseSha = await resolveRef(root, base);
+  const headSha = head ? await resolveRef(root, head) : null;
+
+  const dirs: string[] = [];
+  try {
+    dirs.push(await snapshot(root, baseSha));
+    dirs.push(await snapshot(root, headSha));
+    const review = compare(await readSnapshot(dirs[0]), await readSnapshot(dirs[1]));
+    process.stdout.write(renderReview(review));
+  } finally {
+    for (const d of dirs) await fs.rm(d, { recursive: true, force: true });
+  }
+  return 0;
+}
+
 function printHelp(): void {
   process.stdout.write(
     [
@@ -221,6 +254,8 @@ function printHelp(): void {
       "    wrap --name <s> -- <command>    Proxy a server to count real tool usage",
       "    usage                           Show recorded tool usage",
       "    trim [path] [--write]           Suggest what to cut, based on usage",
+      "    diff [path] --base <ref> [--head <ref>]",
+      "                                    Review agent-config changes (markdown, for a PR)",
       "",
       "  Any repo, any stack. scan is read-only & local; wire/wrap sit in the",
       "  path locally to count real calls. Nothing is ever sent.",
