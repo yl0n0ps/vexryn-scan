@@ -9,6 +9,7 @@ import path from "node:path";
 import type { McpServer, ServerEstimate } from "./types.js";
 import { discoverConfigs, discoverGlobalConfigs } from "./scan/discover.js";
 import { parseServers } from "./scan/parse.js";
+import { claudeCodeContext } from "./scan/claude.js";
 import { introspectServer } from "./scan/introspect.js";
 import { assembleReport, renderText } from "./scan/report.js";
 import { writeHtml } from "./scan/html.js";
@@ -16,7 +17,6 @@ import { runWrap } from "./proxy/wrap.js";
 import { loadUsage, usedToolCount } from "./usage/store.js";
 import { wireConfigs, unwireConfigs, type WireChange } from "./wire/wire.js";
 import { computeTrim, renderTrim, writeTrimmed } from "./trim/trim.js";
-import { estimateServer } from "./scan/catalog.js";
 
 const VERSION = "0.0.1";
 
@@ -54,7 +54,8 @@ async function runScan(args: string[]): Promise<number> {
     ...(await discoverConfigs(root)),
     ...(includesGlobal ? await discoverGlobalConfigs() : []),
   ];
-  const servers = await parseServers(configs, root);
+  const claude = await claudeCodeContext(root, includesGlobal);
+  const servers = [...(await parseServers(configs, root)), ...claude.pluginServers];
 
   // Attach real usage from the local store (populated by `vexryn wrap`).
   const usage = await loadUsage();
@@ -85,7 +86,7 @@ async function runScan(args: string[]): Promise<number> {
     process.stderr.write("\n");
   }
 
-  const report = assembleReport(root, deep, includesGlobal, configs, servers);
+  const report = assembleReport(root, deep, includesGlobal, configs, servers, claude);
   process.stdout.write(renderText(report));
 
   if (html) {
@@ -187,7 +188,6 @@ async function runTrim(args: string[]): Promise<number> {
   const servers = await parseServers(configs, root);
   const usage = await loadUsage();
   for (const s of servers) {
-    if (!s.estimate) s.estimate = estimateServer(s.name, s.target);
     s.usedToolCount = usage.servers[s.name] ? usedToolCount(usage, s.name) : null;
   }
 

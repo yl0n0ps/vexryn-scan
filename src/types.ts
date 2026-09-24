@@ -83,9 +83,8 @@ export interface McpServer {
   /** The config file this server came from (display path). */
   fromRelPath: string;
   /**
-   * Tool count + token cost. `null` means we have no figure yet:
-   * not in the catalog, and not introspected. Populated by the catalog
-   * (static) or by real introspection (--deep).
+   * Tool count + token cost, from real introspection (--deep). `null` means
+   * not measured: the static scan never executes a server, and never invents a figure.
    */
   estimate: ServerEstimate | null;
 }
@@ -94,10 +93,8 @@ export interface ServerEstimate {
   toolCount: number;
   /** Tokens the tool definitions add to the context window. */
   approxTokens: number;
-  /** How we got the figure: "catalog:<id>", "introspect", or "introspect-failed". */
+  /** How we got the figure: "introspect" or "introspect-failed". */
   source: string;
-  /** Whether this is a real measurement (--deep) or an estimate (catalog). */
-  measured: boolean;
   /** Per-tool detail, present when measured via introspection. */
   tools?: ToolInfo[];
   /** Set when introspection was attempted but failed, with the reason. */
@@ -112,12 +109,31 @@ export interface ToolInfo {
   tokens: number;
 }
 
+/** Something an agent loads into context at every session start (read from disk). */
+export interface ContextItem {
+  /** What it is: a file path, or e.g. "12 skill descriptions". */
+  label: string;
+  tokens: number;
+}
+
+/**
+ * How Claude Code loads MCP tool schemas: deferred (tool search, the default —
+ * only names up front), upfront (all schemas), or auto (upfront if they fit in
+ * 10% of the window).
+ */
+export type ToolSearch = "deferred" | "upfront" | "auto";
+
 /** The load of ONE agent app: its servers share one context window. */
 export interface AgentLoad {
   client: AgentClient;
   servers: McpServer[];
   toolCount: number;
+  /** Tokens loaded up front: always-loaded context + MCP tools (names only when deferred). */
   approxTokens: number;
+  /** Always-loaded instructions: CLAUDE.md, memory, skill/subagent descriptions. */
+  context: ContextItem[];
+  /** True when MCP tool schemas load on demand (Claude Code tool search). */
+  mcpDeferred: boolean;
   unmeasuredServers: number;
   /** Distinct tools used, summed over servers that have usage data. */
   usedToolCount: number;

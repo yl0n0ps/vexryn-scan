@@ -4,7 +4,7 @@
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { AgentLoad, LoadReport, McpServer } from "../types.js";
+import type { AgentLoad, ContextItem, LoadReport, McpServer } from "../types.js";
 import { CONTEXT_WINDOW_TOKENS, fmtTokens, loadPercent } from "./report.js";
 
 /** Write the report and return the file path. */
@@ -18,7 +18,7 @@ export async function writeHtml(report: LoadReport, root: string): Promise<strin
 
 export function renderHtml(report: LoadReport): string {
   const { totals, configs, deep, agents, includesGlobal } = report;
-  const mode = deep ? "measured" : "estimated";
+  const mode = deep ? "MCP measured live" : "static read";
   const heaviest = agents[0];
   const heaviestPct = heaviest ? loadPercent(heaviest.approxTokens) : 0;
   const sections = agents.map(agentSection).join("\n");
@@ -82,7 +82,8 @@ ${sections || '  <p class="meta">No MCP servers declared — only rules/instruct
 
   <p class="foot">100% local — nothing was sent. Each agent has its own context window, so load is shown per agent.
   ${includesGlobal ? "Includes your user-wide agent configs (read-only)." : ""}
-  ${deep ? "Measured by connecting to your own servers." : "Estimated from the bundled catalog — run --deep for real numbers."}</p>
+  ${deep ? "MCP servers measured by connecting to your own servers." : "MCP servers not measured — run --deep for real numbers."}
+  Not counted: the agent's own system prompt, hook output, and your conversation as it grows.</p>
 </div>
 </body>
 </html>`;
@@ -90,23 +91,37 @@ ${sections || '  <p class="meta">No MCP servers declared — only rules/instruct
 
 function agentSection(a: AgentLoad): string {
   const pct = loadPercent(a.approxTokens);
-  const rows = a.servers.map(serverRow).join("\n");
+  const rows = [...a.context.map(contextRow), ...a.servers.map(serverRow)].join("\n");
+  const deferred = a.mcpDeferred
+    ? `<p class="meta">MCP tool schemas load on demand (tool search): only their names count up front.</p>`
+    : "";
   const used =
     a.hasUsage && a.toolCount > 0
       ? `<p class="used">You actually used ${a.usedToolCount} of ${a.toolCount} tools.</p>`
       : "";
   return `  <section class="card agent">
     <h2>${escapeHtml(a.client)}</h2>
-    <p class="meta">${a.servers.length} server${plural(a.servers.length)} · ${a.toolCount} tool${plural(a.toolCount)} · ~${a.approxTokens.toLocaleString("en-US")} of ${CONTEXT_WINDOW_TOKENS.toLocaleString("en-US")} tokens up front (${pct}%)</p>
-    <div class="track"><div class="fill" style="width:${Math.min(100, pct)}%"></div></div>
+    ${
+      a.context.length === 0 && a.unmeasuredServers === a.servers.length
+        ? `<p class="meta">${a.servers.length} server${plural(a.servers.length)} · load not measured — run --deep</p>`
+        : `<p class="meta">${a.servers.length} server${plural(a.servers.length)} · ${a.toolCount} tool${plural(a.toolCount)} · ~${a.approxTokens.toLocaleString("en-US")} of ${CONTEXT_WINDOW_TOKENS.toLocaleString("en-US")} tokens up front (${pct}%)</p>
+    <div class="track"><div class="fill" style="width:${Math.min(100, pct)}%"></div></div>`
+    }
     ${used}
+    ${deferred}
     <div class="table-wrap"><table>
-      <thead><tr><th>Server</th><th style="text-align:right">Tools</th><th style="text-align:right">Context</th><th>Declared in</th></tr></thead>
+      <thead><tr><th>Loaded</th><th style="text-align:right">Tools</th><th style="text-align:right">Context</th><th>Declared in</th></tr></thead>
       <tbody>
 ${rows}
       </tbody>
     </table></div>
   </section>`;
+}
+
+function contextRow(c: ContextItem): string {
+  return `        <tr><td class="srv">${escapeHtml(c.label)}</td><td class="num">—</td><td class="num">${c.tokens.toLocaleString(
+    "en-US",
+  )}</td><td class="src">always loaded</td></tr>`;
 }
 
 function serverRow(s: McpServer): string {
@@ -116,11 +131,10 @@ function serverRow(s: McpServer): string {
     const reason = s.estimate?.error ? "unreachable" : "cost unknown";
     return `        <tr><td class="srv">${name}</td><td class="num bad">${reason}</td><td class="num">—</td><td class="src">${from}</td></tr>`;
   }
-  const est = s.estimate.measured ? "" : " (est.)";
   const used = s.usedToolCount != null ? ` · ${s.usedToolCount} used` : "";
   return `        <tr><td class="srv">${name}</td><td class="num">${s.estimate.toolCount}${used}</td><td class="num">~${fmtTokens(
     s.estimate.approxTokens,
-  )}${est}</td><td class="src">${from}</td></tr>`;
+  )}</td><td class="src">${from}</td></tr>`;
 }
 
 function plural(n: number): string {

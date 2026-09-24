@@ -4,7 +4,6 @@
 
 import { promises as fs } from "node:fs";
 import type { DiscoveredConfig, McpServer, Scope } from "../types.js";
-import { estimateServer } from "./catalog.js";
 
 /** Config kinds that can declare MCP servers (rules/markdown files cannot). */
 const SERVER_KINDS = new Set([
@@ -57,7 +56,7 @@ export async function parseServers(configs: DiscoveredConfig[], root: string): P
           client: cfg.client,
           scope: section.scope,
           fromRelPath: cfg.relPath,
-          estimate: estimateServer(s.name, s.target),
+          estimate: null,
         });
       }
     }
@@ -77,7 +76,7 @@ async function projectKeys(root: string): Promise<Set<string>> {
 }
 
 /** Read JSON, tolerating comments and trailing commas (VS Code files are JSONC). */
-async function readJsonLoose(p: string): Promise<unknown | null> {
+export async function readJsonLoose(p: string): Promise<unknown | null> {
   let text: string;
   try {
     text = await fs.readFile(p, "utf8");
@@ -131,7 +130,7 @@ function stripJsonc(text: string): string {
 type BareServer = Pick<McpServer, "name" | "transport" | "target" | "command" | "args" | "url">;
 
 /** A `{ name: definition }` map → servers. Remote URL keys differ per app. */
-function extractServers(map: unknown): BareServer[] {
+export function extractServers(map: unknown): BareServer[] {
   if (typeof map !== "object" || map === null) return [];
   const out: BareServer[] = [];
   for (const [name, def] of Object.entries(map as Record<string, unknown>)) {

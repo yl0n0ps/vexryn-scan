@@ -87,6 +87,8 @@ try {
 
   assert.match(section(out, "CLAUDE DESKTOP"), /filesystem/);
   assert.match(section(out, "WINDSURF"), /remote-docs/, "Windsurf serverUrl parsed");
+  assert.match(section(out, "WINDSURF"), /not measured/, "an unmeasured agent says so");
+  assert.ok(!/~0%/.test(section(out, "WINDSURF")), "an unmeasured agent never shows a fake 0%");
   assert.match(section(out, "VS CODE"), /notion/, "VS Code JSONC parsed");
   assert.match(out, /\(4 user-wide\)/);
 

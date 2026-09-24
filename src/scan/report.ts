@@ -4,7 +4,8 @@
 // Load is computed PER AGENT: each agent app (Claude Code, Cursor, …) has
 // its own context window, so summing across apps would be meaningless.
 
-import type { AgentClient, AgentLoad, DiscoveredConfig, LoadReport, McpServer, Scope } from "../types.js";
+import type { AgentClient, AgentLoad, ContextItem, DiscoveredConfig, LoadReport, McpServer, Scope, ToolSearch } from "../types.js";
+import { countTokens } from "./tokens.js";
 
 // Rough size of a typical model context window, for the "% of window" figure.
 export const CONTEXT_WINDOW_TOKENS = 200_000;
@@ -18,10 +19,13 @@ export function assembleReport(
   includesGlobal: boolean,
   configs: DiscoveredConfig[],
   servers: McpServer[],
+  claude: { items: ContextItem[]; toolSearch: ToolSearch } = { items: [], toolSearch: "deferred" },
 ): LoadReport {
   const deduped = dedupePerAgent(servers);
 
   const byClient = new Map<AgentClient, McpServer[]>();
+  // Claude Code loads its CLAUDE.md/skills even with no MCP server declared.
+  if (claude.items.length > 0) byClient.set("Claude Code", []);
   for (const s of deduped) {
     const list = byClient.get(s.client) ?? [];
     list.push(s);
@@ -30,7 +34,9 @@ export function assembleReport(
 
   const agents: AgentLoad[] = [];
   for (const [client, list] of byClient) {
-    agents.push(agentLoad(client, list));
+    agents.push(
+      client === "Claude Code" ? agentLoad(client, list, claude.items, claude.toolSearch) : agentLoad(client, list, [], "upfront"),
+    );
   }
   agents.sort(
     (a, b) =>
@@ -66,16 +72,18 @@ function dedupePerAgent(servers: McpServer[]): McpServer[] {
   return servers.filter((s) => best.get(`${s.client}\u0000${s.name}`) === s);
 }
 
-function agentLoad(client: AgentClient, servers: McpServer[]): AgentLoad {
+function agentLoad(client: AgentClient, servers: McpServer[], context: ContextItem[], toolSearch: ToolSearch): AgentLoad {
   let toolCount = 0;
-  let approxTokens = 0;
+  let mcpTokens = 0;
+  let nameTokens = 0;
   let unmeasuredServers = 0;
   let usedToolCount = 0;
   let hasUsage = false;
   for (const s of servers) {
     if (isMeasurable(s)) {
       toolCount += s.estimate!.toolCount;
-      approxTokens += s.estimate!.approxTokens;
+      mcpTokens += s.estimate!.approxTokens;
+      nameTokens += (s.estimate!.tools ?? []).reduce((n, t) => n + countTokens(t.name), 0);
     } else {
       unmeasuredServers += 1;
     }
@@ -84,7 +92,10 @@ function agentLoad(client: AgentClient, servers: McpServer[]): AgentLoad {
       usedToolCount += s.usedToolCount;
     }
   }
-  return { client, servers, toolCount, approxTokens, unmeasuredServers, usedToolCount, hasUsage };
+  // Deferred (tool search): only tool names load up front; `auto` defers when schemas exceed 10% of the window.
+  const mcpDeferred = toolSearch === "deferred" || (toolSearch === "auto" && mcpTokens > CONTEXT_WINDOW_TOKENS / 10);
+  const approxTokens = context.reduce((n, c) => n + c.tokens, 0) + (mcpDeferred ? nameTokens : mcpTokens);
+  return { client, servers, toolCount, approxTokens, context, mcpDeferred, unmeasuredServers, usedToolCount, hasUsage };
 }
 
 export function isMeasurable(s: McpServer): boolean {
@@ -99,13 +110,13 @@ export function loadPercent(tokens: number): number {
 export function renderText(report: LoadReport): string {
   const { configs, agents, totals, deep, includesGlobal } = report;
   const lines: string[] = [];
-  const mode = deep ? "measured" : "estimated";
+  const mode = deep ? "MCP measured live" : "static read";
 
   lines.push("");
   lines.push("  vexryn · agent load report");
   lines.push("");
 
-  if (configs.length === 0) {
+  if (configs.length === 0 && agents.length === 0) {
     lines.push("  No agent configs found. Nothing to scan here.");
     lines.push("");
     return lines.join("\n");
@@ -127,16 +138,31 @@ export function renderText(report: LoadReport): string {
 
   for (const a of agents) {
     const pct = loadPercent(a.approxTokens);
+    const nothingMeasured = a.context.length === 0 && a.unmeasuredServers === a.servers.length;
+    const tools =
+      a.servers.length === 0 ? "" : a.unmeasuredServers === a.servers.length ? ", tools not measured" : `, ${a.toolCount} tool${plural(a.toolCount)}`;
+    lines.push(`  ${a.client.toUpperCase()}  — ${a.servers.length} server${plural(a.servers.length)}${tools}`);
     lines.push(
-      `  ${a.client.toUpperCase()}  — ${a.servers.length} server${plural(a.servers.length)}, ` +
-        `${a.toolCount} tool${plural(a.toolCount)}`,
-    );
-    lines.push(
-      `  ${bar(pct)}  ~${pct}%   ~${a.approxTokens.toLocaleString("en-US")} of ` +
-        `${CONTEXT_WINDOW_TOKENS.toLocaleString("en-US")} tokens up front`,
+      nothingMeasured
+        ? `  ${dim("░".repeat(24))}  load not measured — run --deep`
+        : `  ${bar(pct)}  ~${pct}%   ~${a.approxTokens.toLocaleString("en-US")} of ` +
+            `${CONTEXT_WINDOW_TOKENS.toLocaleString("en-US")} tokens up front`,
     );
     if (a.hasUsage && a.toolCount > 0) {
       lines.push(`  You actually used ${a.usedToolCount} of ${a.toolCount} tools.`);
+    }
+    if (a.context.length > 0) {
+      lines.push("    Always loaded, every session:");
+      for (const c of a.context) {
+        lines.push(`      ${padEnd(c.label, 34)} ${c.tokens.toLocaleString("en-US").padStart(7)} tok`);
+      }
+    }
+    if (a.servers.length > 0 && (a.context.length > 0 || a.mcpDeferred)) {
+      lines.push(
+        a.mcpDeferred
+          ? "    MCP servers — tool schemas load on demand (tool search); only names count up front:"
+          : "    MCP servers:",
+      );
     }
     for (const s of a.servers) {
       lines.push(`    ${padEnd(s.name, 20)} ${padEnd(renderServerCost(s), 34)} ${dim(`${s.fromRelPath} · ${s.scope}`)}`);
@@ -152,8 +178,8 @@ export function renderText(report: LoadReport): string {
       );
     } else {
       lines.push(
-        `  ${totals.unmeasuredServers} server${plural(totals.unmeasuredServers)} not in the catalog — ` +
-          "cost unknown. Run with --deep to measure them for real",
+        `  ${totals.unmeasuredServers} MCP server${plural(totals.unmeasuredServers)} not measured. ` +
+          "Run with --deep to measure them for real",
       );
       lines.push("  (connects to your own servers locally; nothing is sent).");
     }
@@ -163,8 +189,8 @@ export function renderText(report: LoadReport): string {
   if (includesGlobal) {
     lines.push("  Includes your user-wide agent configs (read-only). --no-global for this repo only.");
   }
-  lines.push("  Honest note: tool definitions are a fixed cost, but your");
-  lines.push("  conversation history also grows — this report measures the tools.");
+  lines.push("  Honest note: this counts what your configs make the agent load. Not counted:");
+  lines.push("  the agent's own system prompt, hook output, and your conversation as it grows.");
   lines.push("");
   return lines.join("\n");
 }
@@ -174,9 +200,8 @@ function renderServerCost(s: McpServer): string {
   if (s.estimate.source === "introspect-failed") {
     return dim(`unreachable — ${truncate(s.estimate.error ?? "failed", 40)}`);
   }
-  const tag = s.estimate.measured ? "" : dim(" (est.)");
   const used = s.usedToolCount != null ? ` · ${s.usedToolCount} used` : "";
-  return `${s.estimate.toolCount} tools · ~${fmtTokens(s.estimate.approxTokens)} tok${tag}${used}`;
+  return `${s.estimate.toolCount} tools · ~${fmtTokens(s.estimate.approxTokens)} tok${used}`;
 }
 
 /** Compact token count: 299 → "299", 52000 → "52k". */

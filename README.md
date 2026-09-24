@@ -40,12 +40,24 @@ Working skeleton. What's real today:
 - **Per-agent load:** each agent app has its own context window, so load is
   reported per agent, never summed across apps. A server declared at several
   scopes of one agent is counted once (narrowest scope wins, like Claude Code).
-- **Static measurement (default):** estimates context cost from a small bundled
-  catalog of well-known servers. Servers not in the catalog show *cost unknown*.
-  The default path **never executes a server** — safe for CI / untrusted repos.
+- **Claude Code's always-loaded context (default, exact):** what Claude Code
+  loads at every session start, per its docs
+  ([context window](https://code.claude.com/docs/en/context-window)): CLAUDE.md
+  files (repo root + parents + `~/.claude/CLAUDE.md`), auto memory `MEMORY.md`
+  (first 200 lines / 25KB), skill descriptions (user, repo, enabled plugins —
+  not `disable-model-invocation` ones) and subagent descriptions. Real tokens,
+  read from disk, nothing executed. On a typical setup this — not MCP — is the
+  biggest fixed load.
+- **MCP tool search aware:** Claude Code defers MCP tool schemas by default
+  (only names load up front), so their cost isn't counted as up-front load
+  unless `ENABLE_TOOL_SEARCH=false` / a custom `ANTHROPIC_BASE_URL` turns
+  deferral off. MCP servers shipped by enabled plugins are listed too.
+- **No invented numbers:** the static path never executes a server and never
+  guesses its cost — an unmeasured server says *not measured*. Safe for CI /
+  untrusted repos.
 - **Real measurement (`--deep`, agnostic):** connects to your OWN configured
   servers locally, reads their real tool list, and counts real tokens with
-  `gpt-tokenizer`. Works for ANY server, not just catalog ones. Opt-in, launches
+  `gpt-tokenizer`. Works for ANY server. Opt-in, launches
   the servers' commands on your machine, nothing is sent.
 - **HTML report (`--html`):** writes a shareable `.vexryn/report.html`.
 
@@ -59,18 +71,23 @@ Working skeleton. What's real today:
 - **Trim (`vexryn trim [--write]`):** uses real usage to suggest what to cut and
   writes a lean config under `.vexryn/suggested/` (originals untouched).
 
-Not built yet (honest): **wiring user-wide configs** — they're read-only for now
-(Claude Code rewrites `~/.claude.json` while it runs, so writing it safely needs
-care), so usage/trim only cover repo-level servers. The **catalog** numbers are
-rough seeds, not measurements — `--deep` is the source of truth; the catalog
-should be refilled from real measurements and grow into a community **open
-feed** (OSV format).
+Not built yet (honest):
+- **Wiring user-wide configs** — read-only for now (Claude Code rewrites
+  `~/.claude.json` while it runs), so usage/trim only cover repo-level servers.
+- **Other agents' instruction files** (`GEMINI.md`, `AGENTS.md`, Cursor rules…)
+  aren't counted yet — only Claude Code's, whose loading rules are documented.
+- **Not visible from config files:** the agent's built-in system prompt, hook
+  output (e.g. SessionStart hooks), slash-command files, and connectors added
+  through an app UI (claude.ai / desktop) rather than a config file.
+- **Open feed** (OSV format) of measured per-server costs — to be filled from
+  real `--deep` measurements, never by hand.
 
 ## Test
 
 ```bash
-npm test   # global configs, wire round-trip, proxy + usage + trim — all against
-           # a temporary fake home (VEXRYN_HOME); your real configs are never touched
+npm test   # global configs, wire round-trip, proxy + usage + trim, Claude Code
+           # context — all against a temporary fake home (VEXRYN_HOME); your real
+           # configs are never touched
 ```
 
 ## Develop
@@ -78,7 +95,7 @@ npm test   # global configs, wire round-trip, proxy + usage + trim — all again
 ```bash
 npm install
 npm run build
-node dist/cli.js scan ./fixtures/sample-repo            # static (catalog)
+node dist/cli.js scan ./fixtures/sample-repo            # static (read-only)
 node dist/cli.js scan ./fixtures/deep-repo --deep       # real introspection
 node dist/cli.js scan ./fixtures/sample-repo --html     # + .vexryn/report.html
 

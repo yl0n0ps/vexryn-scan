@@ -55,7 +55,7 @@ try {
   const trim = cli("trim", "fixtures/sample-repo");
   assert.match(trim, /keep {2}github/);
   assert.match(trim, /drop {2}sentry/);
-  assert.match(trim, /frees ~15k tokens/);
+  assert.match(trim, /Dropping 1 unused server shrinks the tool list/, "no invented saving without a measurement");
 
   console.log(usage + scan + trim);
   console.log("proxy-check: all assertions passed");

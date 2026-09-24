@@ -27,7 +27,6 @@ export async function introspectServer(server: McpServer): Promise<ServerEstimat
       toolCount: detailed.length,
       approxTokens,
       source: "introspect",
-      measured: true,
       tools: detailed,
     };
   } catch (err) {
@@ -35,7 +34,6 @@ export async function introspectServer(server: McpServer): Promise<ServerEstimat
       toolCount: 0,
       approxTokens: 0,
       source: "introspect-failed",
-      measured: false,
       error: err instanceof Error ? err.message : String(err),
     };
   }

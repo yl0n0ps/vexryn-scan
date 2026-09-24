@@ -62,8 +62,12 @@ export function renderTrim(result: TrimResult): string {
     lines.push(`    ${mark(r.verdict)}  ${pad(r.server.name, 18)} ${dim(r.reason)}`);
   }
   lines.push("");
+  const drops = recs.filter((r) => r.verdict === "drop").length;
   if (savedTokens > 0) {
     lines.push(`  Dropping the unused servers frees ~${Math.round(savedTokens / 1000)}k tokens of context.`);
+  } else if (drops > 0) {
+    lines.push(`  Dropping ${drops} unused server${drops === 1 ? "" : "s"} shrinks the tool list your agent picks from.`);
+    lines.push("  (Context saved not measured — run `vexryn scan --deep` for real numbers.)");
   } else {
     lines.push("  Nothing to drop — everything with usage data is in use.");
   }
