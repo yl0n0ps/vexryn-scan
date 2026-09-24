@@ -134,6 +134,28 @@ Not reviewed yet (honest): other agents' instruction files (`AGENTS.md`,
 `GEMINI.md`, Cursor rules), slash-command files, and MCP tool lists (unknowable
 without running a server).
 
+## Use it from your agent (`vexryn mcp`)
+
+The same two things, as MCP tools your own agent can call mid-conversation
+("what do you load?", "review my agent-config change"): `agent_load_report`
+and `agent_config_review`. Works with any MCP client (Claude Code, Cursor,
+Windsurf, Gemini CLI…).
+
+```json
+{ "mcpServers": { "vexryn": { "command": "npx", "args": ["-y", "vexryn", "mcp"] } } }
+```
+
+(Not on npm yet — from a checkout use `"command": "node", "args": ["<path>/vexryn-scan/dist/cli.js", "mcp"]`.)
+
+**Read-only by construction.** Nothing that edits a config (`wire`,
+`trim --write`), sits in a server's path (`wrap`) or launches servers
+(`--deep`) is exposed: an agent must never be able to widen its own powers
+through Vexryn — that's the exact blind spot Vexryn exists to show. Paths are
+confined to the directory the agent started Vexryn in. Secrets are masked as in
+`vexryn diff`. Honest note: this adds two tool names to your agent's context
+(Claude Code defers their schemas; other clients load them) — a small,
+deliberate cost.
+
 ## Test
 
 ```bash

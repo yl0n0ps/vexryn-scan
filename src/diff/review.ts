@@ -11,7 +11,8 @@ import { discoverConfigs } from "../scan/discover.js";
 import { parseServers, readJsonLoose } from "../scan/parse.js";
 import { claudeCodeContext } from "../scan/claude.js";
 import { readClaudeSettings, type ClaudeSettings, type Hook } from "../scan/settings.js";
-import { isAgentConfigPath, type Side } from "./snapshot.js";
+import { promises as fs } from "node:fs";
+import { gitRoot, isAgentConfigPath, resolveRef, snapshot, type Side } from "./snapshot.js";
 
 export const MARKER = "<!-- vexryn-pr-review -->";
 export const NO_CHANGE = "No agent config file changed.";
@@ -45,6 +46,24 @@ export interface Review {
   /** Agent files whose content changed: read by this review / not read yet. */
   changed: string[];
   unreviewed: string[];
+}
+
+/**
+ * `vexryn diff` in one call: review `base` → `head` (default: the working
+ * tree) of the repo containing `dir`. Temp snapshots are always removed.
+ */
+export async function reviewRepo(dir: string, base: string, head?: string): Promise<string> {
+  const root = await gitRoot(dir);
+  const baseSha = await resolveRef(root, base);
+  const headSha = head ? await resolveRef(root, head) : null;
+  const sides: Side[] = [];
+  try {
+    sides.push(await snapshot(root, baseSha));
+    sides.push(await snapshot(root, headSha));
+    return renderReview(compare(await readSnapshot(sides[0]), await readSnapshot(sides[1])));
+  } finally {
+    for (const s of sides) await fs.rm(s.dir, { recursive: true, force: true });
+  }
 }
 
 /** Read a snapshot side with the static scan, repo scope only. */

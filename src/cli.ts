@@ -5,12 +5,13 @@
 //   vexryn wrap --name <server> -- <command...>
 //   vexryn usage
 //   vexryn diff [path] --base <ref> [--head <ref>]
+//   vexryn mcp
 
 import path from "node:path";
 import type { McpServer, ServerEstimate } from "./types.js";
 import { discoverConfigs, discoverGlobalConfigs } from "./scan/discover.js";
 import { parseServers } from "./scan/parse.js";
-import { claudeCodeContext } from "./scan/claude.js";
+import { collectStatic } from "./scan/collect.js";
 import { introspectServer } from "./scan/introspect.js";
 import { assembleReport, renderText } from "./scan/report.js";
 import { writeHtml } from "./scan/html.js";
@@ -18,9 +19,8 @@ import { runWrap } from "./proxy/wrap.js";
 import { loadUsage, usedToolCount } from "./usage/store.js";
 import { wireConfigs, unwireConfigs, type WireChange } from "./wire/wire.js";
 import { computeTrim, renderTrim, writeTrimmed } from "./trim/trim.js";
-import { gitRoot, resolveRef, snapshot, type Side } from "./diff/snapshot.js";
-import { compare, readSnapshot, renderReview } from "./diff/review.js";
-import { promises as fs } from "node:fs";
+import { reviewRepo } from "./diff/review.js";
+import { runMcp } from "./mcp/server.js";
 
 const VERSION = "0.0.1";
 
@@ -42,6 +42,10 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "unwire") return runWire(rest, "unwire");
   if (cmd === "trim") return runTrim(rest);
   if (cmd === "diff") return runDiff(rest);
+  if (cmd === "mcp") {
+    await runMcp(VERSION); // serves until the client disconnects
+    return 0;
+  }
 
   process.stderr.write(`Unknown command: ${cmd}\n\n`);
   printHelp();
@@ -55,18 +59,7 @@ async function runScan(args: string[]): Promise<number> {
   const target = args.find((a) => !a.startsWith("-")) ?? ".";
   const root = path.resolve(process.cwd(), target);
 
-  const configs = [
-    ...(await discoverConfigs(root)),
-    ...(includesGlobal ? await discoverGlobalConfigs() : []),
-  ];
-  const claude = await claudeCodeContext(root, includesGlobal);
-  const servers = [...(await parseServers(configs, root)), ...claude.pluginServers];
-
-  // Attach real usage from the local store (populated by `vexryn wrap`).
-  const usage = await loadUsage();
-  for (const s of servers) {
-    s.usedToolCount = usage.servers[s.name] ? usedToolCount(usage, s.name) : null;
-  }
+  const { configs, servers, claude } = await collectStatic(root, includesGlobal);
 
   if (deep && servers.length > 0) {
     // The same server is often declared for several agents: launch it once.
@@ -227,19 +220,7 @@ async function runDiff(args: string[]): Promise<number> {
     return 2;
   }
   const target = args.find((a, i) => !a.startsWith("-") && args[i - 1] !== "--base" && args[i - 1] !== "--head") ?? ".";
-  const root = await gitRoot(path.resolve(process.cwd(), target));
-  const baseSha = await resolveRef(root, base);
-  const headSha = head ? await resolveRef(root, head) : null;
-
-  const sides: Side[] = [];
-  try {
-    sides.push(await snapshot(root, baseSha));
-    sides.push(await snapshot(root, headSha));
-    const review = compare(await readSnapshot(sides[0]), await readSnapshot(sides[1]));
-    process.stdout.write(renderReview(review));
-  } finally {
-    for (const s of sides) await fs.rm(s.dir, { recursive: true, force: true });
-  }
+  process.stdout.write(await reviewRepo(path.resolve(process.cwd(), target), base, head));
   return 0;
 }
 
@@ -261,6 +242,8 @@ function printHelp(): void {
       "    trim [path] [--write]           Suggest what to cut, based on usage",
       "    diff [path] --base <ref> [--head <ref>]",
       "                                    Review agent-config changes (markdown, for a PR)",
+      "    mcp                             Serve the load report + review as two read-only",
+      "                                    MCP tools (stdio), for your own agent to call",
       "",
       "  Any repo, any stack. scan is read-only & local; wire/wrap sit in the",
       "  path locally to count real calls. Nothing is ever sent.",
