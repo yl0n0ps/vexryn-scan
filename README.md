@@ -28,20 +28,31 @@ them legible.
 
 ## Status
 
-Early skeleton. `vexryn scan` discovers configs and MCP servers and estimates
-context cost from a small bundled catalog of well-known servers. Servers not in
-the catalog show as *cost unknown* — we **never execute a server** to measure
-it (that's the line Snyk's scanner crosses). Precise counts for unknown servers
-will come from an opt-in introspection path, and the catalog will grow into a
-community **open feed** (OSV format).
+Working skeleton. What's real today:
+
+- **Discovery (agnostic):** finds agent configs across any repo/stack and multiple
+  agents (MCP, Cursor, Claude, Gemini, Windsurf). Read-only.
+- **Static measurement (default):** estimates context cost from a small bundled
+  catalog of well-known servers. Servers not in the catalog show *cost unknown*.
+  The default path **never executes a server** — safe for CI / untrusted repos.
+- **Real measurement (`--deep`, agnostic):** connects to your OWN configured
+  servers locally, reads their real tool list, and counts real tokens with
+  `gpt-tokenizer`. Works for ANY server, not just catalog ones. Opt-in, launches
+  the servers' commands on your machine, nothing is sent.
+- **HTML report (`--html`):** writes a shareable `.vexryn/report.html`.
+
+Not built yet (honest): **real usage** ("you use 11 of 94") needs per-agent log
+adapters and isn't agnostic yet; **`vexryn trim`** depends on that usage signal.
+The catalog is the seed of a future community **open feed** (OSV format).
 
 ## Develop
 
 ```bash
 npm install
 npm run build
-node dist/cli.js scan            # scan the current repo
-node dist/cli.js scan ./fixtures/sample-repo
+node dist/cli.js scan ./fixtures/sample-repo            # static (catalog)
+node dist/cli.js scan ./fixtures/deep-repo --deep       # real introspection
+node dist/cli.js scan ./fixtures/sample-repo --html     # + .vexryn/report.html
 ```
 
 ## Architecture (decided by the bricks, not habit)

@@ -1,5 +1,5 @@
-// Assemble + render the load report. Rendering is plain text for now
-// (the .vexryn/report.html visual is the next milestone; see the mockup).
+// Assemble + render the load report (terminal). The .vexryn/report.html
+// visual is rendered separately in html.ts.
 
 import type { DiscoveredConfig, McpServer, LoadReport } from "../types.js";
 
@@ -8,33 +8,36 @@ const CONTEXT_WINDOW_TOKENS = 200_000;
 
 export function assembleReport(
   root: string,
+  deep: boolean,
   configs: DiscoveredConfig[],
   servers: McpServer[],
 ): LoadReport {
-  let knownToolCount = 0;
+  let toolCount = 0;
   let approxTokens = 0;
-  let unknownServers = 0;
+  let unmeasuredServers = 0;
   for (const s of servers) {
-    if (s.estimate) {
-      knownToolCount += s.estimate.toolCount;
+    if (s.estimate && s.estimate.source !== "introspect-failed") {
+      toolCount += s.estimate.toolCount;
       approxTokens += s.estimate.approxTokens;
     } else {
-      unknownServers += 1;
+      unmeasuredServers += 1;
     }
   }
   return {
     root,
+    deep,
     configs,
     servers,
-    totals: { serverCount: servers.length, knownToolCount, approxTokens, unknownServers },
+    totals: { serverCount: servers.length, toolCount, approxTokens, unmeasuredServers },
   };
 }
 
-/** Human-readable terminal report. Kept dependency-free on purpose. */
+/** Human-readable terminal report. Dependency-free on purpose. */
 export function renderText(report: LoadReport): string {
-  const { configs, servers, totals } = report;
+  const { configs, servers, totals, deep } = report;
   const lines: string[] = [];
   const pct = Math.round((totals.approxTokens / CONTEXT_WINDOW_TOKENS) * 100);
+  const mode = deep ? "measured" : "estimated";
 
   lines.push("");
   lines.push("  vexryn · agent load report");
@@ -48,32 +51,37 @@ export function renderText(report: LoadReport): string {
 
   lines.push(
     `  Found ${configs.length} agent config${plural(configs.length)}, ` +
-      `${totals.serverCount} MCP server${plural(totals.serverCount)}` +
-      (totals.knownToolCount ? `, ~${totals.knownToolCount} known tools` : ""),
+      `${totals.serverCount} MCP server${plural(totals.serverCount)}, ` +
+      `${totals.toolCount} tools (${mode})`,
   );
   lines.push("");
 
-  // Context load (only counts servers we can estimate).
-  lines.push("  CONTEXT LOAD  — estimated tool definitions loaded up front");
+  lines.push(`  CONTEXT LOAD  — tool definitions loaded up front (${mode})`);
   lines.push(`  ${bar(pct)}  ~${pct}%`);
   lines.push(
     `  ~${totals.approxTokens.toLocaleString("en-US")} tokens of a ${CONTEXT_WINDOW_TOKENS.toLocaleString("en-US")} window`,
   );
   lines.push("");
 
-  // Per-server breakdown.
   lines.push("  BY SERVER");
   for (const s of servers) {
     lines.push(`    ${padEnd(s.name, 18)} ${renderServerCost(s)}   ${dim(s.fromRelPath)}`);
   }
   lines.push("");
 
-  if (totals.unknownServers > 0) {
-    lines.push(
-      `  ${totals.unknownServers} server${plural(totals.unknownServers)} not in the catalog yet — ` +
-        "cost unknown. We never execute a server to measure it;",
-    );
-    lines.push("  precise counts come from an opt-in introspection (coming).");
+  if (totals.unmeasuredServers > 0) {
+    if (deep) {
+      lines.push(
+        `  ${totals.unmeasuredServers} server${plural(totals.unmeasuredServers)} could not be reached ` +
+          "(see the reason above). Nothing was sent.",
+      );
+    } else {
+      lines.push(
+        `  ${totals.unmeasuredServers} server${plural(totals.unmeasuredServers)} not in the catalog — ` +
+          "cost unknown. Run with --deep to measure them for real",
+      );
+      lines.push("  (connects to your own servers locally; nothing is sent).");
+    }
     lines.push("");
   }
 
@@ -84,8 +92,17 @@ export function renderText(report: LoadReport): string {
 }
 
 function renderServerCost(s: McpServer): string {
-  if (!s.estimate) return dim("cost unknown");
-  return `${s.estimate.toolCount} tools · ~${Math.round(s.estimate.approxTokens / 1000)}k tok`;
+  if (!s.estimate) return dim("no figure");
+  if (s.estimate.source === "introspect-failed") {
+    return dim(`unreachable — ${s.estimate.error ?? "failed"}`);
+  }
+  const tag = s.estimate.measured ? "" : dim(" (est.)");
+  return `${s.estimate.toolCount} tools · ~${fmtTokens(s.estimate.approxTokens)} tok${tag}`;
+}
+
+/** Compact token count: 299 → "299", 52000 → "52k". */
+export function fmtTokens(n: number): string {
+  return n < 1000 ? `${n}` : `${Math.round(n / 1000)}k`;
 }
 
 function bar(pct: number): string {
@@ -103,6 +120,5 @@ function padEnd(s: string, n: number): string {
 }
 
 function dim(s: string): string {
-  // ANSI dim; harmless if the terminal ignores it.
   return `\u001b[2m${s}\u001b[0m`;
 }

@@ -37,7 +37,12 @@ export function estimateServer(name: string, target: string): ServerEstimate | n
   for (const key of Object.keys(CATALOG)) {
     if (hay.includes(key)) {
       const e = CATALOG[key];
-      return { toolCount: e.toolCount, approxTokens: e.approxTokens, source: `catalog:${key}` };
+      return {
+        toolCount: e.toolCount,
+        approxTokens: e.approxTokens,
+        source: `catalog:${key}`,
+        measured: false,
+      };
     }
   }
   return null;

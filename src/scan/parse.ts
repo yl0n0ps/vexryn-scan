@@ -42,7 +42,7 @@ async function readJson(p: string): Promise<unknown | null> {
   }
 }
 
-type BareServer = Pick<McpServer, "name" | "transport" | "target">;
+type BareServer = Pick<McpServer, "name" | "transport" | "target" | "command" | "args" | "url">;
 
 /** Both `{ mcpServers: {...} }` and `{ servers: {...} }` shapes are used in the wild. */
 function extractServers(raw: unknown): BareServer[] {
@@ -58,10 +58,18 @@ function extractServers(raw: unknown): BareServer[] {
     if (typeof def !== "object" || def === null) continue;
     const d = def as Record<string, unknown>;
     if (typeof d.url === "string") {
-      out.push({ name, transport: "http", target: d.url });
+      out.push({ name, transport: "http", target: d.url, url: d.url });
     } else if (typeof d.command === "string") {
-      const args = Array.isArray(d.args) ? d.args.filter((a) => typeof a === "string") : [];
-      out.push({ name, transport: "stdio", target: [d.command, ...args].join(" ") });
+      const args = (Array.isArray(d.args) ? d.args : []).filter(
+        (a): a is string => typeof a === "string",
+      );
+      out.push({
+        name,
+        transport: "stdio",
+        target: [d.command, ...args].join(" "),
+        command: d.command,
+        args,
+      });
     } else {
       out.push({ name, transport: "unknown", target: "" });
     }
