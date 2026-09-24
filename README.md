@@ -13,16 +13,21 @@ Vexryn reads configs, not your code.
 
 ## Why
 
-Connect a few MCP servers and their tool definitions quietly eat your agent's
-context window before you type a single word — the agent gets slower and picks
-the wrong tools. Today those configs are scattered and unreadable. Vexryn makes
-them legible.
+Before you type a word, your agent has already loaded instruction files
+(`CLAUDE.md`…), skill and subagent descriptions, and MCP servers — and a config
+change can quietly give it new powers (a new server holding a token, a shell
+command it may run without asking, a hook that runs at every session start).
+Those configs are scattered and unreadable, and code review has no opinion on
+them. Vexryn makes them legible.
 
 ## The road (perf → review → proof)
 
 1. **Load report (here).** `vexryn scan` — a lean, faster agent in one command.
-2. **PR review (next).** A GitHub App that turns an unreadable `.mcp.json` diff
-   into a sentence: *"+12 tools, can now send email and delete files."*
+2. **PR review (built — CLI + GitHub Action).** `vexryn diff` turns an
+   unreadable agent-config diff into a short comment: *"new MCP server `slack`
+   receives `SLACK_BOT_TOKEN`, version not pinned · Claude Code may run
+   `git push` without asking · +2,300 tokens every session."* A hosted GitHub
+   App comes later, when a team needs it.
 3. **Proof on demand (moat).** When a capability is genuinely dangerous, prove
    it's exploitable in a sandbox — never just flag it.
 
@@ -82,12 +87,54 @@ Not built yet (honest):
 - **Open feed** (OSV format) of measured per-server costs — to be filled from
   real `--deep` measurements, never by hand.
 
+## PR review (`vexryn diff`)
+
+```bash
+vexryn diff --base main            # what my uncommitted/branch changes do
+vexryn diff --base <sha> --head <sha>
+```
+
+Compares two versions of the repo's agent configs and prints one markdown
+comment: **what the agent may now do** — MCP servers added/removed/changed
+(launch command or URL, unpinned `npx`/`uvx` packages, the *names* of the env
+vars/headers they receive — never values), Claude Code permission rules,
+permission mode, extra directories, hooks, plugins — and **what Claude Code now
+loads every session** (exact token deltas, skills/subagents by name).
+
+Static: files are read from git objects as data, never executed. Every string
+from the repo is rendered inside a code span, so a hostile server name can't
+inject links or @mentions. Always exits 0 — it informs, it doesn't block.
+
+In CI, the GitHub Action posts it as a single comment it keeps up to date
+(on a fork PR, whose token is read-only, it writes to the job summary instead):
+
+```yaml
+# .github/workflows/vexryn.yml
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  agent-config-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4   # pin to a commit SHA in real use
+        with:
+          fetch-depth: 2            # the merge commit + the base it compares to
+      - uses: OWNER/vexryn-scan@main  # not published yet — see Status
+```
+
+Not reviewed yet (honest): other agents' instruction files (`AGENTS.md`,
+`GEMINI.md`, Cursor rules), slash-command files, and MCP tool lists (unknowable
+without running a server).
+
 ## Test
 
 ```bash
 npm test   # global configs, wire round-trip, proxy + usage + trim, Claude Code
-           # context — all against a temporary fake home (VEXRYN_HOME); your real
-           # configs are never touched
+           # context, settings, git snapshots, diff review, the Action's comment
+           # script (fake gh) — all in temp dirs / a fake home (VEXRYN_HOME);
+           # your real configs are never touched, nothing reaches GitHub
 ```
 
 ## Develop
