@@ -114,7 +114,13 @@ export async function writeTrimmed(
 }
 
 function isJsonServerConfig(kind: string): boolean {
-  return kind === "mcp-json" || kind === "vscode-mcp" || kind === "claude-settings" || kind === "gemini";
+  return (
+    kind === "mcp-json" ||
+    kind === "cursor-mcp" ||
+    kind === "vscode-mcp" ||
+    kind === "claude-settings" ||
+    kind === "gemini"
+  );
 }
 
 function mark(v: Verdict): string {

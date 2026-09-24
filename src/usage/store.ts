@@ -19,7 +19,8 @@ export interface ServerUsage {
 }
 
 function storePath(): string {
-  return path.join(os.homedir(), ".vexryn", "usage.json");
+  // VEXRYN_HOME overrides the home (tests), like global config discovery.
+  return path.join(process.env.VEXRYN_HOME || os.homedir(), ".vexryn", "usage.json");
 }
 
 /** Async read for scan/usage commands. Returns empty data if none. */

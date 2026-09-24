@@ -32,6 +32,14 @@ Working skeleton. What's real today:
 
 - **Discovery (agnostic):** finds agent configs across any repo/stack and multiple
   agents (MCP, Cursor, Claude, Gemini, Windsurf). Read-only.
+- **User-wide configs (default):** also reads each agent app's global config —
+  Claude Code `~/.claude.json` (user scope + this repo's local scope), Claude
+  Desktop, Cursor `~/.cursor/mcp.json`, Windsurf, Gemini CLI, VS Code user
+  `mcp.json` (JSONC ok). That's usually where most of an agent's load lives.
+  Read-only; `--no-global` restricts to the repo (e.g. in CI).
+- **Per-agent load:** each agent app has its own context window, so load is
+  reported per agent, never summed across apps. A server declared at several
+  scopes of one agent is counted once (narrowest scope wins, like Claude Code).
 - **Static measurement (default):** estimates context cost from a small bundled
   catalog of well-known servers. Servers not in the catalog show *cost unknown*.
   The default path **never executes a server** — safe for CI / untrusted repos.
@@ -46,10 +54,24 @@ Working skeleton. What's real today:
   any agent, any server, precise, local. `vexryn scan` then shows *"you used 2
   of 5 tools"*. See it with `vexryn usage`.
 
-Not built yet (honest): **auto-wiring** (`vexryn` rewriting `.mcp.json` to route
-servers through `wrap` for you) — today you point the config at `vexryn wrap`
-yourself; **`vexryn trim`** (uses the usage signal to suggest what to cut). The
-catalog is the seed of a future community **open feed** (OSV format).
+- **Auto-wiring (`vexryn wire` / `unwire`):** routes a repo's stdio servers
+  through the proxy, reversible, with a backup.
+- **Trim (`vexryn trim [--write]`):** uses real usage to suggest what to cut and
+  writes a lean config under `.vexryn/suggested/` (originals untouched).
+
+Not built yet (honest): **wiring user-wide configs** — they're read-only for now
+(Claude Code rewrites `~/.claude.json` while it runs, so writing it safely needs
+care), so usage/trim only cover repo-level servers. The **catalog** numbers are
+rough seeds, not measurements — `--deep` is the source of truth; the catalog
+should be refilled from real measurements and grow into a community **open
+feed** (OSV format).
+
+## Test
+
+```bash
+npm test   # global configs, wire round-trip, proxy + usage + trim — all against
+           # a temporary fake home (VEXRYN_HOME); your real configs are never touched
+```
 
 ## Develop
 
@@ -59,11 +81,6 @@ npm run build
 node dist/cli.js scan ./fixtures/sample-repo            # static (catalog)
 node dist/cli.js scan ./fixtures/deep-repo --deep       # real introspection
 node dist/cli.js scan ./fixtures/sample-repo --html     # + .vexryn/report.html
-
-# Real usage via the transparent proxy (agnostic):
-node test/proxy-check.mjs                               # drives mock through wrap
-node dist/cli.js usage                                  # show recorded usage
-node dist/cli.js scan ./fixtures/deep-repo --deep       # now shows "2 of 5 used"
 
 # Wire a real server through the proxy in your own .mcp.json:
 #   "command": "vexryn", "args": ["wrap", "--name", "github", "--",

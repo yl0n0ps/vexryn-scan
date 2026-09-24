@@ -6,7 +6,8 @@
 //   vexryn usage
 
 import path from "node:path";
-import { discoverConfigs } from "./scan/discover.js";
+import type { McpServer, ServerEstimate } from "./types.js";
+import { discoverConfigs, discoverGlobalConfigs } from "./scan/discover.js";
 import { parseServers } from "./scan/parse.js";
 import { introspectServer } from "./scan/introspect.js";
 import { assembleReport, renderText } from "./scan/report.js";
@@ -45,35 +46,46 @@ async function main(argv: string[]): Promise<number> {
 async function runScan(args: string[]): Promise<number> {
   const deep = args.includes("--deep");
   const html = args.includes("--html");
+  const includesGlobal = !args.includes("--no-global");
   const target = args.find((a) => !a.startsWith("-")) ?? ".";
   const root = path.resolve(process.cwd(), target);
 
-  const configs = await discoverConfigs(root);
-  const servers = await parseServers(configs);
+  const configs = [
+    ...(await discoverConfigs(root)),
+    ...(includesGlobal ? await discoverGlobalConfigs() : []),
+  ];
+  const servers = await parseServers(configs, root);
 
   // Attach real usage from the local store (populated by `vexryn wrap`).
   const usage = await loadUsage();
   for (const s of servers) {
-    const used = usedToolCount(usage, s.name);
-    s.usedToolCount = usage.servers[s.name] ? used : null;
+    s.usedToolCount = usage.servers[s.name] ? usedToolCount(usage, s.name) : null;
   }
 
   if (deep && servers.length > 0) {
+    // The same server is often declared for several agents: launch it once.
+    const reachable = servers.filter((s) => s.transport !== "unknown");
+    const unique = new Map<string, McpServer>();
+    for (const s of reachable) unique.set(`${s.transport}\u0000${s.target}`, s);
+
     process.stderr.write(
-      `\n  --deep: connecting to ${servers.length} of your own MCP server${
-        servers.length === 1 ? "" : "s"
+      `\n  --deep: connecting to ${unique.size} of your own MCP server${
+        unique.size === 1 ? "" : "s"
       } to measure real tool cost.\n` +
         "  This launches their commands locally. Nothing is sent anywhere.\n",
     );
-    for (const server of servers) {
-      if (server.transport === "unknown") continue;
+    const measured = new Map<string, ServerEstimate>();
+    for (const [key, server] of unique) {
       process.stderr.write(`  · introspecting ${server.name}…\n`);
-      server.estimate = await introspectServer(server);
+      measured.set(key, await introspectServer(server));
+    }
+    for (const s of reachable) {
+      s.estimate = measured.get(`${s.transport}\u0000${s.target}`) ?? s.estimate;
     }
     process.stderr.write("\n");
   }
 
-  const report = assembleReport(root, deep, configs, servers);
+  const report = assembleReport(root, deep, includesGlobal, configs, servers);
   process.stdout.write(renderText(report));
 
   if (html) {
@@ -148,6 +160,19 @@ async function runWire(args: string[], mode: "wire" | "unwire"): Promise<number>
       "\n  Your agent now routes these servers through vexryn (a backup was saved).\n" +
         "  Work as usual; run `vexryn usage` or `vexryn scan` to see real usage.\n",
     );
+
+  // User-wide configs are read-only for now: say so instead of silently skipping.
+  if (mode === "wire") {
+    const globalServers = await parseServers(await discoverGlobalConfigs(), root);
+    if (globalServers.length > 0) {
+      const files = [...new Set(globalServers.map((s) => s.fromRelPath))].join(", ");
+      process.stdout.write(
+        `\n  ${globalServers.length} server${globalServers.length === 1 ? "" : "s"} in your user-wide configs ` +
+          `(${files}) were left untouched:\n` +
+          "  wiring user-wide configs isn't supported yet, so their usage isn't counted.\n",
+      );
+    }
+  }
   process.stdout.write("\n");
   return 0;
 }
@@ -157,8 +182,9 @@ async function runTrim(args: string[]): Promise<number> {
   const target = args.find((a) => !a.startsWith("-")) ?? ".";
   const root = path.resolve(process.cwd(), target);
 
+  // Trim acts on this repo's configs only (user-wide configs aren't wired yet).
   const configs = await discoverConfigs(root);
-  const servers = await parseServers(configs);
+  const servers = await parseServers(configs, root);
   const usage = await loadUsage();
   for (const s of servers) {
     if (!s.estimate) s.estimate = estimateServer(s.name, s.target);
@@ -186,9 +212,10 @@ function printHelp(): void {
       "  vexryn — see what your AI agent actually loads, and uses.",
       "",
       "  Commands:",
-      "    scan [path] [--deep] [--html]   Scan a repo; report the load",
-      "      --deep    Connect to your own servers to measure real token cost",
-      "      --html    Also write .vexryn/report.html",
+      "    scan [path] [--deep] [--html]   Report the load of each agent (repo + user-wide)",
+      "      --deep       Connect to your own servers to measure real token cost",
+      "      --html       Also write .vexryn/report.html",
+      "      --no-global  Only this repo's configs (skip ~/.claude.json, Cursor, …)",
       "    wire [path]                     Route servers through the proxy (auto)",
       "    unwire [path]                   Undo wire (restore direct servers)",
       "    wrap --name <s> -- <command>    Proxy a server to count real tool usage",
