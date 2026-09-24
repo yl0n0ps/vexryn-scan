@@ -18,9 +18,4 @@ runs:
         GH_TOKEN: ${{ github.token }}
         REPO: ${{ github.repository }}
         PR: ${{ github.event.pull_request.number }}
-      run: |
-        review="$RUNNER_TEMP/vexryn-review.md"
-        # On pull_request, the checkout is GitHub's merge commit: parent 1 is the base branch.
-        node "$GITHUB_ACTION_PATH/dist/cli.js" diff . --base HEAD^1 --head HEAD > "$review"
-        cat "$review"
-        bash "$GITHUB_ACTION_PATH/scripts/pr-comment.sh" "$review"
+      run: bash "$GITHUB_ACTION_PATH/scripts/pr-review.sh"

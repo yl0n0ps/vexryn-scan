@@ -99,11 +99,17 @@ comment: **what the agent may now do** — MCP servers added/removed/changed
 (launch command or URL, unpinned `npx`/`uvx` packages, the *names* of the env
 vars/headers they receive — never values), Claude Code permission rules,
 permission mode, extra directories, hooks, plugins — and **what Claude Code now
-loads every session** (exact token deltas, skills/subagents by name).
+loads every session** (token deltas — counted with the o200k tokenizer, an
+approximation of the model's own count — and skills/subagents by name). Every
+changed agent file is named, including ones it doesn't review yet (`AGENTS.md`,
+Cursor rules…), so a change is never reported as "no change".
 
-Static: files are read from git objects as data, never executed. Every string
+Static: files are read from git objects as data, never executed; a symlinked
+`CLAUDE.md` is followed one hop inside the repo, never outside. Every string
 from the repo is rendered inside a code span, so a hostile server name can't
-inject links or @mentions. Always exits 0 — it informs, it doesn't block.
+inject links or @mentions, and likely secrets in commands, URLs and hooks are
+masked. Exits 0 whatever it finds — it informs, it doesn't block (1 on a git
+error, 2 on a usage error).
 
 In CI, the GitHub Action posts it as a single comment it keeps up to date
 (on a fork PR, whose token is read-only, it writes to the job summary instead):

@@ -1,8 +1,9 @@
 // Compare two snapshots of a repo's agent configs and render the PR comment:
 // what the agent may now DO (MCP servers, Claude Code permissions, hooks,
 // plugins) and what it now LOADS every session (Claude Code context).
-// Exact facts only. Every string that came from the repo goes through
-// `code()`, so a hostile name can't inject markdown, links or @mentions.
+// Exact facts only: every changed agent file is named, even when no field this
+// review reads changed. Every string that came from the repo goes through
+// `code()`, which masks secrets and keeps markdown, links and @mentions inert.
 
 import path from "node:path";
 import type { ContextItem, McpServer } from "../types.js";
@@ -10,13 +11,18 @@ import { discoverConfigs } from "../scan/discover.js";
 import { parseServers, readJsonLoose } from "../scan/parse.js";
 import { claudeCodeContext } from "../scan/claude.js";
 import { readClaudeSettings, type ClaudeSettings, type Hook } from "../scan/settings.js";
+import { isAgentConfigPath, type Side } from "./snapshot.js";
 
 export const MARKER = "<!-- vexryn-pr-review -->";
-export const NO_CHANGE = "No agent config change.";
+export const NO_CHANGE = "No agent config file changed.";
 
-/** Lines per section; keeps a comment well under GitHub's 65,536-char limit. */
+/** Lines per section and items per inline list. */
 const MAX_LINES = 40;
+const MAX_ITEMS = 10;
+/** GitHub rejects comments over 65,536 chars; stay clear of it. */
+const MAX_BODY = 60_000;
 const WARN = "⚠️ ";
+const SETTINGS_FILES = [".claude/settings.json", ".claude/settings.local.json"];
 
 export interface Snapshot {
   servers: McpServer[];
@@ -24,6 +30,10 @@ export interface Snapshot {
   settings: ClaudeSettings;
   /** Config files present but not valid JSON. */
   unreadable: string[];
+  /** Content hash of every agent file, reviewed or not. */
+  hashes: Record<string, string>;
+  /** Reviewed files that are symlinks the review won't follow. */
+  unresolved: string[];
 }
 
 export interface Review {
@@ -32,56 +42,92 @@ export interface Review {
   /** What Claude Code loads every session. */
   loadHeader: string | null;
   load: string[];
+  /** Agent files whose content changed: read by this review / not read yet. */
+  changed: string[];
+  unreviewed: string[];
 }
 
-/** Read a snapshot dir with the static scan, repo scope only. */
-export async function readSnapshot(dir: string): Promise<Snapshot> {
-  const configs = await discoverConfigs(dir);
+/** Read a snapshot side with the static scan, repo scope only. */
+export async function readSnapshot(side: Side): Promise<Snapshot> {
+  const configs = await discoverConfigs(side.dir);
   const unreadable: string[] = [];
   for (const c of configs) {
-    if (c.relPath.endsWith(".json") && (await readJsonLoose(c.path)) === null) unreadable.push(c.relPath);
+    if (c.relPath.endsWith(".json") && (await readJsonLoose(c.path)) === null) unreadable.push(posix(c.relPath));
   }
   return {
-    servers: await parseServers(configs, dir),
-    context: (await claudeCodeContext(dir, false)).items,
-    settings: await readClaudeSettings(dir),
+    servers: (await parseServers(configs, side.dir)).map((s) => ({ ...s, fromRelPath: posix(s.fromRelPath) })),
+    context: (await claudeCodeContext(side.dir, false)).items,
+    settings: await readClaudeSettings(side.dir),
     unreadable,
+    hashes: side.hashes,
+    unresolved: side.unresolved,
   };
 }
 
 export function compare(base: Snapshot, head: Snapshot): Review {
+  // A settings file unreadable on either side can't be compared: no fake deltas.
+  const settingsComparable = !SETTINGS_FILES.some((f) => base.unreadable.includes(f) || head.unreadable.includes(f));
   const powers = [
     ...unreadableLines(base, head),
     ...serverLines(base, head),
-    ...permissionLines(base.settings, head.settings),
-    ...hookLines(base.settings.hooks, head.settings.hooks),
-    ...pluginLines(base.settings.plugins, head.settings.plugins),
+    ...(settingsComparable
+      ? [
+          ...permissionLines(base.settings, head.settings),
+          ...hookLines(base.settings.hooks, head.settings.hooks),
+          ...pluginLines(base.settings.plugins, head.settings.plugins),
+        ]
+      : []),
   ];
   // Increases first, keeping each group's order.
   powers.sort((x, y) => Number(y.startsWith(WARN)) - Number(x.startsWith(WARN)));
-  return { powers, ...loadLines(base.context, head.context) };
+
+  const files = [...new Set([...Object.keys(base.hashes), ...Object.keys(head.hashes)])].sort();
+  const changed = files.filter((f) => base.hashes[f] !== head.hashes[f]);
+  return {
+    powers,
+    ...loadLines(base, head),
+    changed: changed.filter(isAgentConfigPath),
+    unreviewed: changed.filter((f) => !isAgentConfigPath(f)),
+  };
 }
 
 export function renderReview(r: Review): string {
-  const out = [MARKER, "### Vexryn — agent config review", ""];
-  if (r.powers.length === 0 && r.load.length === 0) {
-    out.push(NO_CHANGE);
-    return out.join("\n") + "\n";
+  const head = [MARKER, "### Vexryn — agent config review", ""];
+  if (r.powers.length === 0 && r.load.length === 0 && r.changed.length === 0 && r.unreviewed.length === 0) {
+    return [...head, NO_CHANGE].join("\n") + "\n";
   }
-  out.push("This PR changes what your AI agent may do or what it loads.", "");
-  if (r.powers.length > 0) out.push("**What the agent may do**", ...bullets(r.powers), "");
-  if (r.loadHeader) out.push(r.loadHeader, ...bullets(r.load), "");
-  out.push(
-    "<sub>Static read of the config files in this PR: nothing was executed, nothing was sent. " +
-      "An MCP server's tool list can't be known without running it — run `vexryn scan --deep` " +
-      "locally on servers you trust.</sub>",
-  );
-  return out.join("\n") + "\n";
+  const body: string[] = [];
+  if (r.powers.length > 0 || r.load.length > 0) {
+    body.push("These changes affect what your AI agent may do or what it loads.", "");
+  } else {
+    body.push("Agent config files changed, but not in any field this review reads.", "");
+  }
+  if (r.powers.length > 0) body.push("**What the agent may do**", ...bullets(r.powers), "");
+  if (r.loadHeader) body.push(r.loadHeader, ...bullets(r.load), "");
+
+  const files = [
+    r.changed.length ? `Changed agent files: ${list(r.changed)}.` : "",
+    r.unreviewed.length ? `Not reviewed yet: ${list(r.unreviewed)}.` : "",
+  ].filter(Boolean);
+  const foot = [
+    ...(files.length ? [files.join(" "), ""] : []),
+    "<sub>This review reads MCP servers, Claude Code permissions, permission mode, extra directories, hooks, " +
+      "plugins and always-loaded context (CLAUDE.md, skills, subagents); other fields aren't reviewed. " +
+      "Static read: nothing was executed, nothing was sent. An MCP server's tool list can't be known " +
+      "without running it — run `vexryn scan --deep` locally on servers you trust.</sub>",
+  ];
+
+  const size = (lines: string[]) => [...head, ...lines, ...foot].join("\n").length;
+  if (size(body) > MAX_BODY) {
+    while (body.length > 0 && size([...body, "", "…review truncated to fit in one comment."]) > MAX_BODY) body.pop();
+    body.push("", "…review truncated to fit in one comment.", "");
+  }
+  return [...head, ...body, ...foot].join("\n") + "\n";
 }
 
-/** Inline code span for untrusted text: flattened, truncated, backtick-safe. */
+/** Inline code span for untrusted text: secrets masked, flattened, truncated, backtick-safe. */
 export function code(s: string): string {
-  const flat = s.replace(/\s+/g, " ").trim();
+  const flat = redact(s).replace(/\s+/g, " ").trim();
   if (!flat) return "(empty)";
   const text = flat.length > 120 ? `${flat.slice(0, 119)}…` : flat;
   const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((m) => m.length));
@@ -89,32 +135,92 @@ export function code(s: string): string {
   return longest > 0 ? `${fence} ${text} ${fence}` : `${fence}${text}${fence}`;
 }
 
+// --- Secrets ---------------------------------------------------------------
+
+const SECRET_NAME = /token|key|secret|passw|auth|credential/i;
+const TOKEN_SHAPE = /\b(?:gh[pousr]_\w{8,}|github_pat_\w{8,}|sk-[\w-]{8,}|xox[abeoprs]-[\w-]{8,}|AKIA[0-9A-Z]{12,})/g;
+const MASK = "***";
+
+/**
+ * Mask what is likely a secret in a command line, URL or rule: the value of a
+ * secret-named flag (`--api-key X`, `--token=X`) or assignment (`API_KEY=X`),
+ * what follows `Bearer` or a secret-named header (`Authorization: X`), known
+ * token shapes, and in URLs the userinfo, query, fragment and random-looking
+ * path segments. Over-masking is fine: this text is only ever displayed.
+ */
+export function redact(s: string): string {
+  let maskNext = false;
+  return s
+    .split(/(\s+)/)
+    .map((w) => {
+      if (w === "" || /^\s+$/.test(w)) return w;
+      if (maskNext) {
+        maskNext = false;
+        return MASK;
+      }
+      const assign = w.match(/^(["']?-{0,2}[\w.-]*)=(.+)$/);
+      if (assign && SECRET_NAME.test(assign[1])) return `${assign[1]}=${MASK}`;
+      const secretFlag = /^-{1,2}[\w.-]+$/.test(w) && SECRET_NAME.test(w);
+      const secretHeader = /^["']?[\w-]+:["']?$/.test(w) && SECRET_NAME.test(w);
+      if (secretFlag || secretHeader || /^bearer$/i.test(w)) {
+        maskNext = true;
+        return w;
+      }
+      return maskUrls(w).replace(TOKEN_SHAPE, MASK);
+    })
+    .join("");
+}
+
+function maskUrls(w: string): string {
+  return w.replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s"'`<>()]+/gi, (raw) => {
+    let url: URL;
+    try {
+      url = new URL(raw);
+    } catch {
+      return MASK;
+    }
+    const segments = url.pathname.split("/").map((seg) => (seg.length >= 16 && /[a-z]/i.test(seg) && /\d/.test(seg) ? MASK : seg));
+    const secretPath = segments.includes(MASK);
+    if (!url.username && !url.password && !url.search && !url.hash && !secretPath) return raw; // nothing to hide
+    return `${url.protocol}//${url.host}${secretPath ? segments.join("/") : url.pathname}${url.search ? "?…" : ""}`;
+  });
+}
+
 // --- MCP servers -----------------------------------------------------------
 
 function unreadableLines(base: Snapshot, head: Snapshot): string[] {
-  return head.unreadable
-    .filter((f) => !base.unreadable.includes(f))
-    .map((f) => `${WARN}${code(f)} is not valid JSON — its MCP servers can't be reviewed`);
+  const what = (f: string) => (SETTINGS_FILES.includes(f) ? "settings" : "MCP servers");
+  return [
+    ...head.unreadable
+      .filter((f) => !base.unreadable.includes(f))
+      .map((f) => `${WARN}${code(f)} is not valid JSON — its ${what(f)} can't be reviewed`),
+    ...base.unreadable
+      .filter((f) => !head.unreadable.includes(f) && head.hashes[f])
+      .map((f) => `${code(f)} was not valid JSON before — changes to its ${what(f)} can't be compared`),
+  ];
 }
 
 function serverLines(base: Snapshot, head: Snapshot): string[] {
   const key = (s: McpServer) => `${s.fromRelPath}\u0000${s.name}`;
+  // Raw launch facts: display text is truncated, so it can't decide "changed".
+  const facts = (s: McpServer) => JSON.stringify([s.transport, s.command ?? "", s.args ?? [], s.url ?? "", [...(s.receives ?? [])].sort()]);
+  const unknown = (f: string) => base.unreadable.includes(f) || head.unreadable.includes(f);
   const before = new Map(base.servers.map((s) => [key(s), s]));
   const after = new Map(head.servers.map((s) => [key(s), s]));
   const lines: string[] = [];
   for (const [k, s] of after) {
     const was = before.get(k);
+    if (unknown(s.fromRelPath)) continue; // reported once as unreadable
     if (!was) {
       lines.push(`${WARN}New MCP server ${code(s.name)} for ${s.client} in ${code(s.fromRelPath)}: ${describe(s)}`);
-    } else if (describe(was) !== describe(s)) {
-      lines.push(
-        `${WARN}MCP server ${code(s.name)} changed in ${code(s.fromRelPath)} (${s.client}): now ${describe(s)} (before: ${describe(was)})`,
-      );
+    } else if (facts(was) !== facts(s)) {
+      const [now, then] = [describe(s), describe(was)];
+      const hidden = now === then ? ` — ${argDelta(was.args, s.args) || "details changed beyond what is shown"}` : "";
+      lines.push(`${WARN}MCP server ${code(s.name)} changed in ${code(s.fromRelPath)} (${s.client}): now ${now} (before: ${then})${hidden}`);
     }
   }
   for (const [k, s] of before) {
-    // A file that stopped parsing is reported once, not as N removals.
-    if (!after.has(k) && !head.unreadable.includes(s.fromRelPath)) {
+    if (!after.has(k) && !unknown(s.fromRelPath)) {
       lines.push(`MCP server ${code(s.name)} removed from ${code(s.fromRelPath)} (${s.client})`);
     }
   }
@@ -128,21 +234,38 @@ function describe(s: McpServer): string {
       : s.transport === "http"
         ? `connects to ${code(s.target)}`
         : "unrecognized launch config";
-  const receives = s.receives?.length ? `, receives ${s.receives.map(code).join(", ")}` : "";
-  return how + receives;
+  return how + (s.receives?.length ? `, receives ${list(s.receives)}` : "");
+}
+
+function argDelta(before: string[] = [], after: string[] = []): string {
+  const added = after.filter((a) => !before.includes(a));
+  const removed = before.filter((a) => !after.includes(a));
+  return [added.length ? `args added: ${list(added)}` : "", removed.length ? `args removed: ${list(removed)}` : ""]
+    .filter(Boolean)
+    .join("; ");
 }
 
 const RUNNERS = new Set(["npx", "bunx", "pnpx", "uvx"]);
 
-/** A package runner fetching a package with no version (or `latest`): what runs can change any day. */
+/**
+ * A package runner fetching a package without an exact version: what runs can
+ * change any day. No claim for local paths, URLs or git specs.
+ */
 function unpinned(s: McpServer): boolean {
   const runner = path.basename(s.command ?? "").replace(/\.(cmd|exe)$/i, "");
   if (!RUNNERS.has(runner)) return false;
-  const pkg = (s.args ?? []).find((a) => !a.startsWith("-"));
-  if (!pkg) return false;
+  const args = s.args ?? [];
+  let pkg: string | undefined;
+  for (let i = 0; i < args.length && pkg === undefined; i++) {
+    const a = args[i];
+    if (/^--(package|from)=/.test(a)) pkg = a.slice(a.indexOf("=") + 1);
+    else if (a === "-p" || a === "--package" || a === "--from") pkg = args[i + 1];
+    else if (!a.startsWith("-")) pkg = a;
+  }
+  if (!pkg || /^[./~]|:\/\/|^(git|github|file|link)[:+]/.test(pkg)) return false;
   // npm: name@version (skip a scope's leading @); uv: name==version or name@version.
   const version = runner === "uvx" ? pkg.split(/==|@/)[1] : pkg.slice(1).split("@")[1];
-  return !version || version === "latest";
+  return !(version && /^\d+\.\d+\.\d+([-+][\w.-]+)?$/.test(version));
 }
 
 // --- Claude Code settings --------------------------------------------------
@@ -167,13 +290,14 @@ function permissionLines(base: ClaudeSettings, head: ClaudeSettings): string[] {
   for (const d of dirs.added) lines.push(`${WARN}Claude Code may access directory ${code(d)}`);
   for (const d of dirs.removed) lines.push(`Claude Code no longer has access to directory ${code(d)}`);
 
-  if (base.defaultMode !== head.defaultMode) {
-    const to = head.defaultMode ?? "default";
-    const ignored = IGNORED_FROM_PROJECT.has(to);
-    const loosens = !ignored && !["default", "plan"].includes(to);
+  // `manual` is an alias of `default`. Of the modes a project file can set,
+  // only `acceptEdits` loosens (`dontAsk` auto-denies, `plan` is read-only).
+  const norm = (m: string | null) => (m == null || m === "manual" ? "default" : m);
+  if (norm(base.defaultMode) !== norm(head.defaultMode)) {
+    const to = norm(head.defaultMode);
     lines.push(
-      `${loosens ? WARN : ""}Permission mode: ${code(base.defaultMode ?? "default")} → ${code(to)}` +
-        (ignored ? " — ignored by Claude Code when set in a project file" : ""),
+      `${to === "acceptEdits" ? WARN : ""}Permission mode: ${code(base.defaultMode ?? "default")} → ${code(head.defaultMode ?? "default")}` +
+        (IGNORED_FROM_PROJECT.has(to) ? " — ignored by Claude Code when set in a project file" : ""),
     );
   }
   return lines;
@@ -203,10 +327,18 @@ function pluginLines(base: Record<string, boolean>, head: Record<string, boolean
 
 const AGGREGATES: Record<string, string> = { skills: "Skill descriptions", agents: "Subagent descriptions" };
 
-function loadLines(base: ContextItem[], head: ContextItem[]): Pick<Review, "loadHeader" | "load"> {
+function loadLines(baseSnap: Snapshot, headSnap: Snapshot): Pick<Review, "loadHeader" | "load"> {
+  const load: string[] = [];
+  // A root file that is an unfollowable symlink on either side has no honest number.
+  // ponytail: an unfollowable SKILL.md/agent link still shifts its aggregate; name it if that shows up.
+  const unresolved = new Set([...baseSnap.unresolved, ...headSnap.unresolved]);
+  for (const f of headSnap.unresolved.filter((f) => !baseSnap.unresolved.includes(f))) {
+    load.push(`${code(f)} is a symlink the review won't follow (outside the repo, or to another link) — not counted`);
+  }
+  const base = baseSnap.context.filter((c) => !unresolved.has(c.key));
+  const head = headSnap.context.filter((c) => !unresolved.has(c.key));
   const before = new Map(base.map((c) => [c.key, c]));
   const after = new Map(head.map((c) => [c.key, c]));
-  const load: string[] = [];
   for (const key of new Set([...before.keys(), ...after.keys()])) {
     const b = before.get(key);
     const a = after.get(key);
@@ -218,8 +350,8 @@ function loadLines(base: ContextItem[], head: ContextItem[]): Pick<Review, "load
       const removed = bn.filter((n) => !an.includes(n));
       load.push(
         `${AGGREGATES[key]}: ${bn.length} → ${an.length} (${signed(at - bt)} tokens)` +
-          (added.length ? ` — adds ${added.map(code).join(", ")}` : "") +
-          (removed.length ? ` — removes ${removed.map(code).join(", ")}` : ""),
+          (added.length ? ` — adds ${list(added)}` : "") +
+          (removed.length ? ` — removes ${list(removed)}` : ""),
       );
     } else {
       load.push(`${code(key)}: ${fmt(bt)} → ${fmt(at)} tokens (${signed(at - bt)})`);
@@ -228,6 +360,19 @@ function loadLines(base: ContextItem[], head: ContextItem[]): Pick<Review, "load
   if (load.length === 0) return { loadHeader: null, load };
   const [tb, ta] = [sum(base), sum(head)];
   return { loadHeader: `**Loads every session (Claude Code): ${fmt(tb)} → ${fmt(ta)} tokens (${signed(ta - tb)})**`, load };
+}
+
+// --- Formatting ------------------------------------------------------------
+
+/** Code spans for at most MAX_ITEMS names, then "+N more". */
+function list(names: string[]): string {
+  const shown = names.slice(0, MAX_ITEMS).map(code).join(", ");
+  return names.length > MAX_ITEMS ? `${shown} +${names.length - MAX_ITEMS} more` : shown;
+}
+
+function bullets(lines: string[]): string[] {
+  const shown = lines.length > MAX_LINES ? [...lines.slice(0, MAX_LINES), `…and ${lines.length - MAX_LINES} more`] : lines;
+  return shown.map((l) => `- ${l}`);
 }
 
 function sum(items: ContextItem[]): number {
@@ -242,7 +387,6 @@ function signed(n: number): string {
   return `${n > 0 ? "+" : ""}${fmt(n)}`;
 }
 
-function bullets(lines: string[]): string[] {
-  const shown = lines.length > MAX_LINES ? [...lines.slice(0, MAX_LINES), `…and ${lines.length - MAX_LINES} more`] : lines;
-  return shown.map((l) => `- ${l}`);
+function posix(p: string): string {
+  return p.split(path.sep).join("/");
 }

@@ -157,7 +157,7 @@ try {
   // --- unrelated change only → the no-change body ----------------------
   put("src/app.js", "console.log(3)\n");
   const unrelated = commit("unrelated");
-  assert.equal(diff("--base", broken, "--head", unrelated).out, `${MARKER}\n### Vexryn — agent config review\n\nNo agent config change.\n`);
+  assert.equal(diff("--base", broken, "--head", unrelated).out, `${MARKER}\n### Vexryn — agent config review\n\nNo agent config file changed.\n`);
 
   // --- working tree is the default head --------------------------------
   put("CLAUDE.md", headClaude + "One more rule.\n");

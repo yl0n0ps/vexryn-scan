@@ -18,7 +18,7 @@ import { runWrap } from "./proxy/wrap.js";
 import { loadUsage, usedToolCount } from "./usage/store.js";
 import { wireConfigs, unwireConfigs, type WireChange } from "./wire/wire.js";
 import { computeTrim, renderTrim, writeTrimmed } from "./trim/trim.js";
-import { gitRoot, resolveRef, snapshot } from "./diff/snapshot.js";
+import { gitRoot, resolveRef, snapshot, type Side } from "./diff/snapshot.js";
 import { compare, readSnapshot, renderReview } from "./diff/review.js";
 import { promises as fs } from "node:fs";
 
@@ -211,13 +211,18 @@ async function runTrim(args: string[]): Promise<number> {
 }
 
 async function runDiff(args: string[]): Promise<number> {
+  // A flag given without its value is an error, never a silent default.
+  let bad = false;
   const value = (flag: string) => {
     const i = args.indexOf(flag);
-    return i === -1 ? undefined : args[i + 1];
+    if (i === -1) return undefined;
+    const v = args[i + 1];
+    if (v === undefined || v.startsWith("--")) bad = true;
+    return v;
   };
   const base = value("--base");
   const head = value("--head");
-  if (!base) {
+  if (!base || bad) {
     process.stderr.write("usage: vexryn diff [path] --base <ref> [--head <ref>]   (head defaults to the working tree)\n");
     return 2;
   }
@@ -226,14 +231,14 @@ async function runDiff(args: string[]): Promise<number> {
   const baseSha = await resolveRef(root, base);
   const headSha = head ? await resolveRef(root, head) : null;
 
-  const dirs: string[] = [];
+  const sides: Side[] = [];
   try {
-    dirs.push(await snapshot(root, baseSha));
-    dirs.push(await snapshot(root, headSha));
-    const review = compare(await readSnapshot(dirs[0]), await readSnapshot(dirs[1]));
+    sides.push(await snapshot(root, baseSha));
+    sides.push(await snapshot(root, headSha));
+    const review = compare(await readSnapshot(sides[0]), await readSnapshot(sides[1]));
     process.stdout.write(renderReview(review));
   } finally {
-    for (const d of dirs) await fs.rm(d, { recursive: true, force: true });
+    for (const s of sides) await fs.rm(s.dir, { recursive: true, force: true });
   }
   return 0;
 }

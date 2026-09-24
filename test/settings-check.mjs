@@ -32,6 +32,7 @@ try {
             { type: "http", url: "https://hooks.test/pre" },
             { type: "mcp_tool", server: "audit", tool: "log" },
             { type: "prompt", prompt: "Is this safe?" },
+            { type: "agent", prompt: "Verify the tests pass" },
             "not-an-object",
           ],
         },
@@ -54,6 +55,7 @@ try {
     { on: "PreToolUse Bash", action: "calls", what: "https://hooks.test/pre" },
     { on: "PreToolUse Bash", action: "calls MCP tool", what: "audit/log" },
     { on: "PreToolUse Bash", action: "asks the model", what: "Is this safe?" },
+    { on: "PreToolUse Bash", action: "runs a subagent with", what: "Verify the tests pass" },
   ]);
 
   const empty = await readClaudeSettings(path.join(root, "nowhere"));

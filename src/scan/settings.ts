@@ -10,7 +10,7 @@ import { readJsonLoose } from "./parse.js";
 export interface Hook {
   /** Event, plus the matcher when there is one: "PreToolUse Bash". */
   on: string;
-  action: "runs" | "calls" | "calls MCP tool" | "asks the model" | "has unknown type";
+  action: "runs" | "calls" | "calls MCP tool" | "asks the model" | "runs a subagent with" | "has unknown type";
   /** What it runs/calls — untrusted text from the repo. */
   what: string;
 }
@@ -73,8 +73,9 @@ function handler(h: Obj): Pick<Hook, "action" | "what"> {
     case "mcp_tool":
       return { action: "calls MCP tool", what: `${s(h.server)}/${s(h.tool)}` };
     case "prompt":
-    case "agent":
       return { action: "asks the model", what: s(h.prompt) };
+    case "agent":
+      return { action: "runs a subagent with", what: s(h.prompt) };
     default:
       return { action: "has unknown type", what: String(h.type) };
   }
