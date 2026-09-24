@@ -1,0 +1,26 @@
+name: Vexryn agent config review
+description: >-
+  Comments on a pull request with what its AI-agent config changes let the
+  agent do and load. Static read of the config files — nothing from the PR is
+  executed, nothing is sent anywhere but the comment. Non-blocking.
+runs:
+  using: composite
+  steps:
+    - name: Build vexryn
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      # ponytail: builds from source on each run (~20 s); switch to `npx vexryn@<version>` once published.
+      run: npm ci --ignore-scripts --no-audit --no-fund && npm run build
+
+    - name: Review agent config changes
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+        PR: ${{ github.event.pull_request.number }}
+      run: |
+        review="$RUNNER_TEMP/vexryn-review.md"
+        # On pull_request, the checkout is GitHub's merge commit: parent 1 is the base branch.
+        node "$GITHUB_ACTION_PATH/dist/cli.js" diff . --base HEAD^1 --head HEAD > "$review"
+        cat "$review"
+        bash "$GITHUB_ACTION_PATH/scripts/pr-comment.sh" "$review"
