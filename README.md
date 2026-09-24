@@ -41,9 +41,15 @@ Working skeleton. What's real today:
   the servers' commands on your machine, nothing is sent.
 - **HTML report (`--html`):** writes a shareable `.vexryn/report.html`.
 
-Not built yet (honest): **real usage** ("you use 11 of 94") needs per-agent log
-adapters and isn't agnostic yet; **`vexryn trim`** depends on that usage signal.
-The catalog is the seed of a future community **open feed** (OSV format).
+- **Real usage (`vexryn wrap`, agnostic):** a transparent MCP proxy. Route a
+  server through it and Vexryn counts the tool calls the agent actually makes —
+  any agent, any server, precise, local. `vexryn scan` then shows *"you used 2
+  of 5 tools"*. See it with `vexryn usage`.
+
+Not built yet (honest): **auto-wiring** (`vexryn` rewriting `.mcp.json` to route
+servers through `wrap` for you) — today you point the config at `vexryn wrap`
+yourself; **`vexryn trim`** (uses the usage signal to suggest what to cut). The
+catalog is the seed of a future community **open feed** (OSV format).
 
 ## Develop
 
@@ -53,6 +59,15 @@ npm run build
 node dist/cli.js scan ./fixtures/sample-repo            # static (catalog)
 node dist/cli.js scan ./fixtures/deep-repo --deep       # real introspection
 node dist/cli.js scan ./fixtures/sample-repo --html     # + .vexryn/report.html
+
+# Real usage via the transparent proxy (agnostic):
+node test/proxy-check.mjs                               # drives mock through wrap
+node dist/cli.js usage                                  # show recorded usage
+node dist/cli.js scan ./fixtures/deep-repo --deep       # now shows "2 of 5 used"
+
+# Wire a real server through the proxy in your own .mcp.json:
+#   "command": "vexryn", "args": ["wrap", "--name", "github", "--",
+#                                  "npx", "-y", "@modelcontextprotocol/server-github"]
 ```
 
 ## Architecture (decided by the bricks, not habit)

@@ -54,6 +54,13 @@ export function renderText(report: LoadReport): string {
       `${totals.serverCount} MCP server${plural(totals.serverCount)}, ` +
       `${totals.toolCount} tools (${mode})`,
   );
+
+  // Usage summary, when the proxy has recorded any.
+  const usedTotal = servers.reduce((n, s) => n + (s.usedToolCount ?? 0), 0);
+  const haveUsage = servers.some((s) => s.usedToolCount != null);
+  if (haveUsage && totals.toolCount > 0) {
+    lines.push(`  You actually used ${usedTotal} of ${totals.toolCount} tools.`);
+  }
   lines.push("");
 
   lines.push(`  CONTEXT LOAD  — tool definitions loaded up front (${mode})`);
@@ -97,7 +104,9 @@ function renderServerCost(s: McpServer): string {
     return dim(`unreachable — ${s.estimate.error ?? "failed"}`);
   }
   const tag = s.estimate.measured ? "" : dim(" (est.)");
-  return `${s.estimate.toolCount} tools · ~${fmtTokens(s.estimate.approxTokens)} tok${tag}`;
+  const used =
+    s.usedToolCount != null ? `  ·  ${s.usedToolCount} used` : "";
+  return `${s.estimate.toolCount} tools · ~${fmtTokens(s.estimate.approxTokens)} tok${tag}${used}`;
 }
 
 /** Compact token count: 299 → "299", 52000 → "52k". */

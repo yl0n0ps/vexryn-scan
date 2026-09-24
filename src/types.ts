@@ -41,6 +41,11 @@ export interface McpServer {
   args?: string[];
   /** Endpoint URL (http only), used by --deep introspection. */
   url?: string;
+  /**
+   * Distinct tools of this server actually called, from the local usage store
+   * (populated by `vexryn wrap`). `null` = no usage data recorded yet.
+   */
+  usedToolCount?: number | null;
   /** The config file this server came from. */
   fromRelPath: string;
   /**
