@@ -1,0 +1,36 @@
+{
+  "name": "vexryn",
+  "version": "0.0.1",
+  "description": "See what your AI agent actually loads — any repo, any stack, no config.",
+  "type": "module",
+  "bin": {
+    "vexryn": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "node --loader tsx src/cli.ts",
+    "scan": "npm run build && node dist/cli.js scan",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "mcp",
+    "context",
+    "developer-tools",
+    "cli"
+  ],
+  "license": "SEE LICENSE IN LICENSE",
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
