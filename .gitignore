@@ -3,5 +3,5 @@ dist/
 *.log
 .DS_Store
 .vexryn/
-.vexryn/
 fixtures/**/.vexryn/
+*.vexryn-bak

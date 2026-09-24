@@ -13,6 +13,9 @@ import { assembleReport, renderText } from "./scan/report.js";
 import { writeHtml } from "./scan/html.js";
 import { runWrap } from "./proxy/wrap.js";
 import { loadUsage, usedToolCount } from "./usage/store.js";
+import { wireConfigs, unwireConfigs, type WireChange } from "./wire/wire.js";
+import { computeTrim, renderTrim, writeTrimmed } from "./trim/trim.js";
+import { estimateServer } from "./scan/catalog.js";
 
 const VERSION = "0.0.1";
 
@@ -30,6 +33,9 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "scan") return runScan(rest);
   if (cmd === "wrap") return runWrapCmd(rest);
   if (cmd === "usage") return runUsage();
+  if (cmd === "wire") return runWire(rest, "wire");
+  if (cmd === "unwire") return runWire(rest, "unwire");
+  if (cmd === "trim") return runTrim(rest);
 
   process.stderr.write(`Unknown command: ${cmd}\n\n`);
   printHelp();
@@ -117,6 +123,62 @@ async function runUsage(): Promise<number> {
   return 0;
 }
 
+async function runWire(args: string[], mode: "wire" | "unwire"): Promise<number> {
+  const target = args.find((a) => !a.startsWith("-")) ?? ".";
+  const root = path.resolve(process.cwd(), target);
+  const configs = await discoverConfigs(root);
+  const changes = mode === "wire" ? await wireConfigs(configs) : await unwireConfigs(configs);
+
+  const verb = mode === "wire" ? "Wired" : "Unwired";
+  process.stdout.write(`\n  vexryn · ${mode}\n\n`);
+  let touched = 0;
+  for (const c of changes) {
+    if (c.wired.length === 0 && c.already.length === 0 && c.skipped.length === 0) continue;
+    process.stdout.write(`  ${c.file}\n`);
+    if (c.wired.length) {
+      process.stdout.write(`    ${verb}: ${c.wired.join(", ")}\n`);
+      touched += c.wired.length;
+    }
+    if (c.already.length) process.stdout.write(`    already wired: ${c.already.join(", ")}\n`);
+    if (c.skipped.length) process.stdout.write(`    skipped (not stdio): ${c.skipped.join(", ")}\n`);
+  }
+  if (touched === 0) process.stdout.write("  Nothing to change.\n");
+  else if (mode === "wire")
+    process.stdout.write(
+      "\n  Your agent now routes these servers through vexryn (a backup was saved).\n" +
+        "  Work as usual; run `vexryn usage` or `vexryn scan` to see real usage.\n",
+    );
+  process.stdout.write("\n");
+  return 0;
+}
+
+async function runTrim(args: string[]): Promise<number> {
+  const write = args.includes("--write");
+  const target = args.find((a) => !a.startsWith("-")) ?? ".";
+  const root = path.resolve(process.cwd(), target);
+
+  const configs = await discoverConfigs(root);
+  const servers = await parseServers(configs);
+  const usage = await loadUsage();
+  for (const s of servers) {
+    if (!s.estimate) s.estimate = estimateServer(s.name, s.target);
+    s.usedToolCount = usage.servers[s.name] ? usedToolCount(usage, s.name) : null;
+  }
+
+  const result = computeTrim(servers);
+  process.stdout.write(renderTrim(result));
+
+  if (write && result.hasUsage) {
+    const drop = new Set(result.recs.filter((r) => r.verdict === "drop").map((r) => r.server.name));
+    if (drop.size > 0) {
+      const written = await writeTrimmed(root, configs, drop);
+      for (const w of written) process.stdout.write(`  wrote ${w}\n`);
+      process.stdout.write("\n");
+    }
+  }
+  return 0;
+}
+
 function printHelp(): void {
   process.stdout.write(
     [
@@ -127,11 +189,14 @@ function printHelp(): void {
       "    scan [path] [--deep] [--html]   Scan a repo; report the load",
       "      --deep    Connect to your own servers to measure real token cost",
       "      --html    Also write .vexryn/report.html",
+      "    wire [path]                     Route servers through the proxy (auto)",
+      "    unwire [path]                   Undo wire (restore direct servers)",
       "    wrap --name <s> -- <command>    Proxy a server to count real tool usage",
       "    usage                           Show recorded tool usage",
+      "    trim [path] [--write]           Suggest what to cut, based on usage",
       "",
-      "  Any repo, any stack. scan is read-only & local; wrap sits in the path",
-      "  locally to count real calls. Nothing is ever sent.",
+      "  Any repo, any stack. scan is read-only & local; wire/wrap sit in the",
+      "  path locally to count real calls. Nothing is ever sent.",
       "",
     ].join("\n"),
   );

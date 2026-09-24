@@ -59,6 +59,14 @@ function loadSync(): UsageData {
   return cache;
 }
 
+/** Register a server as active (wired) without recording any call. */
+export function touchServer(serverName: string): void {
+  const data = loadSync();
+  if (!data.servers[serverName]) {
+    data.servers[serverName] = { tools: {}, updatedAt: new Date().toISOString() };
+  }
+}
+
 /** Increment the call count for one tool of one server (in memory). */
 export function recordToolCall(serverName: string, toolName: string): void {
   const data = loadSync();

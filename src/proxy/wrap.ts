@@ -9,9 +9,14 @@
 
 import { spawn } from "node:child_process";
 import readline from "node:readline";
-import { recordToolCall, flush } from "../usage/store.js";
+import { recordToolCall, touchServer, flush } from "../usage/store.js";
 
 export function runWrap(name: string, command: string, args: string[]): void {
+  // Register the server as active immediately, so a wired-but-unused server is
+  // distinguishable from one that was never wired (trim needs this).
+  touchServer(name);
+  flush();
+
   const child = spawn(command, args, { stdio: ["pipe", "pipe", "inherit"] });
 
   child.on("error", (err) => {
