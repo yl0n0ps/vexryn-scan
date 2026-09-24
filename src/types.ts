@@ -75,6 +75,8 @@ export interface McpServer {
   args?: string[];
   /** Endpoint URL (http only), used by --deep introspection. */
   url?: string;
+  /** NAMES of the env vars / headers the server receives — never their values. */
+  receives?: string[];
   /**
    * Distinct tools of this server actually called, from the local usage store
    * (populated by `vexryn wrap`). `null` = no usage data recorded yet.
@@ -111,9 +113,13 @@ export interface ToolInfo {
 
 /** Something an agent loads into context at every session start (read from disk). */
 export interface ContextItem {
+  /** Stable identity across two scans: the file label, or "memory" / "skills" / "agents". */
+  key: string;
   /** What it is: a file path, or e.g. "12 skill descriptions". */
   label: string;
   tokens: number;
+  /** Skill / subagent names, for the aggregated items. */
+  names?: string[];
 }
 
 /**

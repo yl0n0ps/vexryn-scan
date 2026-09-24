@@ -127,7 +127,7 @@ function stripJsonc(text: string): string {
   return out.replace(/,(\s*[}\]])/g, "$1");
 }
 
-type BareServer = Pick<McpServer, "name" | "transport" | "target" | "command" | "args" | "url">;
+type BareServer = Pick<McpServer, "name" | "transport" | "target" | "command" | "args" | "url" | "receives">;
 
 /** A `{ name: definition }` map → servers. Remote URL keys differ per app. */
 export function extractServers(map: unknown): BareServer[] {
@@ -136,6 +136,8 @@ export function extractServers(map: unknown): BareServer[] {
   for (const [name, def] of Object.entries(map as Record<string, unknown>)) {
     if (typeof def !== "object" || def === null) continue;
     const d = def as Record<string, unknown>;
+    // Names only: env/header values are often secrets and are never kept.
+    const receives = [d.env, d.headers].flatMap((m) => (typeof m === "object" && m !== null ? Object.keys(m) : []));
     // url (most apps), serverUrl (Windsurf), httpUrl (Gemini streamable HTTP)
     const url = [d.url, d.serverUrl, d.httpUrl].find((v): v is string => typeof v === "string");
     if (typeof d.command === "string") {
@@ -148,11 +150,12 @@ export function extractServers(map: unknown): BareServer[] {
         target: [d.command, ...args].join(" "),
         command: d.command,
         args,
+        receives,
       });
     } else if (url) {
-      out.push({ name, transport: "http", target: url, url });
+      out.push({ name, transport: "http", target: url, url, receives });
     } else {
-      out.push({ name, transport: "unknown", target: "" });
+      out.push({ name, transport: "unknown", target: "", receives });
     }
   }
   return out;

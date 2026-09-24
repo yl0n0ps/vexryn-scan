@@ -33,8 +33,8 @@ const MEMORY_MAX_BYTES = 25 * 1024;
 export async function claudeCodeContext(root: string, includesGlobal: boolean): Promise<ClaudeContext> {
   const claude = path.join(homeDir(), ".claude");
   const items: ContextItem[] = [];
-  const add = (label: string, text: string | null) => {
-    if (text) items.push({ label, tokens: countTokens(text) });
+  const add = (label: string, text: string | null, key = label, names?: string[]) => {
+    if (text) items.push({ key, label, tokens: countTokens(text), ...(names && { names }) });
   };
   // A file reached twice (~/.claude/CLAUDE.md is also the home dir's .claude/CLAUDE.md) counts once.
   const seen = new Set<string>();
@@ -61,31 +61,36 @@ export async function claudeCodeContext(root: string, includesGlobal: boolean): 
   if (includesGlobal) {
     await addFile("~/.claude/CLAUDE.md", path.join(claude, "CLAUDE.md"));
     const memory = await readText(path.join(claude, "projects", root.replace(/[^a-zA-Z0-9]/g, "-"), "memory", "MEMORY.md"));
-    add("auto memory (MEMORY.md)", memory && capMemory(memory));
+    add("auto memory (MEMORY.md)", memory && capMemory(memory), "memory");
     skillDirs.push(path.join(claude, "skills"), ...plugins.map((p) => path.join(p.dir, "skills")));
     agentDirs.push(path.join(claude, "agents"), ...plugins.map((p) => path.join(p.dir, "agents")));
   }
 
   // ponytail: plugin/user `commands/*.md` not counted — add once their startup loading is documented.
   const skills: string[] = [];
+  const skillNames: string[] = [];
   for (const dir of skillDirs) {
     for (const file of await findFiles(dir, "SKILL.md", 3)) {
       const fm = frontmatter((await readText(file)) ?? "");
       if (fm["disable-model-invocation"] === "true") continue;
-      skills.push(`${fm.name ?? path.basename(path.dirname(file))}: ${fm.description ?? ""}`);
+      const name = fm.name ?? path.basename(path.dirname(file));
+      skillNames.push(name);
+      skills.push(`${name}: ${fm.description ?? ""}`);
     }
   }
-  if (skills.length) add(`${skills.length} skill description${plural(skills.length)}`, skills.join("\n"));
+  if (skills.length) add(`${skills.length} skill description${plural(skills.length)}`, skills.join("\n"), "skills", skillNames);
 
   const agents: string[] = [];
+  const agentNames: string[] = [];
   for (const dir of agentDirs) {
     for (const file of await findFiles(dir, ".md", 0)) {
       const fm = frontmatter((await readText(file)) ?? "");
       if (!fm.name) continue; // a subagent file declares its name; README.md etc. are not agents
-      agents.push(`${fm.name ?? path.basename(file, ".md")}: ${fm.description ?? ""}`);
+      agentNames.push(fm.name);
+      agents.push(`${fm.name}: ${fm.description ?? ""}`);
     }
   }
-  if (agents.length) add(`${agents.length} subagent description${plural(agents.length)}`, agents.join("\n"));
+  if (agents.length) add(`${agents.length} subagent description${plural(agents.length)}`, agents.join("\n"), "agents", agentNames);
 
   const pluginServers: McpServer[] = [];
   for (const p of plugins) {
