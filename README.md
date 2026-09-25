@@ -33,7 +33,7 @@ them. Vexryn makes them legible.
 
 ## Status
 
-Working skeleton. What's real today:
+Early release — [`vexryn` on npm](https://www.npmjs.com/package/vexryn) (0.1.0). What's real today:
 
 - **Discovery (agnostic):** finds agent configs across any repo/stack and multiple
   agents (MCP, Cursor, Claude, Gemini, Windsurf). Read-only.
@@ -176,7 +176,7 @@ Windsurf, Gemini CLI…).
 { "mcpServers": { "vexryn": { "command": "npx", "args": ["-y", "vexryn", "mcp"] } } }
 ```
 
-(Not on npm yet — from a checkout use `"command": "node", "args": ["<path>/vexryn-scan/dist/cli.js", "mcp"]`.)
+(From a checkout instead: `"command": "node", "args": ["<path>/vexryn-scan/dist/cli.js", "mcp"]`.)
 
 **Read-only by construction.** Nothing that edits a config (`wire`,
 `trim --write`), sits in a server's path (`wrap`) or launches servers
