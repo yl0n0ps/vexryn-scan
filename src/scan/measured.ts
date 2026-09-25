@@ -21,6 +21,23 @@ export function measuredKey(s: { transport: string; target: string }): string {
   return createHash("sha256").update(`${s.transport} ${s.target}`).digest("hex");
 }
 
+/** sha256 of a tool's description + input schema, key order ignored: the same schema serialized differently is not a change. */
+export function toolHash(description: string, inputSchema: unknown): string {
+  return createHash("sha256").update(JSON.stringify({ d: description, s: canonical(inputSchema ?? {}) })).digest("hex");
+}
+
+function canonical(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(canonical);
+  if (v && typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    return Object.fromEntries(Object.keys(o).sort().map((k) => [k, canonical(o[k])]));
+  }
+  return v;
+}
+
+// ponytail: 90-day ageing — a server gone from every config is forgotten; make it a flag if someone needs longer memory.
+const MAX_AGE_MS = 90 * 86_400_000;
+
 function storePath(): string {
   return path.join(process.env.VEXRYN_HOME || os.homedir(), ".vexryn", "measured.json");
 }
@@ -29,11 +46,12 @@ export async function loadMeasured(): Promise<MeasuredStore> {
   try {
     const data = JSON.parse(await fs.readFile(storePath(), "utf8")) as unknown;
     if (data && typeof data === "object" && !Array.isArray(data)) {
-      // Keep only well-formed entries: one bad one must never break the scan.
+      // Keep only well-formed, recent entries: one bad one must never break the scan.
       const store: MeasuredStore = {};
+      const cutoff = Date.now() - MAX_AGE_MS;
       for (const [key, m] of Object.entries(data as Record<string, unknown>)) {
         const e = m as Partial<Measured> | null;
-        if (e && typeof e.measuredAt === "string" && Array.isArray(e.tools)) store[key] = e as Measured;
+        if (e && typeof e.measuredAt === "string" && Array.isArray(e.tools) && Date.parse(e.measuredAt) >= cutoff) store[key] = e as Measured;
       }
       return store;
     }

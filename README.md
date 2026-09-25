@@ -98,6 +98,9 @@ Not built yet (honest):
   through an app UI (claude.ai / desktop) rather than a config file.
 - **Open feed** (OSV format) of measured per-server costs — to be filled from
   real `--deep` measurements, never by hand.
+- **Usage per launch command** — `wrap` records calls under the server *name*
+  the agent uses, not its launch command, so a name reused for a different
+  server in another repo mixes their counts in `trim`.
 - **Powers in the PR review** — the diff only holds a launch command, so
   "adds 8 tools, can send messages" needs a measured catalogue
   (package@version → tools). Not before it exists.

@@ -191,8 +191,8 @@ async function runTrim(args: string[]): Promise<number> {
   // Trim acts on this repo's configs only (user-wide configs aren't wired yet).
   const configs = await discoverConfigs(root);
   const servers = await parseServers(configs, root);
-  await attachLocal(servers);
-  const result = computeTrim(servers, await loadUsage());
+  const usage = await attachLocal(servers);
+  const result = computeTrim(servers, usage);
   process.stdout.write(renderTrim(result));
 
   if (write && result.hasUsage) {

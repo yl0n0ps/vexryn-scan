@@ -38,6 +38,8 @@ export function computeTrim(servers: McpServer[], usage?: UsageData): TrimResult
       savedTokens += s.estimate?.approxTokens ?? 0;
     } else if (used != null && used > 0) {
       const tools = s.estimate?.tools;
+      // Usage is recorded under the NAME the agent uses (wrap --name), the measurement under the launch
+      // command: a name reused for a different server in another repo mixes their counts (README, honest list).
       const called = usage?.servers[s.name]?.tools ?? {};
       const unused = tools?.filter((t) => !(called[t.name] > 0)).map((t) => t.name);
       recs.push({ server: s, verdict: "keep", reason: tools ? `${used} of ${tools.length} tools used` : `${used} tool(s) used`, unused });

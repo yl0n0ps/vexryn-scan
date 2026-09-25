@@ -3,6 +3,7 @@
 // local store, and Claude Code's always-loaded context. Never executes anything.
 
 import type { DiscoveredConfig, LoadReport, McpServer } from "../types.js";
+import type { UsageData } from "../usage/store.js";
 import { discoverConfigs, discoverGlobalConfigs } from "./discover.js";
 import { parseServers } from "./parse.js";
 import { claudeCodeContext, type ClaudeContext } from "./claude.js";
@@ -24,8 +25,8 @@ export async function collectStatic(root: string, includesGlobal: boolean): Prom
   return { configs, servers, claude };
 }
 
-/** Attach what THIS machine recorded locally: real usage (wrap) and past measurements (--deep). */
-export async function attachLocal(servers: McpServer[]): Promise<void> {
+/** Attach what THIS machine recorded locally: real usage (wrap) and past measurements (--deep). Returns the usage read. */
+export async function attachLocal(servers: McpServer[]): Promise<UsageData> {
   const usage = await loadUsage();
   const measured = await loadMeasured();
   for (const s of servers) {
@@ -33,6 +34,7 @@ export async function attachLocal(servers: McpServer[]): Promise<void> {
     const m = measured[measuredKey(s)];
     if (m && !s.estimate) s.estimate = estimateFromMeasured(m);
   }
+  return usage;
 }
 
 /** The static load report (no --deep): read-only, nothing launched. */

@@ -75,7 +75,7 @@ const tools = [
 
 // Simulate a server that changed since the last measurement (drift tests).
 if (process.env.MOCK_EXTRA_TOOL) {
-  tools[2].description = "Read the contents of a file at a path, following symlinks.";
+  tools.find((t) => t.name === "read_file").description = "Read the contents of a file at a path, following symlinks.";
   tools.push({
     name: "delete_record",
     description: "Delete a customer record permanently.",
