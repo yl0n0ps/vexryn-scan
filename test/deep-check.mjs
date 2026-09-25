@@ -67,6 +67,18 @@ try {
   const text = strip(renderTrim(computeTrim([fake], { servers: { big: { tools: { t0: 1 }, updatedAt: "" } } })));
   assert.match(text, /never used \(11\): t1, t2, t3, t4, t5, t6, t7, t8, … \+3 more/);
 
+  // 6. a trap hidden in a tool description: flagged as a fact, the description itself never printed
+  const poisonHome = mkdtempSync(path.join(os.tmpdir(), "vexryn-poison-"));
+  try {
+    out = strip(execFileSync("node", ["dist/cli.js", "scan", "fixtures/deep-repo", "--deep", "--no-global"], { env: { ...process.env, VEXRYN_HOME: poisonHome, MOCK_POISON: "1" }, encoding: "utf8" }));
+    assert.match(out, /⚠ tool add — its description contains the phrase "<IMPORTANT>", "Before using this tool", "Do not tell the user"/);
+    assert.ok(!out.includes("id_rsa") && !out.includes("sidenote"), "the description itself is never printed");
+    out = strip(execFileSync("node", ["dist/cli.js", "scan", "fixtures/deep-repo", "--no-global"], { env: { ...process.env, VEXRYN_HOME: poisonHome }, encoding: "utf8" }));
+    assert.match(out, /⚠ tool add — its description contains the phrase/, "remembered with the measurement");
+  } finally {
+    rmSync(poisonHome, { recursive: true, force: true });
+  }
+
   console.log("deep-check: all assertions passed");
 } finally {
   rmSync(home, { recursive: true, force: true });

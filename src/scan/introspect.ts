@@ -12,6 +12,7 @@ import type { McpServer, ServerEstimate, ToolInfo } from "../types.js";
 import { countToolTokens } from "./tokens.js";
 import { classifyTool } from "./powers.js";
 import { toolHash } from "./measured.js";
+import { toolFlags } from "../diff/rules.js";
 
 const CONNECT_TIMEOUT_MS = 15_000;
 
@@ -25,6 +26,7 @@ export async function introspectServer(server: McpServer): Promise<ServerEstimat
       tokens: countToolTokens(t),
       power: classifyTool(t),
       hash: toolHash(t.description ?? "", t.inputSchema),
+      flags: toolFlags(t.description ?? ""),
     }));
     const approxTokens = detailed.reduce((sum, t) => sum + t.tokens, 0);
     return {

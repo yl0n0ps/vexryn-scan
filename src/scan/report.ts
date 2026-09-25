@@ -183,6 +183,7 @@ export function renderText(report: LoadReport): string {
       if (can.length) lines.push(`      can: ${can.join(", ")}`);
       for (const f of serverFacts(s)) lines.push(`      ⚠ ${f}`);
       for (const d of s.estimate?.drift ?? []) lines.push(`      ⚠ ${plain(d)}`);
+      for (const f of trapFacts(s)) lines.push(`      ⚠ ${f}`);
     }
     lines.push("");
   }
@@ -230,6 +231,18 @@ export function serverFacts(s: McpServer): string[] {
   if (s.url && plainHttpRemote(s.url)) facts.push(`connects over plain http:// (unencrypted) to ${plain(new URL(s.url).hostname)}`);
   for (const name of s.literalSecrets ?? []) facts.push(`${plain(name)} is a literal secret written in the file (not shown)`);
   if (secretInText(s.target)) facts.push("its command or URL contains a credential (not shown)");
+  return facts;
+}
+
+/** Traps hidden in the server's tool descriptions — the phrases, never the description. */
+export function trapFacts(s: McpServer): string[] {
+  const facts: string[] = [];
+  for (const t of s.estimate?.tools ?? []) {
+    if (!t.flags) continue;
+    const who = `tool ${plain(t.name)} — its description contains`;
+    if (t.flags.phrases.length) facts.push(`${who} the phrase ${t.flags.phrases.map((p) => `"${plain(p)}"`).join(", ")}`);
+    if (t.flags.hidden) facts.push(`${who} ${t.flags.hidden} invisible character${plural(t.flags.hidden)}`);
+  }
   return facts;
 }
 

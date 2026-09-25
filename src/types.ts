@@ -121,6 +121,14 @@ export interface ToolInfo {
   power?: Power | null;
   /** sha256 of description + input schema, to notice a change next time. */
   hash?: string;
+  /** Traps hidden in its description (instruction phrases, invisible characters); the description itself is never shown. */
+  flags?: ToolFlags | null;
+}
+
+/** What a tool description hides: instruction-override phrases (as matched) and invisible characters. */
+export interface ToolFlags {
+  phrases: string[];
+  hidden: number;
 }
 
 /** Something an agent loads into context at every session start (read from disk). */
