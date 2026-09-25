@@ -88,6 +88,8 @@ export interface McpServer {
   usedToolCount?: number | null;
   /** The config file this server came from (display path). */
   fromRelPath: string;
+  /** Its package is marked deprecated by its publisher (Vexryn catalogue, latest version). */
+  deprecated?: { package: string; message: string } | null;
   /**
    * Tool count + token cost, from real introspection (--deep). `null` means
    * not measured: the static scan never executes a server, and never invents a figure.
@@ -109,12 +111,14 @@ export interface ServerEstimate {
   measuredAt?: string;
   /** What changed since the previous local measurement (--deep only). */
   drift?: string[];
+  /** Set when the figures come from the Vexryn catalogue: which package version they are for. */
+  catalog?: { package: string; version: string; exact: boolean };
 }
 
 /** One tool as declared by a server, with its measured token cost. */
 export interface ToolInfo {
   name: string;
-  description: string;
+  description?: string;
   /** Real tokens the serialized tool definition adds to context. */
   tokens: number;
   /** What the tool can do, or null when the classifier is not sure. */

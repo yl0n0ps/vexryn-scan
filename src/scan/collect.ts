@@ -10,6 +10,7 @@ import { claudeCodeContext, type ClaudeContext } from "./claude.js";
 import { assembleReport } from "./report.js";
 import { loadUsage, usedToolCount } from "../usage/store.js";
 import { estimateFromMeasured, loadMeasured, measuredKey } from "./measured.js";
+import { estimateFromCatalog, lookup, packageSpec } from "./catalog.js";
 
 export interface Collected {
   configs: DiscoveredConfig[];
@@ -25,14 +26,23 @@ export async function collectStatic(root: string, includesGlobal: boolean): Prom
   return { configs, servers, claude };
 }
 
-/** Attach what THIS machine recorded locally: real usage (wrap) and past measurements (--deep). Returns the usage read. */
+/**
+ * Attach what is known without launching anything: real usage (wrap), this machine's
+ * past measurements (--deep) and, failing those, the Vexryn catalogue. Returns the usage read.
+ */
 export async function attachLocal(servers: McpServer[]): Promise<UsageData> {
   const usage = await loadUsage();
   const measured = await loadMeasured();
   for (const s of servers) {
     s.usedToolCount = usage.servers[s.name] ? usedToolCount(usage, s.name) : null;
     const m = measured[measuredKey(s)];
-    if (m && !s.estimate) s.estimate = estimateFromMeasured(m);
+    const hit = s.command ? lookup(packageSpec(s.command, s.args ?? [])) : null;
+    if (!s.estimate) {
+      if (m) s.estimate = estimateFromMeasured(m);
+      else if (hit?.measured) s.estimate = estimateFromCatalog({ ...hit, measured: hit.measured });
+    }
+    // The notice is recorded for the latest version: claimed only for a config running that one.
+    if (hit?.deprecated && hit.version === hit.latest) s.deprecated = { package: hit.package, message: hit.deprecated };
   }
   return usage;
 }

@@ -14,6 +14,9 @@ import { readClaudeSettings, type ClaudeSettings, type Hook } from "../scan/sett
 import { promises as fs } from "node:fs";
 import { gitRoot, isAgentConfigPath, resolveRef, snapshot, type Side } from "./snapshot.js";
 import { projectDir } from "../scan/discover.js";
+import { isExactVersion, lookup, packageSpec, type CatalogHit } from "../scan/catalog.js";
+import { powerLabels } from "../scan/powers.js";
+import { combinations } from "../scan/combos.js";
 import { TOKEN_SHAPE, secretName, blobs, hiddenChars, overridePhrases, plainHttpRemote, secretInText, sensitivePaths, shellInline } from "./rules.js";
 
 export const MARKER = "<!-- vexryn-pr-review -->";
@@ -99,6 +102,8 @@ export function compare(base: Snapshot, head: Snapshot): Review {
     ...unreadableLines(base, head),
     ...serverLines(base, head),
     ...serverFactLines(base, head),
+    ...catalogLines(base, head),
+    ...comboLines(base, head),
     ...shadowLines(base, head),
     ...textLines(base, head),
     ...(settingsComparable
@@ -359,27 +364,68 @@ function argDelta(before: string[] = [], after: string[] = []): string {
     .join("; ");
 }
 
-const RUNNERS = new Set(["npx", "bunx", "pnpx", "uvx"]);
-
 /**
  * A package runner fetching a package without an exact version: what runs can
  * change any day. No claim for local paths, URLs or git specs.
  */
 function unpinned(s: McpServer): boolean {
-  const runner = path.basename(s.command ?? "").replace(/\.(cmd|exe)$/i, "");
-  if (!RUNNERS.has(runner)) return false;
-  const args = s.args ?? [];
-  let pkg: string | undefined;
-  for (let i = 0; i < args.length && pkg === undefined; i++) {
-    const a = args[i];
-    if (/^--(package|from)=/.test(a)) pkg = a.slice(a.indexOf("=") + 1);
-    else if (a === "-p" || a === "--package" || a === "--from") pkg = args[i + 1];
-    else if (!a.startsWith("-")) pkg = a;
+  const spec = s.command ? packageSpec(s.command, s.args ?? []) : null;
+  return !!spec && !isExactVersion(spec.version);
+}
+
+// --- Vexryn catalogue ------------------------------------------------------
+
+const hitOf = (s: McpServer): CatalogHit | null => (s.command ? lookup(packageSpec(s.command, s.args ?? [])) : null);
+
+/** What the catalogue knows about each new/changed server: powers, traps, deprecation. */
+function catalogLines(base: Snapshot, head: Snapshot): string[] {
+  const lines: string[] = [];
+  for (const s of newOrChanged(base, head)) {
+    const hit = hitOf(s);
+    if (!hit) continue;
+    const who = `MCP server ${code(s.name)} (${code(s.fromRelPath)})`;
+    const m = hit.measured;
+    if (m) {
+      const src = `Vexryn catalogue: ${code(`${hit.package}@${hit.version}`)}${hit.exact ? "" : ", latest measured — the config isn't pinned"}, measured ${m.measuredAt.slice(0, 10)}`;
+      const n = `${m.tools.length} tool${plural(m.tools.length)}`;
+      const can = powerLabels(m.tools.map((t) => t.power));
+      lines.push(can.length ? `${WARN}${who} can ${can.join(", ")} — ${n} (${src})` : `${who}: ${n}, no power recognized (${src})`);
+      for (const t of m.tools) {
+        if (t.flags?.phrases.length) lines.push(`${WARN}${who}: tool ${code(t.name)}'s description contains the phrase ${list(t.flags.phrases)}`);
+        if (t.flags?.hidden) lines.push(`${WARN}${who}: tool ${code(t.name)}'s description contains ${t.flags.hidden} invisible character${plural(t.flags.hidden)}`);
+      }
+    } else {
+      lines.push(`${who}: version ${code(hit.version)} isn't in the Vexryn catalogue (latest measured: ${code(hit.latest)})`);
+    }
+    if (hit.deprecated && hit.version === hit.latest) {
+      lines.push(`${WARN}${who} uses ${code(hit.package)}, marked deprecated by its publisher: ${code(hit.deprecated.slice(0, 120))}`);
+    }
   }
-  if (!pkg || /^[./~]|:\/\/|^(git|github|file|link)[:+]/.test(pkg)) return false;
-  // npm: name@version (skip a scope's leading @); uv: name==version or name@version.
-  const version = runner === "uvx" ? pkg.split(/==|@/)[1] : pkg.slice(1).split("@")[1];
-  return !(version && /^\d+\.\d+\.\d+([-+][\w.-]+)?$/.test(version));
+  return lines;
+}
+
+/** Dangerous combinations the change creates, per agent and project directory (catalogue tools). */
+function comboLines(base: Snapshot, head: Snapshot): string[] {
+  const combos = (snap: Snapshot) => {
+    const powers = new Map<string, Set<string>>();
+    for (const s of snap.servers) {
+      const k = `${s.client}\u0000${projectDir(s.fromRelPath)}`;
+      const set = powers.get(k) ?? new Set<string>();
+      for (const t of hitOf(s)?.measured?.tools ?? []) if (t.power) set.add(t.power);
+      powers.set(k, set);
+    }
+    return new Map([...powers].map(([k, set]) => [k, combinations(set as Set<never>)]));
+  };
+  const before = combos(base);
+  const lines: string[] = [];
+  for (const [k, facts] of combos(head)) {
+    const [client, dir] = k.split("\u0000");
+    const where = dir === "." ? "at the repo root" : `in ${code(dir)}`;
+    for (const f of facts.filter((f) => !(before.get(k) ?? []).includes(f))) {
+      lines.push(`${WARN}${client} ${where}: ${f[0].toLowerCase()}${f.slice(1)} (tools per the Vexryn catalogue)`);
+    }
+  }
+  return lines;
 }
 
 // --- Claude Code settings --------------------------------------------------

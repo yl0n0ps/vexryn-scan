@@ -120,7 +120,11 @@ export function loadPercent(tokens: number): number {
 }
 
 /** Human-readable terminal report. Dependency-free on purpose. */
-export function renderText(report: LoadReport): string {
+/**
+ * `forAgent`: the text goes into an AI agent's context (the MCP tool), so third-party
+ * free text — trap phrases, deprecation notices — is replaced by counts.
+ */
+export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}): string {
   const { configs, agents, totals, deep, includesGlobal } = report;
   const lines: string[] = [];
   const mode = deep ? "MCP measured live" : "static read";
@@ -179,13 +183,13 @@ export function renderText(report: LoadReport): string {
       );
     }
     for (const s of a.servers) {
-      const where = `${s.fromRelPath} · ${s.scope}` + (s.estimate?.measuredAt ? ` · measured ${s.estimate.measuredAt.slice(0, 10)}` : "");
+      const where = `${s.fromRelPath} · ${s.scope}` + source(s);
       lines.push(`    ${padEnd(s.name, 20)} ${padEnd(renderServerCost(s), 34)} ${dim(where)}`);
       const can = powerLabels((s.estimate?.tools ?? []).map((t) => t.power));
       if (can.length) lines.push(`      can: ${can.join(", ")}`);
-      for (const f of serverFacts(s)) lines.push(`      ⚠ ${f}`);
+      for (const f of serverFacts(s, opts.forAgent)) lines.push(`      ⚠ ${f}`);
       for (const d of s.estimate?.drift ?? []) lines.push(`      ⚠ ${plain(d)}`);
-      for (const f of trapFacts(s)) lines.push(`      ⚠ ${f}`);
+      for (const f of trapFacts(s, opts.forAgent)) lines.push(`      ⚠ ${f}`);
     }
     lines.push("");
   }
@@ -223,8 +227,15 @@ export function renderText(report: LoadReport): string {
   return lines.join("\n");
 }
 
+/** Where a server's figures come from, for the location column. */
+function source(s: McpServer): string {
+  const e = s.estimate;
+  if (e?.catalog) return ` · catalog ${plain(e.catalog.package)}@${plain(e.catalog.version)} ${e.measuredAt?.slice(0, 10)}${e.catalog.exact ? "" : ", not pinned"}`;
+  return e?.measuredAt ? ` · measured ${e.measuredAt.slice(0, 10)}` : "";
+}
+
 /** Exact facts about a server's launch config (rules.ts). Never a secret value. */
-export function serverFacts(s: McpServer): string[] {
+export function serverFacts(s: McpServer, forAgent = false): string[] {
   const args = s.args ?? [];
   const facts: string[] = [];
   if (s.command && shellInline(s.command, args)) facts.push("runs a shell with inline code or a pipe");
@@ -233,16 +244,23 @@ export function serverFacts(s: McpServer): string[] {
   if (s.url && plainHttpRemote(s.url)) facts.push(`connects over plain http:// (unencrypted) to ${plain(new URL(s.url).hostname)}`);
   for (const name of s.literalSecrets ?? []) facts.push(`${plain(name)} is a literal secret written in the file (not shown)`);
   if (secretInText(s.target)) facts.push("its command or URL contains a credential (not shown)");
+  if (s.deprecated) {
+    const note = forAgent ? "" : `: "${plain(s.deprecated.message).slice(0, 120)}"`;
+    facts.push(`uses ${plain(s.deprecated.package)}, marked deprecated by its publisher${note}`);
+  }
   return facts;
 }
 
 /** Traps hidden in the server's tool descriptions — the phrases, never the description. */
-export function trapFacts(s: McpServer): string[] {
+export function trapFacts(s: McpServer, forAgent = false): string[] {
   const facts: string[] = [];
   for (const t of s.estimate?.tools ?? []) {
     if (!t.flags) continue;
     const who = `tool ${plain(t.name)} — its description contains`;
-    if (t.flags.phrases.length) facts.push(`${who} the phrase ${t.flags.phrases.map((p) => `"${plain(p)}"`).join(", ")}`);
+    const n = t.flags.phrases.length;
+    // Quoting "ignore previous instructions" to an agent would relay the trap itself.
+    if (n && forAgent) facts.push(`${who} ${n} instruction-like phrase${plural(n)}`);
+    else if (n) facts.push(`${who} the phrase ${t.flags.phrases.map((p) => `"${plain(p)}"`).join(", ")}`);
     if (t.flags.hidden) facts.push(`${who} ${t.flags.hidden} invisible character${plural(t.flags.hidden)}`);
   }
   return facts;
@@ -259,7 +277,7 @@ function renderServerCost(s: McpServer): string {
     return dim(`unreachable — ${truncate(s.estimate.error ?? "failed", 40)}`);
   }
   const used = s.usedToolCount != null ? ` · ${s.usedToolCount} used` : "";
-  return `${s.estimate.toolCount} tools · ~${fmtTokens(s.estimate.approxTokens)} tok${used}`;
+  return `${s.estimate.toolCount} tool${plural(s.estimate.toolCount)} · ~${fmtTokens(s.estimate.approxTokens)} tok${used}`;
 }
 
 /** Compact token count: 299 → "299", 52000 → "52k". */
