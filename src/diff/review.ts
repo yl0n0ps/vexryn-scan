@@ -13,6 +13,7 @@ import { claudeCodeContext } from "../scan/claude.js";
 import { readClaudeSettings, type ClaudeSettings, type Hook } from "../scan/settings.js";
 import { promises as fs } from "node:fs";
 import { gitRoot, isAgentConfigPath, resolveRef, snapshot, type Side } from "./snapshot.js";
+import { projectDir } from "../scan/discover.js";
 import { TOKEN_SHAPE, secretName, blobs, hiddenChars, overridePhrases, plainHttpRemote, secretInText, sensitivePaths, shellInline } from "./rules.js";
 
 export const MARKER = "<!-- vexryn-pr-review -->";
@@ -299,10 +300,11 @@ function serverFactLines(base: Snapshot, head: Snapshot): string[] {
 /** A name newly defined in several files with different launch commands. */
 function shadowLines(base: Snapshot, head: Snapshot): string[] {
   const shadowed = (snap: Snapshot) => {
-    // Per agent app: only servers one agent loads together can shadow each other.
-    const byName = new Map<string, { name: string; launches: Map<string, string> }>(); // client+name → launch → file
+    // Only servers one agent loads together can shadow each other: same agent app, same project
+    // directory (an agent loads the config at its project root, never a subproject's).
+    const byName = new Map<string, { name: string; launches: Map<string, string> }>(); // client+dir+name → launch → file
     for (const s of snap.servers) {
-      const k = `${s.client}\u0000${s.name}`;
+      const k = `${s.client}\u0000${projectDir(s.fromRelPath)}\u0000${s.name}`;
       const e = byName.get(k) ?? { name: s.name, launches: new Map<string, string>() };
       if (!e.launches.has(launch(s))) e.launches.set(launch(s), s.fromRelPath);
       byName.set(k, e);

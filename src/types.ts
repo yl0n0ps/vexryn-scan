@@ -170,6 +170,8 @@ export interface LoadReport {
   servers: McpServer[];
   /** Load per agent app, heaviest first. */
   agents: AgentLoad[];
+  /** Servers declared in a subproject's config: loaded only when the agent is opened there, never counted here. */
+  subprojects: { file: string; servers: number }[];
   totals: {
     serverCount: number;
     unmeasuredServers: number;

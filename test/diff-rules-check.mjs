@@ -154,6 +154,17 @@ try {
   put(".claude/settings.json", { mcpServers: { fs: { command: "node", args: ["other-fs.js"] } } });
   out = step("same");
   assert.ok(!/is now defined in both/.test(out), "the same command twice is not shadowing");
+  // A subproject's .mcp.json is another project: Claude Code loads only the one at the project root.
+  put("packages/api/.mcp.json", { mcpServers: { fs: { command: "node", args: ["api-fs.js"] } } });
+  put("packages/api/.claude/settings.json", { mcpServers: { fs: { command: "node", args: ["api-other-fs.js"] } } });
+  out = step("subproject");
+  assert.match(out, /New MCP server `fs` for Claude Code in `packages\/api\/\.mcp\.json`/, "the subproject's change is still reviewed");
+  assert.match(
+    out,
+    /^- ⚠️ `fs` is now defined in both `packages\/api\/\.claude\/settings\.json` and `packages\/api\/\.mcp\.json` with different launch commands$/m,
+    "files of the same subproject do shadow each other",
+  );
+  assert.ok(!/`fs` is now defined in .*`\.mcp\.json` .*`packages/.test(out) && !/and `\.mcp\.json`/.test(out), "root and subproject never shadow each other");
 
   // Plain http to a remote; localhost and https are fine.
   mcp({

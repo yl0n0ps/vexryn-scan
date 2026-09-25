@@ -8,6 +8,7 @@ import type { AgentClient, AgentLoad, ContextItem, DiscoveredConfig, LoadReport,
 import { countTokens } from "./tokens.js";
 import { plainHttpRemote, secretInText, sensitivePaths, shellInline } from "../diff/rules.js";
 import { powerLabels } from "./powers.js";
+import { projectDir } from "./discover.js";
 
 // Rough size of a typical model context window, for the "% of window" figure.
 export const CONTEXT_WINDOW_TOKENS = 200_000;
@@ -23,7 +24,10 @@ export function assembleReport(
   servers: McpServer[],
   claude: { items: ContextItem[]; toolSearch: ToolSearch } = { items: [], toolSearch: "deferred" },
 ): LoadReport {
-  const deduped = dedupePerAgent(servers);
+  const subproject = servers.filter(inSubproject);
+  const deduped = dedupePerAgent(servers.filter((s) => !inSubproject(s)));
+  const subprojects = new Map<string, number>();
+  for (const s of subproject) subprojects.set(s.fromRelPath, (subprojects.get(s.fromRelPath) ?? 0) + 1);
 
   const byClient = new Map<AgentClient, McpServer[]>();
   // Claude Code loads its CLAUDE.md/skills even with no MCP server declared.
@@ -54,11 +58,17 @@ export function assembleReport(
     configs,
     servers: deduped,
     agents,
+    subprojects: [...subprojects].map(([file, n]) => ({ file, servers: n })).sort((a, b) => a.file.localeCompare(b.file)),
     totals: {
       serverCount: deduped.length,
       unmeasuredServers: agents.reduce((n, a) => n + a.unmeasuredServers, 0),
     },
   };
+}
+
+/** A server from a repo config below the scan root: the agent at the root never loads it. */
+export function inSubproject(s: McpServer): boolean {
+  return s.scope === "project" && projectDir(s.fromRelPath) !== ".";
 }
 
 function dedupePerAgent(servers: McpServer[]): McpServer[] {
@@ -118,7 +128,7 @@ export function renderText(report: LoadReport): string {
   lines.push("  vexryn · agent load report");
   lines.push("");
 
-  if (configs.length === 0 && agents.length === 0) {
+  if (configs.length === 0 && agents.length === 0 && report.subprojects.length === 0) {
     lines.push("  No agent configs found. Nothing to scan here.");
     lines.push("");
     return lines.join("\n");
@@ -134,7 +144,7 @@ export function renderText(report: LoadReport): string {
   lines.push("");
 
   if (agents.length === 0) {
-    lines.push("  No MCP servers declared — only rules/instruction files.");
+    lines.push("  No MCP servers declared at this project's root — only rules/instruction files.");
     lines.push("");
   }
 
@@ -173,6 +183,14 @@ export function renderText(report: LoadReport): string {
       if (can.length) lines.push(`      can: ${can.join(", ")}`);
       for (const f of serverFacts(s)) lines.push(`      ⚠ ${f}`);
       for (const d of s.estimate?.drift ?? []) lines.push(`      ⚠ ${plain(d)}`);
+    }
+    lines.push("");
+  }
+
+  if (report.subprojects.length > 0) {
+    lines.push("  Not counted — subprojects (an agent loads them only when opened there):");
+    for (const p of report.subprojects) {
+      lines.push(`    ${padEnd(plain(p.file), 40)} ${p.servers} server${plural(p.servers)}`);
     }
     lines.push("");
   }

@@ -48,6 +48,16 @@ const PROJECT_RULES: Rule[] = [
 const MAX_DEPTH = 8;
 
 /** Recursively find agent-config files under `root`. */
+/**
+ * The project directory a repo config file belongs to, "/"-separated and relative to the scan root:
+ * `.mcp.json` → its folder, `.claude/settings.json` → the folder above. An agent loads the config
+ * at its project root only, never a subproject's (Claude Code docs: ".mcp.json at your project's root").
+ */
+export function projectDir(relPath: string): string {
+  const dir = path.posix.dirname(relPath.split(path.sep).join("/"));
+  return /^\.(claude|cursor|vscode|gemini)$/.test(path.posix.basename(dir)) ? path.posix.dirname(dir) : dir;
+}
+
 export async function discoverConfigs(root: string): Promise<DiscoveredConfig[]> {
   const found: DiscoveredConfig[] = [];
   await walk(root, root, 0, found);

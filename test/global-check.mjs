@@ -108,6 +108,21 @@ try {
   assert.ok(!repoOnly.includes("local-only"), "--no-global skips ~/.claude.json");
   assert.match(repoOnly, /CLAUDE CODE/);
 
+  // A subproject's .mcp.json is loaded only when the agent is opened there: listed, never counted at the root.
+  const mono = mkdtempSync(path.join(os.tmpdir(), "vexryn-mono-"));
+  put(path.join(mono, ".mcp.json"), { mcpServers: { "root-srv": { command: "node", args: ["r.js"] } } });
+  put(path.join(mono, "packages", "api", ".mcp.json"), { mcpServers: { "api-a": { command: "node", args: ["a.js"] }, "api-b": { command: "node", args: ["b.js"] } } });
+  try {
+    const m = execFileSync("node", ["dist/cli.js", "scan", mono, "--no-global"], { env: { ...process.env, VEXRYN_HOME: home }, encoding: "utf8" }).replace(/\u001b\[[0-9;]*m/g, "");
+    assert.match(m, /1 MCP server across 1 agent/, "only the root's server counts");
+    const monoCc = section(m, "CLAUDE CODE");
+    assert.match(monoCc, /root-srv/);
+    assert.ok(!/api-a|api-b/.test(monoCc), "subproject servers are not in the root agent's load");
+    assert.match(m, /Not counted — subprojects \(an agent loads them only when opened there\):\n\s+packages\/api\/\.mcp\.json\s+2 servers/);
+  } finally {
+    rmSync(mono, { recursive: true, force: true });
+  }
+
   console.log(out);
   console.log("global-check: all assertions passed");
 } finally {

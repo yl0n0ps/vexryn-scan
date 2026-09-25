@@ -14,7 +14,7 @@ import { parseServers } from "./scan/parse.js";
 import { attachLocal, collectStatic } from "./scan/collect.js";
 import { drift, loadMeasured, measuredKey, saveMeasured } from "./scan/measured.js";
 import { introspectServer } from "./scan/introspect.js";
-import { assembleReport, renderText } from "./scan/report.js";
+import { assembleReport, inSubproject, renderText } from "./scan/report.js";
 import { writeHtml } from "./scan/html.js";
 import { runWrap } from "./proxy/wrap.js";
 import { loadUsage } from "./usage/store.js";
@@ -64,7 +64,7 @@ async function runScan(args: string[]): Promise<number> {
 
   if (deep && servers.length > 0) {
     // The same server is often declared for several agents: launch it once.
-    const reachable = servers.filter((s) => s.transport !== "unknown");
+    const reachable = servers.filter((s) => s.transport !== "unknown" && !inSubproject(s));
     const unique = new Map<string, McpServer>();
     for (const s of reachable) unique.set(measuredKey(s), s);
 
