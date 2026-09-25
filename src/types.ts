@@ -111,6 +111,8 @@ export interface ServerEstimate {
   measuredAt?: string;
   /** What changed since the previous local measurement (--deep only). */
   drift?: string[];
+  /** The tool list as the server sent it (live measurement only; never stored or displayed). */
+  raw?: Array<{ name: string; description?: string; inputSchema?: unknown }>;
   /** Set when the figures come from the Vexryn catalogue: which package version they are for. */
   catalog?: { package: string; version: string; exact: boolean };
 }

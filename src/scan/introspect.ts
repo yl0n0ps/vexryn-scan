@@ -38,6 +38,7 @@ export async function introspectServer(server: McpServer, timeoutMs = CONNECT_TI
       approxTokens,
       source: "introspect",
       tools: detailed,
+      raw: tools,
     };
   } catch (err) {
     return {

@@ -14,12 +14,16 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { introspectServer } from "../dist/scan/introspect.js";
+import { argNames } from "../dist/scan/powers.js";
 
 const argv = process.argv.slice(2);
 const opt = (flag, dflt) => (argv.includes(flag) ? argv[argv.indexOf(flag) + 1] : dflt);
 const listPath = opt("--list", "catalog/servers.json");
 const outPath = opt("--out", "catalog/catalog.json");
 const only = opt("--only", null);
+// Classifier work only: name, description and argument names of every tool. Never committed or shipped.
+const debugOut = opt("--debug-out", null);
+const debug = [];
 
 if (process.env.GITHUB_ACTIONS !== "true" && !argv.includes("--local-ok")) {
   process.stderr.write("measure-catalog runs third-party packages: only in GitHub Actions (see .github/workflows/catalog.yml).\n");
@@ -55,6 +59,7 @@ for (const [key, spec] of Object.entries(list)) {
       // Facts only: the description is dropped here, on purpose.
       tools: est.tools.map((t) => ({ name: t.name, tokens: t.tokens, power: t.power ?? null, hash: t.hash, ...(t.flags ? { flags: t.flags } : {}) })),
     };
+    if (debugOut) for (const t of est.raw ?? []) debug.push({ key, name: t.name, description: t.description ?? "", args: argNames(t.inputSchema) });
     results.push({ key, ok: true, detail: `${version} · ${est.tools.length} tools` });
   } catch (err) {
     results.push({ key, ok: false, detail: String(err instanceof Error ? err.message : err).split("\n")[0].slice(0, 120) });
@@ -63,6 +68,7 @@ for (const [key, spec] of Object.entries(list)) {
 
 catalog.servers = Object.fromEntries(Object.entries(catalog.servers).sort(([a], [b]) => a.localeCompare(b)));
 writeFileSync(outPath, JSON.stringify(catalog, null, 2) + "\n");
+if (debugOut) writeFileSync(debugOut, JSON.stringify(debug, null, 2) + "\n");
 
 for (const r of results) process.stdout.write(`${r.ok ? "ok  " : "FAIL"}  ${r.key}  ${r.detail}\n`);
 const measured = results.filter((r) => r.ok).length;

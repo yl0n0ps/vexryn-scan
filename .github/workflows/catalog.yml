@@ -17,8 +17,14 @@ jobs:
           persist-credentials: false
       - run: pipx install uv
       - run: npm ci --ignore-scripts --no-audit --no-fund && npm run build
-      - run: node scripts/measure-catalog.mjs
+      - run: node scripts/measure-catalog.mjs --debug-out tools-debug.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: catalog
           path: catalog/catalog.json
+      # For classifier work only (tool descriptions): never committed, never shipped.
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: tools-debug
+          path: tools-debug.json
+          retention-days: 7
