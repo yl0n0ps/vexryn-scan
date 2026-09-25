@@ -30,7 +30,9 @@ export async function runMcp(version: string): Promise<void> {
       description:
         "Read-only. What the AI agents configured for a repo load at every session start (MCP servers, " +
         "and for Claude Code its CLAUDE.md, memory, skill and subagent descriptions), with token counts. " +
-        "Reads config files only; never launches a server. By default also reads the user's own agent configs.",
+        "Reads config files only; never launches a server. By default also reads the user's own agent configs. " +
+        "When a server was measured locally before, shows its real tool count and what those tools can do " +
+        "(read files, run shell commands, send messages…), dated.",
       inputSchema: {
         path: z.string().optional().describe("Repo directory, relative to where Vexryn was started (default: that directory)."),
         includeGlobal: z.boolean().optional().describe("Also read the user's own agent configs (default true)."),

@@ -7,6 +7,7 @@
 import type { AgentClient, AgentLoad, ContextItem, DiscoveredConfig, LoadReport, McpServer, Scope, ToolSearch } from "../types.js";
 import { countTokens } from "./tokens.js";
 import { plainHttpRemote, secretInText, sensitivePaths, shellInline } from "../diff/rules.js";
+import { powerLabels } from "./powers.js";
 
 // Rough size of a typical model context window, for the "% of window" figure.
 export const CONTEXT_WINDOW_TOKENS = 200_000;
@@ -166,8 +167,12 @@ export function renderText(report: LoadReport): string {
       );
     }
     for (const s of a.servers) {
-      lines.push(`    ${padEnd(s.name, 20)} ${padEnd(renderServerCost(s), 34)} ${dim(`${s.fromRelPath} · ${s.scope}`)}`);
+      const where = `${s.fromRelPath} · ${s.scope}` + (s.estimate?.measuredAt ? ` · measured ${s.estimate.measuredAt.slice(0, 10)}` : "");
+      lines.push(`    ${padEnd(s.name, 20)} ${padEnd(renderServerCost(s), 34)} ${dim(where)}`);
+      const can = powerLabels((s.estimate?.tools ?? []).map((t) => t.power));
+      if (can.length) lines.push(`      can: ${can.join(", ")}`);
       for (const f of serverFacts(s)) lines.push(`      ⚠ ${f}`);
+      for (const d of s.estimate?.drift ?? []) lines.push(`      ⚠ ${plain(d)}`);
     }
     lines.push("");
   }

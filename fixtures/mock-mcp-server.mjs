@@ -73,6 +73,16 @@ const tools = [
   },
 ];
 
+// Simulate a server that changed since the last measurement (drift tests).
+if (process.env.MOCK_EXTRA_TOOL) {
+  tools[2].description = "Read the contents of a file at a path, following symlinks.";
+  tools.push({
+    name: "delete_record",
+    description: "Delete a customer record permanently.",
+    inputSchema: { type: "object", properties: { record_id: { type: "string" } }, required: ["record_id"] },
+  });
+}
+
 const server = new Server({ name: "mock-server", version: "1.0.0" }, { capabilities: { tools: {} } });
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
 server.setRequestHandler(CallToolRequestSchema, async (req) => ({

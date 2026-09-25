@@ -8,6 +8,7 @@ import { parseServers } from "./parse.js";
 import { claudeCodeContext, type ClaudeContext } from "./claude.js";
 import { assembleReport } from "./report.js";
 import { loadUsage, usedToolCount } from "../usage/store.js";
+import { estimateFromMeasured, loadMeasured, measuredKey } from "./measured.js";
 
 export interface Collected {
   configs: DiscoveredConfig[];
@@ -19,10 +20,19 @@ export async function collectStatic(root: string, includesGlobal: boolean): Prom
   const configs = [...(await discoverConfigs(root)), ...(includesGlobal ? await discoverGlobalConfigs() : [])];
   const claude = await claudeCodeContext(root, includesGlobal);
   const servers = [...(await parseServers(configs, root)), ...claude.pluginServers];
-  // Attach real usage from the local store (populated by `vexryn wrap`).
-  const usage = await loadUsage();
-  for (const s of servers) s.usedToolCount = usage.servers[s.name] ? usedToolCount(usage, s.name) : null;
+  await attachLocal(servers);
   return { configs, servers, claude };
+}
+
+/** Attach what THIS machine recorded locally: real usage (wrap) and past measurements (--deep). */
+export async function attachLocal(servers: McpServer[]): Promise<void> {
+  const usage = await loadUsage();
+  const measured = await loadMeasured();
+  for (const s of servers) {
+    s.usedToolCount = usage.servers[s.name] ? usedToolCount(usage, s.name) : null;
+    const m = measured[measuredKey(s)];
+    if (m && !s.estimate) s.estimate = estimateFromMeasured(m);
+  }
 }
 
 /** The static load report (no --deep): read-only, nothing launched. */

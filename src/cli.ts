@@ -11,12 +11,13 @@ import path from "node:path";
 import type { McpServer, ServerEstimate } from "./types.js";
 import { discoverConfigs, discoverGlobalConfigs } from "./scan/discover.js";
 import { parseServers } from "./scan/parse.js";
-import { collectStatic } from "./scan/collect.js";
+import { attachLocal, collectStatic } from "./scan/collect.js";
+import { drift, loadMeasured, measuredKey, saveMeasured } from "./scan/measured.js";
 import { introspectServer } from "./scan/introspect.js";
 import { assembleReport, renderText } from "./scan/report.js";
 import { writeHtml } from "./scan/html.js";
 import { runWrap } from "./proxy/wrap.js";
-import { loadUsage, usedToolCount } from "./usage/store.js";
+import { loadUsage } from "./usage/store.js";
 import { wireConfigs, unwireConfigs, type WireChange } from "./wire/wire.js";
 import { computeTrim, renderTrim, writeTrimmed } from "./trim/trim.js";
 import { reviewRepo } from "./diff/review.js";
@@ -65,7 +66,7 @@ async function runScan(args: string[]): Promise<number> {
     // The same server is often declared for several agents: launch it once.
     const reachable = servers.filter((s) => s.transport !== "unknown");
     const unique = new Map<string, McpServer>();
-    for (const s of reachable) unique.set(`${s.transport}\u0000${s.target}`, s);
+    for (const s of reachable) unique.set(measuredKey(s), s);
 
     process.stderr.write(
       `\n  --deep: connecting to ${unique.size} of your own MCP server${
@@ -73,14 +74,20 @@ async function runScan(args: string[]): Promise<number> {
       } to measure real tool cost.\n` +
         "  This launches their commands locally. Nothing is sent anywhere.\n",
     );
+    const store = await loadMeasured();
     const measured = new Map<string, ServerEstimate>();
     for (const [key, server] of unique) {
       process.stderr.write(`  · introspecting ${server.name}…\n`);
-      measured.set(key, await introspectServer(server));
+      const est = await introspectServer(server);
+      if (est.source === "introspect" && est.tools) {
+        // Only a successful read replaces the remembered measurement.
+        if (store[key]) est.drift = drift(store[key], est.tools);
+        store[key] = { measuredAt: new Date().toISOString(), tools: est.tools };
+      }
+      measured.set(key, est);
     }
-    for (const s of reachable) {
-      s.estimate = measured.get(`${s.transport}\u0000${s.target}`) ?? s.estimate;
-    }
+    await saveMeasured(store).catch(() => {}); // remembering is a convenience, never critical
+    for (const s of reachable) s.estimate = measured.get(measuredKey(s)) ?? s.estimate;
     process.stderr.write("\n");
   }
 
@@ -184,12 +191,8 @@ async function runTrim(args: string[]): Promise<number> {
   // Trim acts on this repo's configs only (user-wide configs aren't wired yet).
   const configs = await discoverConfigs(root);
   const servers = await parseServers(configs, root);
-  const usage = await loadUsage();
-  for (const s of servers) {
-    s.usedToolCount = usage.servers[s.name] ? usedToolCount(usage, s.name) : null;
-  }
-
-  const result = computeTrim(servers);
+  await attachLocal(servers);
+  const result = computeTrim(servers, await loadUsage());
   process.stdout.write(renderTrim(result));
 
   if (write && result.hasUsage) {

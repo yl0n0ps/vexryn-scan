@@ -5,6 +5,8 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { McpServer } from "../types.js";
+import type { UsageData } from "../usage/store.js";
+import { fmtTokens } from "../scan/report.js";
 
 export type Verdict = "keep" | "drop" | "unknown";
 
@@ -12,6 +14,8 @@ export interface TrimRec {
   server: McpServer;
   verdict: Verdict;
   reason: string;
+  /** Measured tools this server has that were never called (keep verdict only). */
+  unused?: string[];
 }
 
 export interface TrimResult {
@@ -20,7 +24,7 @@ export interface TrimResult {
   hasUsage: boolean;
 }
 
-export function computeTrim(servers: McpServer[]): TrimResult {
+export function computeTrim(servers: McpServer[], usage?: UsageData): TrimResult {
   const recs: TrimRec[] = [];
   let savedTokens = 0;
   let hasUsage = false;
@@ -33,7 +37,10 @@ export function computeTrim(servers: McpServer[]): TrimResult {
       recs.push({ server: s, verdict: "drop", reason: "recorded, never used" });
       savedTokens += s.estimate?.approxTokens ?? 0;
     } else if (used != null && used > 0) {
-      recs.push({ server: s, verdict: "keep", reason: `${used} tool(s) used` });
+      const tools = s.estimate?.tools;
+      const called = usage?.servers[s.name]?.tools ?? {};
+      const unused = tools?.filter((t) => !(called[t.name] > 0)).map((t) => t.name);
+      recs.push({ server: s, verdict: "keep", reason: tools ? `${used} of ${tools.length} tools used` : `${used} tool(s) used`, unused });
     } else {
       recs.push({ server: s, verdict: "unknown", reason: "no usage yet — wire + use to judge" });
     }
@@ -60,11 +67,12 @@ export function renderTrim(result: TrimResult): string {
 
   for (const r of recs) {
     lines.push(`    ${mark(r.verdict)}  ${pad(r.server.name, 18)} ${dim(r.reason)}`);
+    if (r.unused?.length) lines.push(`          ${dim(`never used (${r.unused.length}): ${shortList(r.unused)}`)}`);
   }
   lines.push("");
   const drops = recs.filter((r) => r.verdict === "drop").length;
   if (savedTokens > 0) {
-    lines.push(`  Dropping the unused servers frees ~${Math.round(savedTokens / 1000)}k tokens of context.`);
+    lines.push(`  Dropping the unused servers frees ~${fmtTokens(savedTokens)} tokens of context.`);
   } else if (drops > 0) {
     lines.push(`  Dropping ${drops} unused server${drops === 1 ? "" : "s"} shrinks the tool list your agent picks from.`);
     lines.push("  (Context saved not measured — run `vexryn scan --deep` for real numbers.)");
@@ -131,6 +139,12 @@ function mark(v: Verdict): string {
   if (v === "keep") return "\u001b[32mkeep\u001b[0m";
   if (v === "drop") return "\u001b[31mdrop\u001b[0m";
   return "\u001b[2m????\u001b[0m";
+}
+
+/** The first names, control characters stripped, then "… +N more". */
+function shortList(names: string[], max = 8): string {
+  const shown = names.slice(0, max).map((n) => n.replace(/[\u0000-\u001f\u007f]/g, ""));
+  return names.length > max ? `${shown.join(", ")}, … +${names.length - max} more` : shown.join(", ");
 }
 
 function pad(s: string, n: number): string {
