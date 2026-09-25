@@ -158,7 +158,7 @@ jobs:
       - uses: actions/checkout@v4   # pin to a commit SHA in real use
         with:
           fetch-depth: 2            # the merge commit + the base it compares to
-      - uses: OWNER/vexryn-scan@main  # not published yet — see Status
+      - uses: yl0n0ps/vexryn-scan@main  # pin to a commit SHA in real use
 ```
 
 Not reviewed yet (honest): other agents' instruction files (`AGENTS.md`,

@@ -23,7 +23,7 @@ import { computeTrim, renderTrim, writeTrimmed } from "./trim/trim.js";
 import { reviewRepo } from "./diff/review.js";
 import { runMcp } from "./mcp/server.js";
 
-const VERSION = "0.0.1";
+const VERSION = "0.1.0";
 
 async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;

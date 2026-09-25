@@ -1,7 +1,7 @@
 {
   "name": "vexryn",
-  "version": "0.0.1",
-  "description": "See what your AI agent actually loads — any repo, any stack, no config.",
+  "version": "0.1.0",
+  "description": "See what your AI agent actually loads \u2014 any repo, any stack, no config.",
   "type": "module",
   "bin": {
     "vexryn": "dist/cli.js"
@@ -28,7 +28,14 @@
     "cli"
   ],
   "license": "SEE LICENSE IN LICENSE",
-  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yl0n0ps/vexryn-scan.git"
+  },
+  "homepage": "https://github.com/yl0n0ps/vexryn-scan#readme",
+  "bugs": {
+    "url": "https://github.com/yl0n0ps/vexryn-scan/issues"
+  },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
