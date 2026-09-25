@@ -49,7 +49,8 @@ export function argNames(inputSchema: unknown): string[] {
 export function classifyTool(tool: ToolShape): Power | null {
   const text = `${tool.name} ${tool.description ?? ""}`.toLowerCase();
   const args = argNames(tool.inputSchema).map((a) => a.toLowerCase());
-  const has = (...words: string[]) => words.some((w) => text.includes(w));
+  // A word must START a word in the text: "prune" is not "run", "budget" is not "get"; "executes" still is "execute".
+  const has = (...words: string[]) => words.some((w) => new RegExp(`(?:^|[^a-z])${w}`).test(text));
   const arg = (...names: string[]) => names.some((n) => args.includes(n));
 
   // — the eight prohibited effects, verbatim from autoconfig.rs —

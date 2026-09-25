@@ -25,6 +25,10 @@ for (const tool of [
   t("create_pull_request", "Open a pull request from a head branch into a base branch with a title and body.", ["title", "body", "head", "base"]),
   t("list_commits", "Get list of commits of a branch, one page at a time", ["page", "perPage"]),
   t("get_issue", "Get details of an issue", ["issue_number"]),
+  // a verb must start a word: "prune" is not "run", "restart" is not "start", "budget"/"target" are not "get"
+  t("prune_processes", "Prune stale process entries", ["command"]),
+  t("set_budget_file", "Set the budget target for a directory", ["path"]),
+  t("restart_daemon", "Restart the background process", ["cmd"]),
 ]) assert.equal(classifyTool(tool), null, `${tool.name} must not classify`);
 
 // Mapped

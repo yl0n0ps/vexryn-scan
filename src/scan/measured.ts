@@ -4,6 +4,7 @@
 // sent. Lives at ~/.vexryn/measured.json (VEXRYN_HOME in tests), keyed by how
 // the server is launched, so the same server declared for two agents is one entry.
 
+import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -15,8 +16,9 @@ export interface Measured {
 }
 export type MeasuredStore = Record<string, Measured>;
 
+/** A digest of how the server is launched: a credential written inline in a command or URL never reaches the store. */
 export function measuredKey(s: { transport: string; target: string }): string {
-  return `${s.transport} ${s.target}`;
+  return createHash("sha256").update(`${s.transport} ${s.target}`).digest("hex");
 }
 
 function storePath(): string {
@@ -26,7 +28,15 @@ function storePath(): string {
 export async function loadMeasured(): Promise<MeasuredStore> {
   try {
     const data = JSON.parse(await fs.readFile(storePath(), "utf8")) as unknown;
-    if (data && typeof data === "object" && !Array.isArray(data)) return data as MeasuredStore;
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      // Keep only well-formed entries: one bad one must never break the scan.
+      const store: MeasuredStore = {};
+      for (const [key, m] of Object.entries(data as Record<string, unknown>)) {
+        const e = m as Partial<Measured> | null;
+        if (e && typeof e.measuredAt === "string" && Array.isArray(e.tools)) store[key] = e as Measured;
+      }
+      return store;
+    }
   } catch {
     // no store yet, or unreadable — fine
   }

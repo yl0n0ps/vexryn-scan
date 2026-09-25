@@ -30,13 +30,22 @@ assert.equal(est.approxTokens, 30);
 assert.equal(est.source, "measured");
 assert.equal(est.measuredAt, prev.measuredAt);
 
-assert.equal(measuredKey({ transport: "stdio", target: "node x.js" }), "stdio node x.js");
+// The key is a digest: a credential written inline in a command or URL must never be copied into the store.
+const key = measuredKey({ transport: "stdio", target: "npx foo --token ghp_SECRET" });
+assert.match(key, /^[0-9a-f]{64}$/, "key is a sha256 digest");
+assert.ok(!key.includes("ghp_SECRET"));
+assert.notEqual(key, measuredKey({ transport: "http", target: "npx foo --token ghp_SECRET" }), "transport is part of the key");
 
 try {
   assert.deepEqual(await loadMeasured(), {}, "no store yet → empty");
   mkdirSync(path.join(home, ".vexryn"), { recursive: true });
   writeFileSync(path.join(home, ".vexryn", "measured.json"), "{ not json");
   assert.deepEqual(await loadMeasured(), {}, "corrupt store → empty, no crash");
+  writeFileSync(
+    path.join(home, ".vexryn", "measured.json"),
+    JSON.stringify({ bad1: { measuredAt: "2026-09-01" }, bad2: { measuredAt: "2026-09-01", tools: "nope" }, bad3: null, ok: prev }),
+  );
+  assert.deepEqual(await loadMeasured(), { ok: prev }, "malformed entries are dropped, good ones kept");
   await saveMeasured({ "stdio node x.js": prev });
   assert.deepEqual(await loadMeasured(), { "stdio node x.js": prev }, "round-trip");
   console.log("measured-check: all assertions passed");
