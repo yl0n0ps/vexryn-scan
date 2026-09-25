@@ -16,10 +16,14 @@ import { toolFlags } from "../diff/rules.js";
 
 const CONNECT_TIMEOUT_MS = 15_000;
 
-/** Introspect one server → a measured estimate, or an error estimate. */
-export async function introspectServer(server: McpServer): Promise<ServerEstimate> {
+/**
+ * Introspect one server → a measured estimate, or an error estimate. `env`, when
+ * given, is the child's WHOLE environment (the catalogue job passes a minimal one);
+ * by default the user's own environment, as their agent would.
+ */
+export async function introspectServer(server: McpServer, timeoutMs = CONNECT_TIMEOUT_MS, env?: Record<string, string>): Promise<ServerEstimate> {
   try {
-    const tools = await withTimeout(listTools(server), CONNECT_TIMEOUT_MS);
+    const tools = await withTimeout(listTools(server, env), timeoutMs);
     const detailed: ToolInfo[] = tools.map((t) => ({
       name: t.name,
       description: t.description ?? "",
@@ -51,9 +55,9 @@ interface RawTool {
   inputSchema?: unknown;
 }
 
-async function listTools(server: McpServer): Promise<RawTool[]> {
+async function listTools(server: McpServer, env?: Record<string, string>): Promise<RawTool[]> {
   const client = new Client({ name: "vexryn-scan", version: "0.0.1" }, { capabilities: {} });
-  const transport = buildTransport(server);
+  const transport = buildTransport(server, env);
   try {
     await client.connect(transport);
     const res = await client.listTools();
@@ -63,12 +67,13 @@ async function listTools(server: McpServer): Promise<RawTool[]> {
   }
 }
 
-function buildTransport(server: McpServer) {
+function buildTransport(server: McpServer, env?: Record<string, string>) {
   if (server.transport === "stdio" && server.command) {
     return new StdioClientTransport({
       command: server.command,
       args: server.args ?? [],
-      env: process.env as Record<string, string>,
+      env: env ?? (process.env as Record<string, string>),
+      stderr: env ? "ignore" : "inherit",
     });
   }
   if (server.transport === "http" && server.url) {

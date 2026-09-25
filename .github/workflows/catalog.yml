@@ -1,0 +1,24 @@
+# Measure the Vexryn catalogue. This job downloads and runs third-party MCP
+# server packages, so it runs here — an ephemeral VM, no secrets, a read-only
+# token that is not left on disk — and never on a person's machine. Each
+# package gets PATH, HOME and dummy credentials only. The result is uploaded as
+# an artifact; a human commits it, and the Vexryn review shows the change.
+name: catalog
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: pipx install uv
+      - run: npm ci --ignore-scripts --no-audit --no-fund && npm run build
+      - run: node scripts/measure-catalog.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: catalog
+          path: catalog/catalog.json
