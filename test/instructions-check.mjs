@@ -74,7 +74,7 @@ try {
   put(path.join(repo, ".cursor/rules/always.mdc"), "---\nalwaysApply: true\n---\nAlways use tabs. Never commit secrets. " + "Explain every change in detail. ".repeat(20) + "\n");
   put(path.join(repo, ".cursor/rules/ts.mdc"), "---\nglobs: \"*.ts\"\nalwaysApply: false\n---\nTypeScript only, strict mode.\n");
   put(path.join(repo, "GEMINI.md"), "# Gemini\nPrefer small diffs. Write tests first.\n");
-  const review = execFileSync("node", [path.resolve("dist/cli.js"), "diff", repo, "--base", "main"], { encoding: "utf8" });
+  const review = execFileSync("node", [path.resolve("dist/cli.js"), "diff", repo, "--base", "main"], { encoding: "utf8" }).replace(/ <sub>vx-[0-9a-f]{8}<\/sub>/g, "");
   assert.match(review, /^\*\*Loads every session \(Cursor\): [\d,]+ → [\d,]+ tokens \(\+[\d,]+\)\*\*$/m);
   assert.match(review, /^- Always-apply rules: 1 → 1 \(\+[\d,]+ tokens\)$/m);
   assert.match(review, /^\*\*Loads every session \(Gemini CLI\): [\d,]+ → [\d,]+ tokens \(\+[\d,]+\)\*\*$/m);

@@ -13,6 +13,7 @@ import { parseServers, readJsonLoose } from "../scan/parse.js";
 import { claudeCodeContext } from "../scan/claude.js";
 import { readClaudeSettings, type ClaudeSettings, type Hook } from "../scan/settings.js";
 import { promises as fs } from "node:fs";
+import { createHash } from "node:crypto";
 import { gitRoot, isAgentConfigPath, resolveRef, snapshot, type Side } from "./snapshot.js";
 import { projectDir } from "../scan/discover.js";
 import { isExactVersion, lookup, packageSpec, type CatalogHit } from "../scan/catalog.js";
@@ -21,6 +22,8 @@ import { combinations } from "../scan/combos.js";
 import { TOKEN_SHAPE, secretName, blobs, hiddenChars, overridePhrases, plainHttpRemote, secretInText, sensitivePaths, shellInline } from "./rules.js";
 
 export const MARKER = "<!-- vexryn-pr-review -->";
+/** Accepted findings, at the repo root. */
+const ACCEPT_FILE = ".vexryn.json";
 export const NO_CHANGE = "No agent config file changed.";
 
 /** Lines per section and items per inline list. */
@@ -45,11 +48,15 @@ export interface Snapshot {
   unresolved: string[];
   /** Content of every agent file (reviewed or not), for the text rules. */
   texts: Record<string, string>;
+  /** Finding ids listed in `.vexryn.json`; `invalid` when the file exists but can't be read. */
+  accept: { ids: Set<string>; invalid: boolean };
 }
 
 export interface Review {
   /** What the agent may do — increases first (prefixed ⚠️). */
   powers: string[];
+  /** Findings hidden because the BASE side's `.vexryn.json` accepts them. */
+  accepted: number;
   /** What each agent loads every session: one section per agent whose load changed. */
   loads: Array<{ header: string; lines: string[] }>;
   /** Agent files whose content changed: read by this review / not read yet. */
@@ -95,6 +102,7 @@ export async function readSnapshot(side: Side): Promise<Snapshot> {
     hashes: side.hashes,
     unresolved: side.unresolved,
     texts,
+    accept: await readAccept(side.dir),
   };
 }
 
@@ -120,6 +128,21 @@ export function compare(base: Snapshot, head: Snapshot): Review {
   // Increases first, keeping each group's order.
   powers.sort((x, y) => Number(y.startsWith(WARN)) - Number(x.startsWith(WARN)));
 
+  // Accepted findings come from the BASE side only: a change can't silence its own findings.
+  let accepted = 0;
+  const shown: string[] = [];
+  for (const l of powers) {
+    if (!l.startsWith(WARN)) shown.push(l);
+    else if (base.accept.ids.has(findingId(l))) accepted++;
+    else shown.push(`${l} <sub>${findingId(l)}</sub>`);
+  }
+  const newlyAccepted = [...head.accept.ids].filter((id) => !base.accept.ids.has(id)).length;
+  if (newlyAccepted) {
+    const n = newlyAccepted;
+    shown.unshift(`${WARN}${code(ACCEPT_FILE)} accepts ${n} more finding${plural(n)} — ${n === 1 ? "it stops" : "they stop"} being reported once this is merged`);
+  }
+  if (head.accept.invalid && !base.accept.invalid) shown.unshift(`${WARN}${code(ACCEPT_FILE)} is not valid JSON — no finding is accepted from it`);
+
   const files = [...new Set([...Object.keys(base.hashes), ...Object.keys(head.hashes)])].sort();
   const changed = files.filter((f) => base.hashes[f] !== head.hashes[f]);
   // A file whose load this review counts for some agent (AGENTS.md, an always-apply rule…) is reviewed.
@@ -130,7 +153,8 @@ export function compare(base: Snapshot, head: Snapshot): Review {
     loadSection(client, base.others[client] ?? [], head.others[client] ?? []),
   );
   return {
-    powers,
+    powers: shown,
+    accepted,
     loads: [claude, ...others].filter((l): l is { header: string; lines: string[] } => l !== null),
     changed: changed.filter(reviewed),
     unreviewed: changed.filter((f) => !reviewed(f)),
@@ -139,7 +163,7 @@ export function compare(base: Snapshot, head: Snapshot): Review {
 
 export function renderReview(r: Review): string {
   const head = [MARKER, "### Vexryn — agent config review", ""];
-  if (r.powers.length === 0 && r.loads.length === 0 && r.changed.length === 0 && r.unreviewed.length === 0) {
+  if (r.powers.length === 0 && r.accepted === 0 && r.loads.length === 0 && r.changed.length === 0 && r.unreviewed.length === 0) {
     return [...head, NO_CHANGE].join("\n") + "\n";
   }
   const body: string[] = [];
@@ -149,6 +173,7 @@ export function renderReview(r: Review): string {
     body.push("Agent config files changed, but not in any field this review reads.", "");
   }
   if (r.powers.length > 0) body.push("**What the agent may do**", ...bullets(r.powers), "");
+  if (r.accepted > 0) body.push(`${r.accepted} accepted finding${plural(r.accepted)} not shown (listed in ${code(ACCEPT_FILE)}).`, "");
   for (const l of r.loads) body.push(l.header, ...bullets(l.lines), "");
 
   const files = [
@@ -161,7 +186,8 @@ export function renderReview(r: Review): string {
       "plugins and always-loaded context (CLAUDE.md, skills, subagents; Cursor and Windsurf rules, AGENTS.md, GEMINI.md); " +
       "other fields aren't reviewed. " +
       "Static read: nothing was executed, nothing was sent. An MCP server's tool list can't be known " +
-      "without running it — run `vexryn scan --deep` locally on servers you trust.</sub>",
+      "without running it — run `vexryn scan --deep` locally on servers you trust. To accept a ⚠️ finding, list the id " +
+      "that ends it in `.vexryn.json` (`{\"accept\": [{\"id\": \"vx-…\", \"reason\": \"…\"}]}`); it is read from the base branch.</sub>",
   ];
 
   const size = (lines: string[]) => [...head, ...lines, ...foot].join("\n").length;
@@ -551,6 +577,30 @@ function loadSection(client: AgentClient, base: ContextItem[], head: ContextItem
   if (load.length === 0) return null;
   const [tb, ta] = [sum(base), sum(head)];
   return { header: `**Loads every session (${client}): ${fmt(tb)} → ${fmt(ta)} tokens (${signed(ta - tb)})**`, lines: load };
+}
+
+// --- Accepted findings -------------------------------------------------------
+
+/** A finding's stable id: its text without dates, so a re-measured catalogue entry keeps its id. */
+function findingId(line: string): string {
+  return "vx-" + createHash("sha256").update(line.replace(/\d{4}-\d{2}-\d{2}/g, "")).digest("hex").slice(0, 8);
+}
+
+async function readAccept(dir: string): Promise<Snapshot["accept"]> {
+  let text: string;
+  try {
+    text = await fs.readFile(path.join(dir, ACCEPT_FILE), "utf8");
+  } catch {
+    return { ids: new Set(), invalid: false };
+  }
+  try {
+    const list = (JSON.parse(text) as { accept?: unknown }).accept;
+    if (!Array.isArray(list)) return { ids: new Set(), invalid: true };
+    const ids = list.map((e) => (typeof e === "string" ? e : (e as { id?: unknown })?.id)).filter((x): x is string => typeof x === "string" && /^vx-[0-9a-f]{8}$/.test(x));
+    return { ids: new Set(ids), invalid: false };
+  } catch {
+    return { ids: new Set(), invalid: true };
+  }
 }
 
 // --- Formatting ------------------------------------------------------------

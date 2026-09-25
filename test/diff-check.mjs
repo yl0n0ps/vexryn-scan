@@ -33,7 +33,8 @@ function commit(msg) {
 }
 function diff(...args) {
   const r = spawnSync("node", [cli, "diff", repo, ...args], { encoding: "utf8" });
-  return { code: r.status, out: r.stdout, err: r.stderr };
+  // Finding ids are checked in diff-rules-check; here the finding text is what matters.
+  return { code: r.status, out: r.stdout.replace(/ <sub>vx-[0-9a-f]{8}<\/sub>/g, ""), err: r.stderr };
 }
 const tok = (s) => encode(s).length;
 const skill = (name) => `---\nname: ${name}\ndescription: Use when ${name} is needed.\n---\n\nBody.\n`;

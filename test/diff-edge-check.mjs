@@ -40,7 +40,8 @@ function step(msg) {
   const r = spawnSync("node", [cli, "diff", repo, "--base", prev, "--head", head], { encoding: "utf8" });
   assert.equal(r.status, 0, r.stderr);
   prev = head;
-  return r.stdout;
+  // Finding ids are checked in diff-rules-check; here the finding text is what matters.
+  return r.stdout.replace(/ <sub>vx-[0-9a-f]{8}<\/sub>/g, "");
 }
 const mcp = (servers) => put(".mcp.json", { mcpServers: servers });
 const dirs = Array.from({ length: 6 }, (_, i) => `/Users/dev/projects/client-number-${i}/workspace`);

@@ -41,7 +41,7 @@ writeFileSync(catalogPath, JSON.stringify({
   },
 }));
 const env = { ...process.env, VEXRYN_HOME: home, VEXRYN_CATALOG: catalogPath };
-const strip = (s) => s.replace(/\u001b\[[0-9;]*m/g, "");
+const strip = (s) => s.replace(/\u001b\[[0-9;]*m/g, "").replace(/ <sub>vx-[0-9a-f]{8}<\/sub>/g, "");
 const cli = (...args) => strip(execFileSync("node", [path.resolve("dist/cli.js"), ...args], { env, encoding: "utf8", cwd: repo }));
 const git = (...a) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...a], { cwd: repo, encoding: "utf8" });
 const mcpJson = (servers) => writeFileSync(path.join(repo, ".mcp.json"), JSON.stringify({ mcpServers: servers }, null, 2));

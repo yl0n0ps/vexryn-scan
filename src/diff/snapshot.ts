@@ -17,6 +17,7 @@ const MAX_BUFFER = 64 * 1024 * 1024;
 export function isAgentConfigPath(p: string): boolean {
   const base = path.posix.basename(p);
   return (
+    p === ".vexryn.json" || // accepted findings (review.ts)
     base === ".mcp.json" ||
     base === "CLAUDE.md" ||
     base === "CLAUDE.local.md" ||
