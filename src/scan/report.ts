@@ -168,7 +168,7 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}
         : `  ${bar(pct)}  ~${pct}%   ~${a.approxTokens.toLocaleString("en-US")} of ` +
             `${CONTEXT_WINDOW_TOKENS.toLocaleString("en-US")} tokens up front`,
     );
-    for (const c of combinations(a.servers.flatMap((s) => (s.estimate?.tools ?? []).map((t) => t.power)))) lines.push(`  ⚠ ${c}`);
+    for (const c of agentWarnings(a)) lines.push(`  ⚠ ${c}`);
     if (a.hasUsage && a.toolCount > 0) {
       lines.push(`  You actually used ${a.usedToolCount} of ${a.toolCount} tools.`);
     }
@@ -188,11 +188,9 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}
     for (const s of a.servers) {
       const where = `${s.fromRelPath} · ${s.scope}` + source(s);
       lines.push(`    ${padEnd(s.name, 20)} ${padEnd(renderServerCost(s), 34)} ${dim(where)}`);
-      const can = powerLabels((s.estimate?.tools ?? []).map((t) => t.power));
-      if (can.length) lines.push(`      can: ${can.join(", ")}`);
-      for (const f of serverFacts(s, opts.forAgent)) lines.push(`      ⚠ ${f}`);
-      for (const d of s.estimate?.drift ?? []) lines.push(`      ⚠ ${plain(d)}`);
-      for (const f of trapFacts(s, opts.forAgent)) lines.push(`      ⚠ ${f}`);
+      const notes = serverNotes(s, opts.forAgent);
+      if (notes.can.length) lines.push(`      can: ${notes.can.join(", ")}`);
+      for (const w of notes.warnings) lines.push(`      ⚠ ${w}`);
     }
     lines.push("");
   }
@@ -230,8 +228,21 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}
   return lines.join("\n");
 }
 
+/** Dangerous combinations across an agent's known tools (combos.ts). */
+export function agentWarnings(a: AgentLoad): string[] {
+  return combinations(a.servers.flatMap((s) => (s.estimate?.tools ?? []).map((t) => t.power)));
+}
+
+/** What the report says under a server: its powers, then every warning (terminal and HTML alike). */
+export function serverNotes(s: McpServer, forAgent = false): { can: string[]; warnings: string[] } {
+  return {
+    can: powerLabels((s.estimate?.tools ?? []).map((t) => t.power)),
+    warnings: [...serverFacts(s, forAgent), ...(s.estimate?.drift ?? []).map(plain), ...trapFacts(s, forAgent)],
+  };
+}
+
 /** Where a server's figures come from, for the location column. */
-function source(s: McpServer): string {
+export function source(s: McpServer): string {
   const e = s.estimate;
   if (e?.catalog) return ` · catalog ${plain(e.catalog.package)}@${plain(e.catalog.version)} ${e.measuredAt?.slice(0, 10)}${e.catalog.exact ? "" : ", not pinned"}`;
   return e?.measuredAt ? ` · measured ${e.measuredAt.slice(0, 10)}` : "";

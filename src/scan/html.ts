@@ -5,7 +5,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { AgentLoad, ContextItem, LoadReport, McpServer } from "../types.js";
-import { CONTEXT_WINDOW_TOKENS, fmtTokens, loadPercent } from "./report.js";
+import { CONTEXT_WINDOW_TOKENS, agentWarnings, fmtTokens, loadPercent, serverNotes, source } from "./report.js";
 
 /** Write the report and return the file path. */
 export async function writeHtml(report: LoadReport, root: string): Promise<string> {
@@ -61,6 +61,10 @@ export function renderHtml(report: LoadReport): string {
   .src{color:var(--muted);font-size:11px;font-family:var(--mono)}
   .bad{color:var(--crit)}
   .foot{color:var(--muted);font-size:12px;font-family:var(--mono);margin-top:28px}
+  .note td{padding-top:0;border-bottom:1px solid var(--line);font-size:12px}
+  tr.has-note td{border-bottom:none}
+  .can{color:var(--brand);font-family:var(--mono);margin:0}
+  .warn{color:var(--warn);margin:2px 0 0}
   .pill{display:inline-block;font-family:var(--mono);font-size:11px;padding:3px 9px;border-radius:100px;
     background:#123028;color:var(--brand)}
 </style>
@@ -78,7 +82,8 @@ export function renderHtml(report: LoadReport): string {
       <p class="meta">${heaviest ? escapeHtml(heaviest.client) : "—"}</p></div>
   </div>
 
-${sections || '  <p class="meta">No MCP servers declared — only rules/instruction files.</p>'}
+${sections || '  <p class="meta">No MCP servers declared at this project\'s root — only rules/instruction files.</p>'}
+${subprojects(report)}
 
   <p class="foot">100% local — nothing was sent. Each agent has its own context window, so load is shown per agent.
   ${includesGlobal ? "Includes your user-wide agent configs (read-only)." : ""}
@@ -107,6 +112,7 @@ function agentSection(a: AgentLoad): string {
         : `<p class="meta">${a.servers.length} server${plural(a.servers.length)} · ${a.toolCount} tool${plural(a.toolCount)} · ~${a.approxTokens.toLocaleString("en-US")} of ${CONTEXT_WINDOW_TOKENS.toLocaleString("en-US")} tokens up front (${pct}%)</p>
     <div class="track"><div class="fill" style="width:${Math.min(100, pct)}%"></div></div>`
     }
+    ${agentWarnings(a).map((w) => `<p class="warn">⚠ ${escapeHtml(w)}</p>`).join("\n    ")}
     ${used}
     ${deferred}
     <div class="table-wrap"><table>
@@ -124,15 +130,42 @@ function contextRow(c: ContextItem): string {
   )}</td><td class="src">always loaded</td></tr>`;
 }
 
+/** Repo configs of subprojects: listed, never counted in an agent's load. */
+function subprojects(report: LoadReport): string {
+  if (report.subprojects.length === 0) return "";
+  const rows = report.subprojects
+    .map((p) => `        <tr><td class="srv">${escapeHtml(p.file)}</td><td class="num">${p.servers} server${plural(p.servers)}</td></tr>`)
+    .join("\n");
+  return `  <section class="card agent">
+    <h2>Not counted — subprojects</h2>
+    <p class="meta">An agent loads these only when it is opened there.</p>
+    <div class="table-wrap"><table><tbody>
+${rows}
+    </tbody></table></div>
+  </section>`;
+}
+
+/** A server row, then its powers and warnings — the same sentences as the terminal report. */
 function serverRow(s: McpServer): string {
-  const from = `${escapeHtml(s.fromRelPath)} · ${s.scope}`;
+  const notes = serverNotes(s);
+  const lines = [
+    ...(notes.can.length ? [`<p class="can">can: ${escapeHtml(notes.can.join(", "))}</p>`] : []),
+    ...notes.warnings.map((w) => `<p class="warn">⚠ ${escapeHtml(w)}</p>`),
+  ];
+  const note = lines.length ? `\n        <tr class="note"><td colspan="4">${lines.join("")}</td></tr>` : "";
+  return serverCells(s, lines.length > 0) + note;
+}
+
+function serverCells(s: McpServer, hasNote: boolean): string {
+  const cls = hasNote ? ' class="has-note"' : "";
+  const from = `${escapeHtml(s.fromRelPath)} · ${s.scope}${escapeHtml(source(s))}`;
   const name = escapeHtml(s.name);
   if (!s.estimate || s.estimate.source === "introspect-failed") {
     const reason = s.estimate?.error ? "unreachable" : "cost unknown";
-    return `        <tr><td class="srv">${name}</td><td class="num bad">${reason}</td><td class="num">—</td><td class="src">${from}</td></tr>`;
+    return `        <tr${cls}><td class="srv">${name}</td><td class="num bad">${reason}</td><td class="num">—</td><td class="src">${from}</td></tr>`;
   }
   const used = s.usedToolCount != null ? ` · ${s.usedToolCount} used` : "";
-  return `        <tr><td class="srv">${name}</td><td class="num">${s.estimate.toolCount}${used}</td><td class="num">~${fmtTokens(
+  return `        <tr${cls}><td class="srv">${name}</td><td class="num">${s.estimate.toolCount}${used}</td><td class="num">~${fmtTokens(
     s.estimate.approxTokens,
   )}</td><td class="src">${from}</td></tr>`;
 }
