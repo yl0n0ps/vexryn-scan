@@ -24,6 +24,7 @@ export function assembleReport(
   configs: DiscoveredConfig[],
   servers: McpServer[],
   claude: { items: ContextItem[]; toolSearch: ToolSearch } = { items: [], toolSearch: "deferred" },
+  others: Partial<Record<AgentClient, ContextItem[]>> = {},
 ): LoadReport {
   const subproject = servers.filter(inSubproject);
   const deduped = dedupePerAgent(servers.filter((s) => !inSubproject(s)));
@@ -33,6 +34,8 @@ export function assembleReport(
   const byClient = new Map<AgentClient, McpServer[]>();
   // Claude Code loads its CLAUDE.md/skills even with no MCP server declared.
   if (claude.items.length > 0) byClient.set("Claude Code", []);
+  // So do the other agents with always-loaded rules.
+  for (const [client, items] of Object.entries(others) as [AgentClient, ContextItem[]][]) if (items.length) byClient.set(client, []);
   for (const s of deduped) {
     const list = byClient.get(s.client) ?? [];
     list.push(s);
@@ -42,7 +45,7 @@ export function assembleReport(
   const agents: AgentLoad[] = [];
   for (const [client, list] of byClient) {
     agents.push(
-      client === "Claude Code" ? agentLoad(client, list, claude.items, claude.toolSearch) : agentLoad(client, list, [], "upfront"),
+      client === "Claude Code" ? agentLoad(client, list, claude.items, claude.toolSearch) : agentLoad(client, list, others[client] ?? [], "upfront"),
     );
   }
   agents.sort(

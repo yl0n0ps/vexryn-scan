@@ -60,7 +60,7 @@ async function runScan(args: string[]): Promise<number> {
   const target = args.find((a) => !a.startsWith("-")) ?? ".";
   const root = path.resolve(process.cwd(), target);
 
-  const { configs, servers, claude } = await collectStatic(root, includesGlobal);
+  const { configs, servers, claude, others } = await collectStatic(root, includesGlobal);
 
   if (deep && servers.length > 0) {
     // The same server is often declared for several agents: launch it once.
@@ -91,7 +91,7 @@ async function runScan(args: string[]): Promise<number> {
     process.stderr.write("\n");
   }
 
-  const report = assembleReport(root, deep, includesGlobal, configs, servers, claude);
+  const report = assembleReport(root, deep, includesGlobal, configs, servers, claude, others);
   process.stdout.write(renderText(report));
 
   if (html) {

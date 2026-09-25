@@ -135,7 +135,10 @@ try {
   assert.ok(!/`ignore all previous instructions`/.test(out), "an unchanged pre-existing phrase is not re-flagged");
   const agents = line(out, /`AGENTS\.md` adds text containing the phrase/);
   assert.match(agents, /`<IMPORTANT>`, `before using this tool`/);
-  assert.match(out, /^Not reviewed yet: .*`AGENTS\.md`/m, "still honest about load counts");
+  // Honest about load counts: Cursor is set up here, so its root AGENTS.md load is counted;
+  // a rule with no frontmatter is applied by hand only, so it is not.
+  assert.match(out, /^\*\*Loads every session \(Cursor\): /m, "AGENTS.md is loaded by Cursor every session");
+  assert.match(out, /Not reviewed yet: `\.cursor\/rules\/style\.mdc`/, "still honest about load counts");
 
   // Sensitive paths handed to a server.
   put(".cursor/mcp.json", { mcpServers: { fs: { command: "npx", args: ["-y", "server-filesystem@1.0.0", "/Users/me/project", "/", "~/.ssh"] } } });

@@ -6,7 +6,8 @@
 // `code()`, which masks secrets and keeps markdown, links and @mentions inert.
 
 import path from "node:path";
-import type { ContextItem, McpServer } from "../types.js";
+import type { AgentClient, ContextItem, McpServer } from "../types.js";
+import { agentContexts, type AgentContexts } from "../scan/instructions.js";
 import { discoverConfigs } from "../scan/discover.js";
 import { parseServers, readJsonLoose } from "../scan/parse.js";
 import { claudeCodeContext } from "../scan/claude.js";
@@ -33,6 +34,8 @@ const SETTINGS_FILES = [".claude/settings.json", ".claude/settings.local.json"];
 export interface Snapshot {
   servers: McpServer[];
   context: ContextItem[];
+  /** Always-loaded context of Cursor, Windsurf, Gemini CLI (when present in the repo). */
+  others: AgentContexts;
   settings: ClaudeSettings;
   /** Config files present but not valid JSON. */
   unreadable: string[];
@@ -47,9 +50,8 @@ export interface Snapshot {
 export interface Review {
   /** What the agent may do — increases first (prefixed ⚠️). */
   powers: string[];
-  /** What Claude Code loads every session. */
-  loadHeader: string | null;
-  load: string[];
+  /** What each agent loads every session: one section per agent whose load changed. */
+  loads: Array<{ header: string; lines: string[] }>;
   /** Agent files whose content changed: read by this review / not read yet. */
   changed: string[];
   unreviewed: string[];
@@ -87,6 +89,7 @@ export async function readSnapshot(side: Side): Promise<Snapshot> {
   return {
     servers: (await parseServers(configs, side.dir)).map((s) => ({ ...s, fromRelPath: posix(s.fromRelPath) })),
     context: (await claudeCodeContext(side.dir, false)).items,
+    others: await agentContexts(side.dir, false),
     settings: await readClaudeSettings(side.dir),
     unreadable,
     hashes: side.hashes,
@@ -119,27 +122,34 @@ export function compare(base: Snapshot, head: Snapshot): Review {
 
   const files = [...new Set([...Object.keys(base.hashes), ...Object.keys(head.hashes)])].sort();
   const changed = files.filter((f) => base.hashes[f] !== head.hashes[f]);
+  // A file whose load this review counts for some agent (AGENTS.md, an always-apply rule…) is reviewed.
+  const counted = new Set([base, head].flatMap((s) => Object.values(s.others).flatMap((items) => (items ?? []).flatMap((c) => [c.key, ...(c.names ?? [])]))));
+  const reviewed = (f: string) => isAgentConfigPath(f) || counted.has(f);
+  const claude = loadLines(base, head);
+  const others = (Object.keys({ ...base.others, ...head.others }) as AgentClient[]).map((client) =>
+    loadSection(client, base.others[client] ?? [], head.others[client] ?? []),
+  );
   return {
     powers,
-    ...loadLines(base, head),
-    changed: changed.filter(isAgentConfigPath),
-    unreviewed: changed.filter((f) => !isAgentConfigPath(f)),
+    loads: [claude, ...others].filter((l): l is { header: string; lines: string[] } => l !== null),
+    changed: changed.filter(reviewed),
+    unreviewed: changed.filter((f) => !reviewed(f)),
   };
 }
 
 export function renderReview(r: Review): string {
   const head = [MARKER, "### Vexryn — agent config review", ""];
-  if (r.powers.length === 0 && r.load.length === 0 && r.changed.length === 0 && r.unreviewed.length === 0) {
+  if (r.powers.length === 0 && r.loads.length === 0 && r.changed.length === 0 && r.unreviewed.length === 0) {
     return [...head, NO_CHANGE].join("\n") + "\n";
   }
   const body: string[] = [];
-  if (r.powers.length > 0 || r.load.length > 0) {
+  if (r.powers.length > 0 || r.loads.length > 0) {
     body.push("These changes affect what your AI agent may do or what it loads.", "");
   } else {
     body.push("Agent config files changed, but not in any field this review reads.", "");
   }
   if (r.powers.length > 0) body.push("**What the agent may do**", ...bullets(r.powers), "");
-  if (r.loadHeader) body.push(r.loadHeader, ...bullets(r.load), "");
+  for (const l of r.loads) body.push(l.header, ...bullets(l.lines), "");
 
   const files = [
     r.changed.length ? `Changed agent files: ${list(r.changed)}.` : "",
@@ -148,7 +158,8 @@ export function renderReview(r: Review): string {
   const foot = [
     ...(files.length ? [files.join(" "), ""] : []),
     "<sub>This review reads MCP servers, Claude Code permissions, permission mode, extra directories, hooks, " +
-      "plugins and always-loaded context (CLAUDE.md, skills, subagents); other fields aren't reviewed. " +
+      "plugins and always-loaded context (CLAUDE.md, skills, subagents; Cursor and Windsurf rules, AGENTS.md, GEMINI.md); " +
+      "other fields aren't reviewed. " +
       "Static read: nothing was executed, nothing was sent. An MCP server's tool list can't be known " +
       "without running it — run `vexryn scan --deep` locally on servers you trust.</sub>",
   ];
@@ -488,9 +499,17 @@ function pluginLines(base: Record<string, boolean>, head: Record<string, boolean
 
 // --- Always-loaded context -------------------------------------------------
 
-const AGGREGATES: Record<string, string> = { skills: "Skill descriptions", agents: "Subagent descriptions" };
+const AGGREGATES: Record<string, string> = {
+  skills: "Skill descriptions",
+  agents: "Subagent descriptions",
+  "cursor-rules": "Always-apply rules",
+  "cursor-rule-descriptions": "Rule descriptions",
+  "windsurf-rules": "Always-on rules",
+  "windsurf-rule-descriptions": "Rule descriptions",
+};
 
-function loadLines(baseSnap: Snapshot, headSnap: Snapshot): Pick<Review, "loadHeader" | "load"> {
+/** Claude Code's section, with the notice about symlinks the review won't follow. */
+function loadLines(baseSnap: Snapshot, headSnap: Snapshot): { header: string; lines: string[] } | null {
   const load: string[] = [];
   // A root file that is an unfollowable symlink on either side has no honest number.
   // ponytail: an unfollowable SKILL.md/agent link still shifts its aggregate; name it if that shows up.
@@ -500,6 +519,15 @@ function loadLines(baseSnap: Snapshot, headSnap: Snapshot): Pick<Review, "loadHe
   }
   const base = baseSnap.context.filter((c) => !unresolved.has(c.key));
   const head = headSnap.context.filter((c) => !unresolved.has(c.key));
+  const section = loadSection("Claude Code", base, head);
+  if (load.length === 0) return section;
+  const [tb, ta] = [sum(base), sum(head)];
+  return { header: `**Loads every session (Claude Code): ${fmt(tb)} → ${fmt(ta)} tokens (${signed(ta - tb)})**`, lines: [...load, ...(section?.lines ?? [])] };
+}
+
+/** One agent's always-loaded context, before → after; null when nothing changed. */
+function loadSection(client: AgentClient, base: ContextItem[], head: ContextItem[]): { header: string; lines: string[] } | null {
+  const load: string[] = [];
   const before = new Map(base.map((c) => [c.key, c]));
   const after = new Map(head.map((c) => [c.key, c]));
   for (const key of new Set([...before.keys(), ...after.keys()])) {
@@ -520,9 +548,9 @@ function loadLines(baseSnap: Snapshot, headSnap: Snapshot): Pick<Review, "loadHe
       load.push(`${code(key)}: ${fmt(bt)} → ${fmt(at)} tokens (${signed(at - bt)})`);
     }
   }
-  if (load.length === 0) return { loadHeader: null, load };
+  if (load.length === 0) return null;
   const [tb, ta] = [sum(base), sum(head)];
-  return { loadHeader: `**Loads every session (Claude Code): ${fmt(tb)} → ${fmt(ta)} tokens (${signed(ta - tb)})**`, load };
+  return { header: `**Loads every session (${client}): ${fmt(tb)} → ${fmt(ta)} tokens (${signed(ta - tb)})**`, lines: load };
 }
 
 // --- Formatting ------------------------------------------------------------

@@ -7,6 +7,7 @@ import type { UsageData } from "../usage/store.js";
 import { discoverConfigs, discoverGlobalConfigs } from "./discover.js";
 import { parseServers } from "./parse.js";
 import { claudeCodeContext, type ClaudeContext } from "./claude.js";
+import { agentContexts, type AgentContexts } from "./instructions.js";
 import { assembleReport } from "./report.js";
 import { loadUsage, usedToolCount } from "../usage/store.js";
 import { estimateFromMeasured, loadMeasured, measuredKey } from "./measured.js";
@@ -16,6 +17,8 @@ export interface Collected {
   configs: DiscoveredConfig[];
   servers: McpServer[];
   claude: ClaudeContext;
+  /** Always-loaded context of the other agents (Cursor, Windsurf, Gemini CLI). */
+  others: AgentContexts;
 }
 
 export async function collectStatic(root: string, includesGlobal: boolean): Promise<Collected> {
@@ -23,7 +26,7 @@ export async function collectStatic(root: string, includesGlobal: boolean): Prom
   const claude = await claudeCodeContext(root, includesGlobal);
   const servers = [...(await parseServers(configs, root)), ...claude.pluginServers];
   await attachLocal(servers);
-  return { configs, servers, claude };
+  return { configs, servers, claude, others: await agentContexts(root, includesGlobal) };
 }
 
 /**
@@ -49,6 +52,6 @@ export async function attachLocal(servers: McpServer[]): Promise<UsageData> {
 
 /** The static load report (no --deep): read-only, nothing launched. */
 export async function staticReport(root: string, includesGlobal: boolean): Promise<LoadReport> {
-  const { configs, servers, claude } = await collectStatic(root, includesGlobal);
-  return assembleReport(root, false, includesGlobal, configs, servers, claude);
+  const { configs, servers, claude, others } = await collectStatic(root, includesGlobal);
+  return assembleReport(root, false, includesGlobal, configs, servers, claude, others);
 }
