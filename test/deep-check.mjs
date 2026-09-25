@@ -79,6 +79,15 @@ try {
     rmSync(poisonHome, { recursive: true, force: true });
   }
 
+  // 7. a dangerous combination across the agent's tools
+  const comboHome = mkdtempSync(path.join(os.tmpdir(), "vexryn-combo-"));
+  try {
+    out = strip(execFileSync("node", ["dist/cli.js", "scan", "fixtures/deep-repo", "--deep", "--no-global"], { env: { ...process.env, VEXRYN_HOME: comboHome, MOCK_FETCH: "1" }, encoding: "utf8" }));
+    assert.match(out, /CLAUDE CODE[^\n]*\n[^\n]*\n  ⚠ Its MCP tools can read web pages, read your files and send them out/);
+  } finally {
+    rmSync(comboHome, { recursive: true, force: true });
+  }
+
   console.log("deep-check: all assertions passed");
 } finally {
   rmSync(home, { recursive: true, force: true });

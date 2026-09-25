@@ -8,6 +8,7 @@ import type { AgentClient, AgentLoad, ContextItem, DiscoveredConfig, LoadReport,
 import { countTokens } from "./tokens.js";
 import { plainHttpRemote, secretInText, sensitivePaths, shellInline } from "../diff/rules.js";
 import { powerLabels } from "./powers.js";
+import { combinations } from "./combos.js";
 import { projectDir } from "./discover.js";
 
 // Rough size of a typical model context window, for the "% of window" figure.
@@ -160,6 +161,7 @@ export function renderText(report: LoadReport): string {
         : `  ${bar(pct)}  ~${pct}%   ~${a.approxTokens.toLocaleString("en-US")} of ` +
             `${CONTEXT_WINDOW_TOKENS.toLocaleString("en-US")} tokens up front`,
     );
+    for (const c of combinations(a.servers.flatMap((s) => (s.estimate?.tools ?? []).map((t) => t.power)))) lines.push(`  ⚠ ${c}`);
     if (a.hasUsage && a.toolCount > 0) {
       lines.push(`  You actually used ${a.usedToolCount} of ${a.toolCount} tools.`);
     }

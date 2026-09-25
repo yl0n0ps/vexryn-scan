@@ -83,6 +83,15 @@ if (process.env.MOCK_EXTRA_TOOL) {
   });
 }
 
+// A web-reading tool: with send_email + read_file it completes a leak combination.
+if (process.env.MOCK_FETCH) {
+  tools.push({
+    name: "fetch_url",
+    description: "Fetch a URL from the web and return its content as text.",
+    inputSchema: { type: "object", properties: { url: { type: "string" } }, required: ["url"] },
+  });
+}
+
 // A tool whose description hides instructions for the model (tool poisoning tests).
 if (process.env.MOCK_POISON) {
   tools.push({
