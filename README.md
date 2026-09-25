@@ -64,6 +64,16 @@ Working skeleton. What's real today:
   servers locally, reads their real tool list, and counts real tokens with
   `gpt-tokenizer`. Works for ANY server. Opt-in, launches
   the servers' commands on your machine, nothing is sent.
+- **Powers (`--deep`, exact):** from a server's real tool list, Vexryn says in
+  plain words what its tools can do — *can: send messages to external
+  recipients, read files, run shell commands* — with a deterministic
+  classifier (a verb, a noun and an argument shape must agree; unsure = not
+  listed). Never from a package name alone.
+- **Remembered measurements + drift:** `--deep` results are kept locally
+  (`~/.vexryn/measured.json`); the static `scan`, the MCP tool and `trim` then
+  show real, dated figures without launching anything, and the next `--deep`
+  says what changed: *+1 tool since 2026-09-25: `delete_record` · 1 tool
+  changed its description or schema*.
 - **HTML report (`--html`):** writes a shareable `.vexryn/report.html`.
 
 - **Real usage (`vexryn wrap`, agnostic):** a transparent MCP proxy. Route a
@@ -74,7 +84,9 @@ Working skeleton. What's real today:
 - **Auto-wiring (`vexryn wire` / `unwire`):** routes a repo's stdio servers
   through the proxy, reversible, with a backup.
 - **Trim (`vexryn trim [--write]`):** uses real usage to suggest what to cut and
-  writes a lean config under `.vexryn/suggested/` (originals untouched).
+  writes a lean config under `.vexryn/suggested/` (originals untouched). With a
+  measurement it goes per tool: *keep `github` — 12 of 46 tools used; never
+  used (34): …*.
 
 Not built yet (honest):
 - **Wiring user-wide configs** — read-only for now (Claude Code rewrites
@@ -86,6 +98,9 @@ Not built yet (honest):
   through an app UI (claude.ai / desktop) rather than a config file.
 - **Open feed** (OSV format) of measured per-server costs — to be filled from
   real `--deep` measurements, never by hand.
+- **Powers in the PR review** — the diff only holds a launch command, so
+  "adds 8 tools, can send messages" needs a measured catalogue
+  (package@version → tools). Not before it exists.
 
 ## PR review (`vexryn diff`)
 
@@ -174,7 +189,8 @@ deliberate cost.
 ```bash
 npm test   # global configs, wire round-trip, proxy + usage + trim, Claude Code
            # context, settings, git snapshots, diff review, the Action's comment
-           # script (fake gh) — all in temp dirs / a fake home (VEXRYN_HOME);
+           # script (fake gh), power classifier, remembered measurements + drift,
+           # per-tool trim — all in temp dirs / a fake home (VEXRYN_HOME);
            # your real configs are never touched, nothing reaches GitHub
 ```
 
