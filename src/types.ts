@@ -12,6 +12,8 @@
 // user's home (global configs of each agent app). Each agent app has its own
 // context window, so load is always reported PER AGENT, never summed across.
 
+import type { Power } from "./scan/powers.js";
+
 /** The agent app that loads a config (each has its own context window). */
 export type AgentClient =
   | "Claude Code"
@@ -103,6 +105,10 @@ export interface ServerEstimate {
   tools?: ToolInfo[];
   /** Set when introspection was attempted but failed, with the reason. */
   error?: string;
+  /** ISO date of the local measurement this estimate was rebuilt from (static scan). */
+  measuredAt?: string;
+  /** What changed since the previous local measurement (--deep only). */
+  drift?: string[];
 }
 
 /** One tool as declared by a server, with its measured token cost. */
@@ -111,6 +117,10 @@ export interface ToolInfo {
   description: string;
   /** Real tokens the serialized tool definition adds to context. */
   tokens: number;
+  /** What the tool can do, or null when the classifier is not sure. */
+  power?: Power | null;
+  /** sha256 of description + input schema, to notice a change next time. */
+  hash?: string;
 }
 
 /** Something an agent loads into context at every session start (read from disk). */

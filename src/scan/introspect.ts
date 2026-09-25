@@ -5,11 +5,13 @@
 // only on explicit --deep, on the user's machine, for servers their agent
 // already runs. Nothing is sent anywhere. The default `scan` never does this.
 
+import { createHash } from "node:crypto";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { McpServer, ServerEstimate, ToolInfo } from "../types.js";
 import { countToolTokens } from "./tokens.js";
+import { classifyTool } from "./powers.js";
 
 const CONNECT_TIMEOUT_MS = 15_000;
 
@@ -21,6 +23,8 @@ export async function introspectServer(server: McpServer): Promise<ServerEstimat
       name: t.name,
       description: t.description ?? "",
       tokens: countToolTokens(t),
+      power: classifyTool(t),
+      hash: createHash("sha256").update(JSON.stringify({ d: t.description ?? "", s: t.inputSchema ?? {} })).digest("hex"),
     }));
     const approxTokens = detailed.reduce((sum, t) => sum + t.tokens, 0);
     return {
