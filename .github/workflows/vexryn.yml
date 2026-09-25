@@ -1,0 +1,17 @@
+# Vexryn reviews its own pull requests: what an agent-config change lets the
+# agent do and load, as one comment kept up to date. Non-blocking.
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write
+concurrency:
+  group: vexryn-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  agent-config-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 2 # the merge commit + the base it compares to
+      - uses: ./ # this repo's own action, as the PR changes it
