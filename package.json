@@ -7,7 +7,8 @@
     "vexryn": "dist/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "NOTICE"
   ],
   "engines": {
     "node": ">=18"
@@ -27,7 +28,7 @@
     "developer-tools",
     "cli"
   ],
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/yl0n0ps/vexryn-scan.git"
