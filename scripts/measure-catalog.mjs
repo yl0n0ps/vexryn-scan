@@ -31,7 +31,7 @@ if (process.env.GITHUB_ACTIONS !== "true" && !argv.includes("--local-ok")) {
 }
 
 const DUMMY = "not-a-real-value";
-const TIMEOUT_MS = 120_000;
+const TIMEOUT_MS = Number(opt("--timeout-ms", "120000"));
 const by = process.env.GITHUB_RUN_ID
   ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
   : "local";

@@ -22,8 +22,9 @@ const CONNECT_TIMEOUT_MS = 15_000;
  * by default the user's own environment, as their agent would.
  */
 export async function introspectServer(server: McpServer, timeoutMs = CONNECT_TIMEOUT_MS, env?: Record<string, string>): Promise<ServerEstimate> {
+  const client = new Client({ name: "vexryn-scan", version: "0.0.1" }, { capabilities: {} });
   try {
-    const tools = await withTimeout(listTools(server, env), timeoutMs);
+    const tools = await withTimeout(listTools(client, server, env), timeoutMs);
     const detailed: ToolInfo[] = tools.map((t) => ({
       name: t.name,
       description: t.description ?? "",
@@ -47,6 +48,9 @@ export async function introspectServer(server: McpServer, timeoutMs = CONNECT_TI
       source: "introspect-failed",
       error: err instanceof Error ? err.message : String(err),
     };
+  } finally {
+    // Also on a timeout: closing the client ends the server process it launched.
+    await client.close().catch(() => {});
   }
 }
 
@@ -56,16 +60,10 @@ interface RawTool {
   inputSchema?: unknown;
 }
 
-async function listTools(server: McpServer, env?: Record<string, string>): Promise<RawTool[]> {
-  const client = new Client({ name: "vexryn-scan", version: "0.0.1" }, { capabilities: {} });
-  const transport = buildTransport(server, env);
-  try {
-    await client.connect(transport);
-    const res = await client.listTools();
-    return (res.tools ?? []) as RawTool[];
-  } finally {
-    await client.close().catch(() => {});
-  }
+async function listTools(client: Client, server: McpServer, env?: Record<string, string>): Promise<RawTool[]> {
+  await client.connect(buildTransport(server, env));
+  const res = await client.listTools();
+  return (res.tools ?? []) as RawTool[];
 }
 
 function buildTransport(server: McpServer, env?: Record<string, string>) {

@@ -70,23 +70,30 @@ export function classifyTool(tool: ToolShape): Power | null {
     arg("account", "user", "username", "login", "newsecret", "new_secret", "new_password", "password", "secret")
   )
     return "credential.change";
-  // a bare `id` is NOT enough: cache/session/temp cleanups "remove by id" too
-  if (has("delete", "remove", "purge", "erase") && arg("recordid", "record_id", "record", "resource_id")) return "data.delete";
+  // a bare `id` is NOT enough: cache/session/temp cleanups "remove by id" too; and a name that
+  // deletes something else (remove_label) isn't deleting the record it takes.
+  const otherObject = nameHas(...DELETE_V) && !nameHas(...DATA_N) && name.some((w) => !DELETE_V.includes(w) && !GENERIC.includes(w));
+  if (has("delete", "remove", "purge", "erase") && arg("recordid", "record_id", "record", "resource_id") && !otherObject) return "data.delete";
   if (has("share", "attach") && has("file", "document", "attachment") && arg("recipient", "to", "content")) return "file.share";
   if (has("grant", "escalate", "elevate") && (has("scope", "permission", "privilege", "role") || arg("scope"))) return "permission.escalate";
   if (has("schedule", "cron") && arg("scheduleid", "schedule_id") && (has("create", "later", "defer") || arg("trigger", "payload")))
     return "schedule.create";
   if (has("memory", "notes") && arg("key") && arg("content", "value") && has("save", "store", "persist", "write", "remember"))
     return "memory.write";
-  const sendName = nameHas("send", "post", "reply", "notify", "publish", "forward", "sms", "email") || (nameHas("add", "create") && nameHas("comment", "message", "reply"));
+  // "email" is not a send verb: find_contact_by_email(email) reads.
+  const sendName = nameHas("send", "post", "reply", "notify", "publish", "forward", "sms") || (nameHas("add", "create") && nameHas("comment", "message", "reply"));
   if (sendName && arg(...RECIPIENT, "body", "message", "text", "content")) return "external-message.send";
-  if (has("send") && arg(...RECIPIENT)) return "external-message.send";
+  // Whole word: "sender" and "sendgrid" are not "send".
+  if (/(?:^|[^a-z])(?:send|sends|sending)(?![a-z])/.test(text) && arg(...RECIPIENT)) return "external-message.send";
 
   // A knowledge-graph / memory store the agent writes to (the key+content shape is above).
   if (has("knowledge graph", "memory") && nameHas(...WRITE_V) && !nameHas(...READ_V)) return "memory.write";
   // Deleting stored data: a delete verb in the name, a data object in the name or description.
   // Not stored data: an index, a cache, a session, temp files or logs.
-  if (nameHas(...DELETE_V) && !nameHas("index", "indexes", "cache", "session", "sessions", "temp", "tmp", "log", "logs") && (nameHas(...DATA_N) || has(...DATA_N)))
+  // The description names the data only when the name has no object of its own (delete-many);
+  // remove_label acts on a label, not on the record the description mentions.
+  const nameObject = name.some((w) => !DELETE_V.includes(w) && !GENERIC.includes(w));
+  if (nameHas(...DELETE_V) && !nameHas("index", "indexes", "cache", "session", "sessions", "temp", "tmp", "log", "logs") && (nameHas(...DATA_N) || (!nameObject && has(...DATA_N))))
     return "data.delete";
 
   // — everyday powers: the name decides —
@@ -119,6 +126,7 @@ const READ_V = ["get", "read", "list", "search", "find", "query", "view", "show"
 const WRITE_V = ["write", "create", "edit", "update", "patch", "put", "set", "add", "insert", "upsert", "append", "save", "move", "rename", "copy", "apply", "push", "commit", "modify", "replace", "store", "persist", "remember"];
 const DELETE_V = ["delete", "remove", "drop", "purge", "erase", "destroy", "wipe", "rm", "unlink"];
 const EXEC_V = ["run", "exec", "execute", "spawn", "launch", "start"];
+const GENERIC = ["many", "all", "one", "by", "id", "ids", "a", "an", "the", "api"];
 const RECIPIENT = ["to", "recipient", "recipients", "email", "channel", "channel_id", "channelid", "phone", "thread_ts"];
 const DATA_N = ["record", "records", "row", "rows", "document", "documents", "collection", "collections", "table", "tables", "database", "databases", "entity", "entities", "block", "blocks", "observation", "observations", "relation", "relations"];
 

@@ -10,7 +10,7 @@ permissions:
 jobs:
   measure:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 150 # worst case: every listed package hits its 120 s timeout
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -19,6 +19,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund && npm run build
       - run: node scripts/measure-catalog.mjs --debug-out tools-debug.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
         with:
           name: catalog
           path: catalog/catalog.json

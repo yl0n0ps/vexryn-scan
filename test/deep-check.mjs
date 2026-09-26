@@ -67,6 +67,13 @@ try {
   const text = strip(renderTrim(computeTrim([fake], { servers: { big: { tools: { t0: 1 }, updatedAt: "" } } })));
   assert.match(text, /never used \(11\): t1, t2, t3, t4, t5, t6, t7, t8, … \+3 more/);
 
+  // 5b. dropping an unused Claude Code server frees its tool NAMES only (schemas are deferred by tool search)
+  const cc = { ...fake, name: "unused", client: "Claude Code", usedToolCount: 0, estimate: { toolCount: 2, approxTokens: 5000, source: "measured", tools: [{ name: "alpha", description: "", tokens: 2500 }, { name: "beta", description: "", tokens: 2500 }] } };
+  const cursorTwin = { ...cc, client: "Cursor" };
+  assert.ok(computeTrim([cc], { servers: {} }).savedTokens < 10, "names only, not 5,000 tokens of schemas");
+  assert.equal(computeTrim([cursorTwin], { servers: {} }).savedTokens, 5000, "other agents load schemas up front");
+  assert.equal(computeTrim([cc], { servers: {} }, "upfront").savedTokens, 5000, "tool search off: schemas count");
+
   // 6. a trap hidden in a tool description: flagged as a fact, the description itself never printed
   const poisonHome = mkdtempSync(path.join(os.tmpdir(), "vexryn-poison-"));
   try {

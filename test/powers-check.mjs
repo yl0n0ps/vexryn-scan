@@ -93,6 +93,10 @@ const real = [
   [t("interact_with_process", "Send input to a running process and automatically receive the response.", ["pid", "input"]), "shell.exec"],
   [t("firecrawl_interact", "Open or reuse a live browser session to navigate a page, click controls, fill fields, or run browser code. Provide either `url` or `scrapeId`.", ["scrapeId", "url", "prompt", "code"]), "network.fetch"],
   [t("drop-index", "Drop an index for the provided database and collection.", ["connectionId", "database", "collection", "indexName"]), null],
+  // review findings (2026-09-26): look-alikes that must stay out
+  [t("find_contact_by_email", "Find a CRM contact by email address", ["email"]), null],
+  [t("list_messages", "List messages in a channel with their sender and timestamp", ["channel"]), null],
+  [t("remove_label", "Remove a label from a record", ["record_id", "label"]), null],
   // stay out of the taxonomy on purpose
   [t("query", "Run a read-only SQL query", ["sql"]), null],
   [t("execute_sql", "Executes raw SQL in the Postgres database.", ["project_id", "query"]), null],

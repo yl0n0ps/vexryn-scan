@@ -58,6 +58,14 @@ try {
   assert.ok(!again.servers["local:broken"], "a server that fails is never listed");
   assert.match(r.stdout, /measured 0, failed 1/);
 
+  // A server that never answers is given up on, stopped, and the run still ends.
+  writeFileSync(list, JSON.stringify({ "local:hang": { command: "node", args: ["-e", "setInterval(() => {}, 1000)"] } }));
+  const t0 = Date.now();
+  r = spawnSync("node", ["scripts/measure-catalog.mjs", "--list", list, "--out", out, "--local-ok", "--timeout-ms", "1500"], { encoding: "utf8", timeout: 20_000, env: { ...process.env, GITHUB_ACTIONS: "" } });
+  assert.equal(r.status, 0, `the run ends by itself (${r.error ?? r.stderr})`);
+  assert.match(r.stdout, /measured 0, failed 1/);
+  assert.ok(Date.now() - t0 < 15_000, "the hung server was stopped at its timeout");
+
   // The shipped catalogue, when present, follows the same rules.
   if (existsSync("catalog/catalog.json")) {
     const shipped = JSON.parse(readFileSync("catalog/catalog.json", "utf8"));

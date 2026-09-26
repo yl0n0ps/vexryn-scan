@@ -52,7 +52,7 @@ try {
   assert.ok(!gemini.includes("AGENTS.md"), "Gemini reads AGENTS.md only when context.fileName says so");
 
   // Gemini's context.fileName can name AGENTS.md.
-  put(path.join(repo, ".gemini/settings.json"), JSON.stringify({ context: { fileName: ["AGENTS.md", "GEMINI.md"] } }));
+  put(path.join(repo, ".gemini/settings.json"), JSON.stringify({ context: { fileName: ["AGENTS.md", "GEMINI.md", "CONTEXT.md"] } }));
   assert.match(section(scan(repo, "--no-global"), "GEMINI CLI"), /AGENTS\.md/);
 
   // A Cursor-rules-only repo still gets its own section, with no MCP server.
@@ -74,12 +74,18 @@ try {
   put(path.join(repo, ".cursor/rules/always.mdc"), "---\nalwaysApply: true\n---\nAlways use tabs. Never commit secrets. " + "Explain every change in detail. ".repeat(20) + "\n");
   put(path.join(repo, ".cursor/rules/ts.mdc"), "---\nglobs: \"*.ts\"\nalwaysApply: false\n---\nTypeScript only, strict mode.\n");
   put(path.join(repo, "GEMINI.md"), "# Gemini\nPrefer small diffs. Write tests first.\n");
+  put(path.join(repo, "CONTEXT.md"), "# Context\nThe billing service owns invoices.\n");
+  put(path.join(repo, ".devin/rules/deploy.md"), "---\ntrigger: always_on\n---\nNever deploy on Fridays.\n");
   const review = execFileSync("node", [path.resolve("dist/cli.js"), "diff", repo, "--base", "main"], { encoding: "utf8" }).replace(/ <sub>vx-[0-9a-f]{8}<\/sub>/g, "");
   assert.match(review, /^\*\*Loads every session \(Cursor\): [\d,]+ → [\d,]+ tokens \(\+[\d,]+\)\*\*$/m);
   assert.match(review, /^- Always-apply rules: 1 → 1 \(\+[\d,]+ tokens\)$/m);
   assert.match(review, /^\*\*Loads every session \(Gemini CLI\): [\d,]+ → [\d,]+ tokens \(\+[\d,]+\)\*\*$/m);
   assert.match(review, /Changed agent files: .*`\.cursor\/rules\/always\.mdc`/);
   assert.match(review, /Not reviewed yet: `\.cursor\/rules\/ts\.mdc`/);
+  assert.match(review, /^\*\*Loads every session \(Windsurf\): /m, ".devin/rules is Windsurf's preferred folder");
+  assert.match(review, /Changed agent files: .*`\.devin\/rules\/deploy\.md`/);
+  assert.match(review, /Changed agent files: .*`CONTEXT\.md`/, "a context file named by Gemini's settings is reviewed");
+  assert.match(review, /^- `CONTEXT\.md`: 0 → \d+ tokens/m);
   console.log("instructions-check: all assertions passed");
 } finally {
   rmSync(tmp, { recursive: true, force: true });

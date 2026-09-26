@@ -34,7 +34,7 @@ export function isUnreviewedAgentPath(p: string): boolean {
   const base = path.posix.basename(p);
   return (
     ["AGENTS.md", "GEMINI.md", ".cursorrules", ".windsurfrules"].includes(base) ||
-    /(^|\/)\.(cursor|windsurf)\/rules\//.test(p) ||
+    /(^|\/)\.(cursor|windsurf|devin)\/rules\//.test(p) ||
     /(^|\/)\.claude\/commands\//.test(p) ||
     /(^|\/)\.github\/copilot-instructions\.md$/.test(p)
   );
@@ -73,9 +73,10 @@ export async function snapshot(root: string, sha: string | null): Promise<Side> 
   try {
     const read = sha ? await commitReader(root, sha) : await workingTreeReader(root);
     const side: Side = { dir, hashes: {}, unresolved: [] };
+    const geminiFiles = await geminiContextFiles(read);
     for (const rel of read.paths) {
       const reviewed = isAgentConfigPath(rel);
-      if (!reviewed && !isUnreviewedAgentPath(rel)) continue;
+      if (!reviewed && !isUnreviewedAgentPath(rel) && !geminiFiles.has(rel)) continue;
       const content = await read.file(rel);
       if (content === "unresolved") {
         if (reviewed) side.unresolved.push(rel);
@@ -92,6 +93,18 @@ export async function snapshot(root: string, sha: string | null): Promise<Side> 
   } catch (err) {
     await fs.rm(dir, { recursive: true, force: true });
     throw err;
+  }
+}
+
+/** Root context files Gemini CLI reads by its `context.fileName` setting (this side's settings). */
+async function geminiContextFiles(read: FileReader): Promise<Set<string>> {
+  if (!read.paths.includes(".gemini/settings.json")) return new Set();
+  const content = await read.file(".gemini/settings.json");
+  try {
+    const n = (JSON.parse(Buffer.isBuffer(content) ? content.toString("utf8") : "") as { context?: { fileName?: unknown } })?.context?.fileName;
+    return new Set((Array.isArray(n) ? n : [n]).filter((x): x is string => typeof x === "string" && /^[\w.-]+$/.test(x) && x !== ".."));
+  } catch {
+    return new Set();
   }
 }
 

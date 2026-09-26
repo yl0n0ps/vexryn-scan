@@ -22,6 +22,7 @@ import { wireConfigs, unwireConfigs, type WireChange } from "./wire/wire.js";
 import { computeTrim, renderTrim, writeTrimmed } from "./trim/trim.js";
 import { reviewRepo } from "./diff/review.js";
 import { runMcp } from "./mcp/server.js";
+import { claudeCodeContext } from "./scan/claude.js";
 
 const VERSION = "0.2.0";
 
@@ -192,7 +193,7 @@ async function runTrim(args: string[]): Promise<number> {
   const configs = await discoverConfigs(root);
   const servers = await parseServers(configs, root);
   const usage = await attachLocal(servers);
-  const result = computeTrim(servers, usage);
+  const result = computeTrim(servers, usage, (await claudeCodeContext(root, true)).toolSearch);
   process.stdout.write(renderTrim(result));
 
   if (write && result.hasUsage) {
