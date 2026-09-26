@@ -3,6 +3,12 @@
 // otherwise null. No model, no guess. Ported from our own Rust autoconfig.rs
 // (Ferrum) with the same discipline and refusal cases, plus four everyday
 // powers a developer reads at a glance.
+//
+// The tool NAME decides first (its verb and its object: read_file, slack_post_message,
+// exec_in_pod); the description only backs it up. Tuned on the real tools of the
+// catalogue run of 2026-09-26, where a word in passing ("prefer this over
+// execute_command", "from file", a `command` sub-command argument) misled a
+// description-wide match.
 
 export type Power =
   | "payment.transfer"
@@ -30,7 +36,7 @@ export const POWER_LABEL: Record<Power, string> = {
   "external-message.send": "send messages to external recipients",
   "file.read": "read files",
   "file.write": "create, edit or delete files",
-  "shell.exec": "run shell commands",
+  "shell.exec": "run commands or code",
   "network.fetch": "access the network",
 };
 
@@ -52,6 +58,8 @@ export function classifyTool(tool: ToolShape): Power | null {
   // A word must START a word in the text: "prune" is not "run", "budget" is not "get"; "executes" still is "execute".
   const has = (...words: string[]) => words.some((w) => new RegExp(`(?:^|[^a-z])${w}`).test(text));
   const arg = (...names: string[]) => names.some((n) => args.includes(n));
+  const name = nameWords(tool.name);
+  const nameHas = (...words: string[]) => words.some((w) => name.includes(w));
 
   // — the eight prohibited effects, verbatim from autoconfig.rs —
   if (has("transfer", "send money", "payment", "payout") && arg("amount", "value", "sum")) return "payment.transfer";
@@ -70,27 +78,53 @@ export function classifyTool(tool: ToolShape): Power | null {
     return "schedule.create";
   if (has("memory", "notes") && arg("key") && arg("content", "value") && has("save", "store", "persist", "write", "remember"))
     return "memory.write";
-  if (has("send", "reply", "message", "email", "notify") && arg("to", "recipient", "body", "message", "text")) return "external-message.send";
+  const sendName = nameHas("send", "post", "reply", "notify", "publish", "forward", "sms", "email") || (nameHas("add", "create") && nameHas("comment", "message", "reply"));
+  if (sendName && arg(...RECIPIENT, "body", "message", "text", "content")) return "external-message.send";
+  if (has("send") && arg(...RECIPIENT)) return "external-message.send";
 
-  // — everyday powers, same discipline —
-  const pathArg = arg("path", "file", "files", "filepath", "file_path", "filename", "file_name", "directory", "dir", "source", "destination");
-  const fileNoun = has("file", "directory", "directories", "folder", "path");
-  if (
-    has("run", "execute", "exec", "launch", "spawn", "start") &&
-    has("command", "shell", "bash", "terminal", "script", "process") &&
-    arg("command", "cmd", "script", "args", "argv")
-  )
+  // A knowledge-graph / memory store the agent writes to (the key+content shape is above).
+  if (has("knowledge graph", "memory") && nameHas(...WRITE_V) && !nameHas(...READ_V)) return "memory.write";
+  // Deleting stored data: a delete verb in the name, a data object in the name or description.
+  // Not stored data: an index, a cache, a session, temp files or logs.
+  if (nameHas(...DELETE_V) && !nameHas("index", "indexes", "cache", "session", "sessions", "temp", "tmp", "log", "logs") && (nameHas(...DATA_N) || has(...DATA_N)))
+    return "data.delete";
+
+  // — everyday powers: the name decides —
+  // Run commands or code: a run verb in the name, and a command/code object in the name or arguments.
+  if (nameHas(...EXEC_V) && (nameHas("command", "commands", "shell", "bash", "terminal", "process", "script", "code", "cmd") || arg("command", "cmd", "script", "code")))
     return "shell.exec";
-  if (has("write", "create", "edit", "save", "move", "copy", "rename", "delete", "remove", "append", "overwrite") && fileNoun && pathArg)
-    return "file.write";
-  if (has("read", "get", "list", "cat", "open", "view", "show", "search") && fileNoun && pathArg) return "file.read";
-  if (
-    has("fetch", "download", "open", "navigate", "browse", "request", "crawl", "scrape", "search", "visit", "load") &&
-    has("url", "web", "internet", "http", "website", "browser") &&
-    arg("url", "uri", "link", "href", "endpoint", "query")
-  )
+  if (nameHas("bash", "shell", "terminal") && arg("command", "cmd")) return "shell.exec";
+  if (nameHas("interact") && nameHas("process", "terminal", "shell")) return "shell.exec";
+
+  // Files: the name must be about files; its verb says read or write.
+  const pathArg = arg("path", "paths", "file", "files", "filepath", "file_path", "filename", "file_name", "directory", "dir", "source", "destination");
+  if (nameHas("file", "files", "directory", "directories", "dir", "folder", "folders", "path", "paths", "filesystem", "fs") && pathArg) {
+    // Uploading local files sends them out: a way out, not a write.
+    if (nameHas("upload", "share", "attach")) return "file.share";
+    if (nameHas(...WRITE_V, ...DELETE_V)) return "file.write";
+    if (nameHas(...READ_V)) return "file.read";
+  }
+
+  // Network: a fetch verb or web object in the name with a URL argument; a web search; or a
+  // description that says it fetches a URL.
+  const urlArg = arg("url", "urls", "uri", "link", "links", "href", "endpoint");
+  if (urlArg && nameHas("fetch", "navigate", "browse", "crawl", "scrape", "download", "visit", "goto", "extract", "web", "url", "urls", "page", "webpage", "site", "website", "browser", "internet"))
     return "network.fetch";
+  if (nameHas("search") && (nameHas("web", "internet") || has("web search", "the web", "internet")) && arg("query", "q", "queries")) return "network.fetch";
+  if (urlArg && has("fetch", "download", "scrape", "crawl") && has("url", "web page", "webpage", "internet", "website")) return "network.fetch";
   return null;
+}
+
+const READ_V = ["get", "read", "list", "search", "find", "query", "view", "show", "describe", "retrieve", "open", "cat", "stat", "inspect", "tree", "info", "head", "tail", "lookup"];
+const WRITE_V = ["write", "create", "edit", "update", "patch", "put", "set", "add", "insert", "upsert", "append", "save", "move", "rename", "copy", "apply", "push", "commit", "modify", "replace", "store", "persist", "remember"];
+const DELETE_V = ["delete", "remove", "drop", "purge", "erase", "destroy", "wipe", "rm", "unlink"];
+const EXEC_V = ["run", "exec", "execute", "spawn", "launch", "start"];
+const RECIPIENT = ["to", "recipient", "recipients", "email", "channel", "channel_id", "channelid", "phone", "thread_ts"];
+const DATA_N = ["record", "records", "row", "rows", "document", "documents", "collection", "collections", "table", "tables", "database", "databases", "entity", "entities", "block", "blocks", "observation", "observations", "relation", "relations"];
+
+/** A tool name's words: snake_case, kebab-case, dotted and camelCase split, lowercased. */
+function nameWords(name: string): string[] {
+  return name.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 }
 
 /** Distinct plain-English labels of a set of powers, in display order. */

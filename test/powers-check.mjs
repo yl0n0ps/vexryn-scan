@@ -27,7 +27,7 @@ for (const tool of [
   t("get_issue", "Get details of an issue", ["issue_number"]),
   // a verb must start a word: "prune" is not "run", "restart" is not "start", "budget"/"target" are not "get"
   t("prune_processes", "Prune stale process entries", ["command"]),
-  t("set_budget_file", "Set the budget target for a directory", ["path"]),
+  t("budget_report", "Show the budget target for a directory", ["path"]),
   t("restart_daemon", "Restart the background process", ["cmd"]),
 ]) assert.equal(classifyTool(tool), null, `${tool.name} must not classify`);
 
@@ -56,6 +56,49 @@ const cases = [
   [t("browser_navigate", "Navigate the browser to a URL", ["url"]), "network.fetch"],
 ];
 for (const [tool, power] of cases) assert.equal(classifyTool(tool), power, `wrong power for ${tool.name}`);
+
+// Real tools from the Vexryn catalogue run (2026-09-26): name, argument names, first words of the
+// description. These pin the name-first rules on what real servers actually expose.
+const real = [
+  // wrong before: a word in the description decided
+  [t("read_file", "Read contents from files and URLs. Prefer this over 'execute_command' with cat/type for viewing files.", ["path", "isUrl", "offset", "length"]), "file.read"],
+  [t("write_file", "Write or append to file contents. IMPORTANT: DO NOT use this tool to create PDF files.", ["path", "content", "mode"]), "file.write"],
+  [t("kubectl_create", "Create Kubernetes resources using various methods (from file or using subcommands)", ["manifest", "filename", "resourceType", "name", "command"]), null],
+  [t("kubectl_delete", "Delete Kubernetes resources by resource type, name, labels, or from a manifest file", ["resourceType", "name", "manifest", "filename"]), null],
+  [t("aks", "Azure Kubernetes Service operations - Manage and query Azure Kubernetes Service (AKS) resources", ["intent", "command", "parameters", "learn"]), null],
+  [t("monitor", "Monitor operations - Commands for managing Azure Monitor workspaces, querying logs", ["intent", "command", "parameters", "learn"]), null],
+  [t("report-problem", "Report a problem with Apify's MCP tools or Actors to the Apify team.", ["message", "actorId", "actorRunId"]), null],
+  [t("runAccessibilityAudit", "Lighthouse accessibility audit of the current page. Launches a separate headless browser.", ["url", "tabId"]), null],
+  // right before, must stay right
+  [t("read_file", "Read the complete contents of a file as text.", ["path", "tail", "head"]), "file.read"],
+  [t("get_file_info", "Retrieve detailed metadata about a file or directory.", ["path"]), "file.read"],
+  [t("directory_tree", "Get a recursive tree view of files and directories as a JSON structure.", ["path"]), "file.read"],
+  [t("start_process", "Start a new terminal process with intelligent state detection.", ["command", "timeout_ms", "shell"]), "shell.exec"],
+  [t("exec_in_pod", "Execute a command in a Kubernetes pod or container and return the output.", ["name", "namespace", "command"]), "shell.exec"],
+  [t("slack_post_message", "Post a new message to a Slack channel", ["channel_id", "text"]), "external-message.send"],
+  [t("navigate", "Navigate to a URL", ["url"]), "network.fetch"],
+  [t("fetch", "Fetches a URL from the internet and optionally extracts its contents as markdown.", ["url", "max_length"]), "network.fetch"],
+  [t("brave_web_search", "Performs a web search using the Brave Search API.", ["query", "count"]), "network.fetch"],
+  // missed before
+  [t("read_multiple_files", "Read the contents of multiple files simultaneously.", ["paths"]), "file.read"],
+  [t("add_issue_comment", "Add a comment to an existing issue", ["owner", "repo", "issue_number", "body"]), "external-message.send"],
+  [t("create_entities", "Create multiple new entities in the knowledge graph", ["entities"]), "memory.write"],
+  [t("delete-many", "Removes all documents that match the filter from a MongoDB collection", ["connectionId", "database", "collection", "filter"]), "data.delete"],
+  [t("API-delete-a-block", "Notion | Delete a block", ["block_id"]), "data.delete"],
+  [t("browser_run_code_unsafe", "Run a Playwright code snippet. Unsafe: executes arbitrary JavaScript.", ["code", "filename"]), "shell.exec"],
+  [t("run_container", "Run an image in a new Docker container", ["image", "name", "command", "volumes"]), "shell.exec"],
+  [t("web_fetch_exa", "Read a webpage's full content as clean markdown.", ["urls", "maxCharacters"]), "network.fetch"],
+  [t("tavily_extract", "Extract content from URLs. Returns raw page content in markdown or text format.", ["urls", "extract_depth"]), "network.fetch"],
+  [t("browser_file_upload", "Upload one or multiple files", ["paths"]), "file.share"],
+  [t("interact_with_process", "Send input to a running process and automatically receive the response.", ["pid", "input"]), "shell.exec"],
+  [t("firecrawl_interact", "Open or reuse a live browser session to navigate a page, click controls, fill fields, or run browser code. Provide either `url` or `scrapeId`.", ["scrapeId", "url", "prompt", "code"]), "network.fetch"],
+  [t("drop-index", "Drop an index for the provided database and collection.", ["connectionId", "database", "collection", "indexName"]), null],
+  // stay out of the taxonomy on purpose
+  [t("query", "Run a read-only SQL query", ["sql"]), null],
+  [t("execute_sql", "Executes raw SQL in the Postgres database.", ["project_id", "query"]), null],
+  [t("create_pull_request", "Create a new pull request in a GitHub repository", ["owner", "repo", "title", "body", "head", "base"]), null],
+];
+for (const [tool, power] of real) assert.equal(classifyTool(tool), power, `real tool ${tool.name} (${tool.description.slice(0, 40)}…)`);
 
 // Robustness: no schema / odd schema → no args, no crash
 assert.deepEqual(argNames(undefined), []);
