@@ -532,6 +532,9 @@ const AGGREGATES: Record<string, string> = {
   "cursor-rule-descriptions": "Rule descriptions",
   "windsurf-rules": "Always-on rules",
   "windsurf-rule-descriptions": "Rule descriptions",
+  "kiro-steering": "Always steering files",
+  "cline-rules": "Rule files",
+  "roo-rules": "Rule files",
 };
 
 /** Claude Code's section, with the notice about symlinks the review won't follow. */
