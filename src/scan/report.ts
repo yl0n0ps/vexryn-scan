@@ -326,14 +326,14 @@ const fgc = rgb(238, 241, 250); // #EEF1FA
 /** The Vexryn banner: the woven-X mark (a blue stroke through a broken one) + the wordmark. TTY only. */
 export function banner(version?: string): string[] {
   if (!COLOR || process.env.VEXRYN_NO_BANNER === "1") return [];
-  const mark = faint("╲") + blue(bold("╳")) + faint("╱"); // the breach: broken strokes around the blue weave
-  const word = bold(fgc("ve") + blue("x") + fgc("ryn")); // the x is the mark, like the lockup
-  const ver = version ? "  " + faint(`v${version}`) : "";
+  // Wordmark-first, like the lockup: the blue x is the mark. A block rule in the
+  // brand gradient. Block/word glyphs render everywhere; the woven-X mark lives in
+  // the SVG assets and the favicon.
+  const word = bold(fgc("ve") + blue("x") + fgc("ryn"));
+  const ver = version ? "   " + faint(`v${version}`) : "";
   return [
     "",
-    `  ${mark}  ${word}${ver}`,
-    `  ${blue("──────────")}${violet("──────────")}`,
-    `  ${muted("see what your agent loads — and what it can do")}`,
+    `  ${word}${ver}   ${muted("· see what your agent loads, and what it can do")}`,
     "",
   ];
 }
