@@ -151,7 +151,8 @@ async function readConfig(kind: string, p: string): Promise<unknown | null> {
     return null;
   }
   if (TOML_KINDS.has(kind)) return readToml(text);
-  if (YAML_KINDS.has(kind)) return readYaml(text);
+  // A .json file keeps JSONC tolerance even for a YAML-kind agent (Continue accepts copied JSON).
+  if (YAML_KINDS.has(kind)) return p.endsWith(".json") ? readJsonLoose(p) : readYaml(text);
   return readJsonLoose(p);
 }
 
@@ -196,11 +197,18 @@ export function normalizeServers(kind: string, obj: Record<string, unknown>): Re
     return out;
   }
   if (kind === "continue-yaml") {
-    const list = Array.isArray(obj.mcpServers) ? obj.mcpServers : [];
-    for (const item of list) {
-      const d = asObj(item);
-      if (typeof d.name === "string") out[d.name] = d;
+    // config.yaml / a per-file YAML: `mcpServers` as a list of {name, command, ...}.
+    if (Array.isArray(obj.mcpServers)) {
+      for (const item of obj.mcpServers) {
+        const d = asObj(item);
+        if (typeof d.name === "string") out[d.name] = d;
+      }
+      return out;
     }
+    // a JSON config copied from Claude/Cursor/Cline: `mcpServers` as a {name: def} object.
+    if (typeof obj.mcpServers === "object" && obj.mcpServers !== null) return named(obj.mcpServers);
+    // a bare single-server file: {name, command, ...} with no wrapper.
+    if (typeof obj.name === "string") return { [obj.name]: obj };
     return out;
   }
   // The VS Code family (Copilot CLI, Cline, Roo, Kiro) uses a plain `mcpServers` (or `servers`) object.

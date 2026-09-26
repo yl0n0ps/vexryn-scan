@@ -73,6 +73,15 @@ assert.equal(cont.name, "search");
 assert.equal(cont.target, "node s.js");
 assert.deepEqual(cont.literalSecrets, ["KEY"]);
 
+// Continue also accepts a copied Claude/Cursor JSON (mcpServers as an OBJECT)
+const contObj = one("continue-yaml", { mcpServers: { github: { command: "npx", args: ["-y", "@modelcontextprotocol/server-github"] } } });
+assert.equal(contObj.name, "github");
+assert.equal(contObj.target, "npx -y @modelcontextprotocol/server-github");
+// and a bare single-server file (no mcpServers wrapper)
+const contBare = one("continue-yaml", { name: "solo", command: "node", args: ["s.js"] });
+assert.equal(contBare.name, "solo");
+assert.equal(contBare.target, "node s.js");
+
 // --- the VS Code family: plain mcpServers object ----------------------------
 for (const kind of ["copilot-cli", "cline", "roo-mcp", "kiro"]) {
   const s = one(kind, { mcpServers: { x: { command: "node", args: ["x.js"] } } });

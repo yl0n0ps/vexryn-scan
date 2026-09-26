@@ -153,6 +153,8 @@ function globalCandidates(home: string): Array<{ path: string; kind: ConfigKind;
     { path: path.join(home, ".continue", "config.yaml"), kind: "continue-yaml", client: "Continue" },
     // Zed, OpenCode and Goose use ~/.config on every platform, not the OS app-data dir.
     { path: path.join(xdg, "goose", "config.yaml"), kind: "goose", client: "Goose" },
+    // Goose on Windows keeps its config under %APPDATA%\\Block\\goose\\config.
+    ...(process.platform === "win32" ? [{ path: path.join(appSupport, "Block", "goose", "config", "config.yaml"), kind: "goose" as ConfigKind, client: "Goose" as AgentClient }] : []),
     { path: path.join(xdg, "zed", "settings.json"), kind: "zed", client: "Zed" },
     { path: path.join(xdg, "opencode", "opencode.json"), kind: "opencode", client: "OpenCode" },
     // Cline and Roo Code (VS Code extensions) keep their MCP settings in the editor's globalStorage.

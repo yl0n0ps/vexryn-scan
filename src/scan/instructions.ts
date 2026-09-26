@@ -25,6 +25,8 @@ export type AgentContexts = Partial<Record<AgentClient, ContextItem[]>>;
 
 export async function agentContexts(root: string, includesGlobal: boolean): Promise<AgentContexts> {
   const home = homeDir();
+  // ~/.config on every platform, or XDG_CONFIG_HOME when set (matches discovery of Zed/OpenCode/Goose).
+  const xdg = process.env.XDG_CONFIG_HOME && !process.env.VEXRYN_HOME ? process.env.XDG_CONFIG_HOME : path.join(home, ".config");
   const present = async (repoPaths: string[], homePath: string) =>
     (await anyExists(repoPaths.map((p) => path.join(root, p)))) || (includesGlobal && (await exists(path.join(home, homePath))));
   const out: AgentContexts = {};
@@ -93,7 +95,7 @@ export async function agentContexts(root: string, includesGlobal: boolean): Prom
   }
 
   // OpenCode: AGENTS.md, else CLAUDE.md; global ~/.config/opencode/AGENTS.md else ~/.claude/CLAUDE.md.
-  if (await present(["opencode.json", "opencode.jsonc"], path.join(".config", "opencode"))) {
+  if ((await anyExists([path.join(root, "opencode.json"), path.join(root, "opencode.jsonc")])) || (includesGlobal && (await exists(path.join(xdg, "opencode"))))) {
     const items: ContextItem[] = [];
     if (agentsMd) file(items, "AGENTS.md", agentsMd);
     else file(items, "CLAUDE.md", await readText(path.join(root, "CLAUDE.md")));
