@@ -12,7 +12,7 @@ command, any repo, no config. Read-only, 100% local, nothing is sent.
 npx vexryn scan
 ```
 
-![What vexryn scan shows](assets/scan.svg)
+![What vexryn scan shows](assets/scan.gif)
 
 Your agent already loaded instruction files, skills and MCP servers before you
 typed a word — and any config change can quietly hand it new powers: a server
