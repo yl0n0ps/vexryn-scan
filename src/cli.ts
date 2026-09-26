@@ -93,7 +93,7 @@ async function runScan(args: string[]): Promise<number> {
   }
 
   const report = assembleReport(root, deep, includesGlobal, configs, servers, claude, others);
-  process.stdout.write(renderText(report));
+  process.stdout.write(renderText(report, { version: VERSION }));
 
   if (html) {
     const out = await writeHtml(report, root);

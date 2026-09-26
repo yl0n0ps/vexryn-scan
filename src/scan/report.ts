@@ -127,14 +127,18 @@ export function loadPercent(tokens: number): number {
  * `forAgent`: the text goes into an AI agent's context (the MCP tool), so third-party
  * free text — trap phrases, deprecation notices — is replaced by counts.
  */
-export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}): string {
+export function renderText(report: LoadReport, opts: { forAgent?: boolean; version?: string } = {}): string {
   const { configs, agents, totals, deep, includesGlobal } = report;
   const lines: string[] = [];
   const mode = deep ? "MCP measured live" : "static read";
 
-  lines.push("");
-  lines.push("  " + bold(brand("vexryn")) + dim(" · agent load report"));
-  lines.push("");
+  const head = banner(opts.version);
+  if (head.length) for (const b of head) lines.push(b);
+  else {
+    lines.push("");
+    lines.push("  vexryn · agent load report");
+    lines.push("");
+  }
 
   if (configs.length === 0 && agents.length === 0 && report.subprojects.length === 0) {
     lines.push("  No agent configs found. Nothing to scan here.");
@@ -190,7 +194,7 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}
       const where = `${s.fromRelPath} · ${s.scope}` + source(s);
       lines.push(`    ${padEnd(s.name, 20)} ${padEnd(renderServerCost(s), 34)} ${dim(where)}`);
       const notes = serverNotes(s, opts.forAgent);
-      if (notes.can.length) lines.push(`      ${dim("can:")} ${brand(notes.can.join(", "))}`);
+      if (notes.can.length) lines.push(`      ${muted("can:")} ${violet(notes.can.join(", "))}`);
       for (const w of notes.warnings) lines.push(`      ${warnColor(w)}`);
     }
     lines.push("");
@@ -300,19 +304,46 @@ export function fmtTokens(n: number): string {
   return n < 1000 ? `${n}` : `${Math.round(n / 1000)}k`;
 }
 
-// Colour only in a real terminal — never when piped, in tests, or into an agent's context.
-// Colour in a real terminal (or when forced for recording), never when piped, in tests, or into an agent.
+// Vexryn identity (docs/brand): dark navy ground, brand blue #4A90FF, agentic violet
+// #C46BFF, coral #FF5A4E for proof/critical ONLY, amber #E6B23C for a config fact.
+// Colour in a real terminal (or FORCE_COLOR for recording), never when piped, in tests, or into an agent.
 const COLOR = (!!process.stdout.isTTY || process.env.FORCE_COLOR === "1") && !process.env.NO_COLOR && process.env.VEXRYN_NO_COLOR !== "1";
+const rgb = (r: number, g: number, b: number) => (s: string) => (COLOR ? `\u001b[38;2;${r};${g};${b}m${s}\u001b[0m` : s);
 const sgr = (open: string) => (s: string) => (COLOR ? `\u001b[${open}m${s}\u001b[0m` : s);
 const bold = sgr("1");
-const brand = sgr("38;5;44"); // teal — vexryn identity, what a tool CAN do
-const warn = sgr("38;5;214"); // amber — a config fact worth a look
-const danger = sgr("38;5;203"); // red — a secret, a deprecation, a leak path
+const blue = rgb(74, 144, 255); // #4A90FF — primary, the brand
+const violet = rgb(196, 107, 255); // #C46BFF — agentic-IA accent: what a tool CAN do
+const brand = blue;
+const warn = rgb(230, 178, 60); // #E6B23C — a config fact worth a look
+const danger = rgb(255, 90, 78); // #FF5A4E — a secret, a deprecation, a leak (proof/critical only)
+const muted = rgb(139, 147, 172); // #8B93AC
+const faint = rgb(86, 94, 126); // #565E7E
+
+const fgc = rgb(238, 241, 250); // #EEF1FA
+
+/** The Vexryn banner: the woven-X mark (a blue stroke through a broken one) + the wordmark. TTY only. */
+export function banner(version?: string): string[] {
+  if (!COLOR || process.env.VEXRYN_NO_BANNER === "1") return [];
+  const mark = faint("╲") + blue(bold("╳")) + faint("╱"); // the breach: broken strokes around the blue weave
+  const word = bold(fgc("ve") + blue("x") + fgc("ryn")); // the x is the mark, like the lockup
+  const ver = version ? "  " + faint(`v${version}`) : "";
+  return [
+    "",
+    `  ${mark}  ${word}${ver}`,
+    `  ${blue("──────────")}${violet("──────────")}`,
+    `  ${muted("see what your agent loads — and what it can do")}`,
+    "",
+  ];
+}
+
+/** A ⚠ line is coral when it names a secret/credential/deprecation/leak; amber otherwise. */
 
 /** A ⚠ line is red when it names a secret, a credential, a deprecation or a leak; amber otherwise. */
 function warnColor(text: string): string {
   return /\b(secret|credential|deprecat|send them out|run a command)\b/i.test(text) ? danger(`⚠ ${text}`) : warn(`⚠ ${text}`);
 }
+
+// (banner defined above)
 
 /**
  * The headline: the few facts that decide whether a reader keeps reading. Most severe
@@ -328,14 +359,15 @@ function verdict(report: LoadReport): string[] {
   const deprecated = servers.filter((s) => s.deprecated).length;
   if (deprecated) lines.push("  " + warn(`${deprecated} server${plural(deprecated)} run${deprecated === 1 ? "s" : ""} a package its publisher has deprecated.`));
   const powers = new Set(servers.flatMap((s) => powerLabels((s.estimate?.tools ?? []).map((t) => t.power))));
-  if (powers.size) lines.push("  " + dim("Across your agents, tools can: ") + brand([...powers].join(", ")) + dim("."));
+  if (powers.size) lines.push("  " + muted("Across your agents, tools can: ") + violet([...powers].join(", ")) + muted("."));
   return lines.length ? ["", ...lines] : [];
 }
 
 function bar(pct: number): string {
   const width = 24;
   const filled = Math.max(0, Math.min(width, Math.round((pct / 100) * width)));
-  return brand("█".repeat(filled)) + dim("░".repeat(width - filled));
+  const half = Math.ceil(filled / 2);
+  return blue("█".repeat(half)) + violet("█".repeat(filled - half)) + faint("░".repeat(width - filled));
 }
 
 function plural(n: number): string {
