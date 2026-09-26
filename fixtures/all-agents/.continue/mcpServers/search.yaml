@@ -1,0 +1,6 @@
+mcpServers:
+  - name: brave
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-brave-search"]
+    env:
+      BRAVE_API_KEY: "BSA-realkey1234567890abcdef"

@@ -1,0 +1,2 @@
+# Gemini
+Prefer small diffs.
