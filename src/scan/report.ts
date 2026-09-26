@@ -133,7 +133,7 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}
   const mode = deep ? "MCP measured live" : "static read";
 
   lines.push("");
-  lines.push("  vexryn · agent load report");
+  lines.push("  " + bold(brand("vexryn")) + dim(" · agent load report"));
   lines.push("");
 
   if (configs.length === 0 && agents.length === 0 && report.subprojects.length === 0) {
@@ -149,6 +149,7 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}
       `, ${totals.serverCount} MCP server${plural(totals.serverCount)}` +
       ` across ${agents.length} agent${plural(agents.length)} (${mode})`,
   );
+  for (const v of verdict(report)) lines.push(v);
   lines.push("");
 
   if (agents.length === 0) {
@@ -161,14 +162,14 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}
     const nothingMeasured = a.context.length === 0 && a.unmeasuredServers === a.servers.length;
     const tools =
       a.servers.length === 0 ? "" : a.unmeasuredServers === a.servers.length ? ", tools not measured" : `, ${a.toolCount} tool${plural(a.toolCount)}`;
-    lines.push(`  ${a.client.toUpperCase()}  — ${a.servers.length} server${plural(a.servers.length)}${tools}`);
+    lines.push("  " + bold(`${a.client.toUpperCase()}  — ${a.servers.length} server${plural(a.servers.length)}${tools}`));
     lines.push(
       nothingMeasured
         ? `  ${dim("░".repeat(24))}  load not measured — run --deep`
         : `  ${bar(pct)}  ~${pct}%   ~${a.approxTokens.toLocaleString("en-US")} of ` +
             `${CONTEXT_WINDOW_TOKENS.toLocaleString("en-US")} tokens up front`,
     );
-    for (const c of agentWarnings(a)) lines.push(`  ⚠ ${c}`);
+    for (const c of agentWarnings(a)) lines.push("  " + warnColor(c));
     if (a.hasUsage && a.toolCount > 0) {
       lines.push(`  You actually used ${a.usedToolCount} of ${a.toolCount} tools.`);
     }
@@ -189,8 +190,8 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}
       const where = `${s.fromRelPath} · ${s.scope}` + source(s);
       lines.push(`    ${padEnd(s.name, 20)} ${padEnd(renderServerCost(s), 34)} ${dim(where)}`);
       const notes = serverNotes(s, opts.forAgent);
-      if (notes.can.length) lines.push(`      can: ${notes.can.join(", ")}`);
-      for (const w of notes.warnings) lines.push(`      ⚠ ${w}`);
+      if (notes.can.length) lines.push(`      ${dim("can:")} ${brand(notes.can.join(", "))}`);
+      for (const w of notes.warnings) lines.push(`      ${warnColor(w)}`);
     }
     lines.push("");
   }
@@ -299,10 +300,42 @@ export function fmtTokens(n: number): string {
   return n < 1000 ? `${n}` : `${Math.round(n / 1000)}k`;
 }
 
+// Colour only in a real terminal — never when piped, in tests, or into an agent's context.
+// Colour in a real terminal (or when forced for recording), never when piped, in tests, or into an agent.
+const COLOR = (!!process.stdout.isTTY || process.env.FORCE_COLOR === "1") && !process.env.NO_COLOR && process.env.VEXRYN_NO_COLOR !== "1";
+const sgr = (open: string) => (s: string) => (COLOR ? `\u001b[${open}m${s}\u001b[0m` : s);
+const bold = sgr("1");
+const brand = sgr("38;5;44"); // teal — vexryn identity, what a tool CAN do
+const warn = sgr("38;5;214"); // amber — a config fact worth a look
+const danger = sgr("38;5;203"); // red — a secret, a deprecation, a leak path
+
+/** A ⚠ line is red when it names a secret, a credential, a deprecation or a leak; amber otherwise. */
+function warnColor(text: string): string {
+  return /\b(secret|credential|deprecat|send them out|run a command)\b/i.test(text) ? danger(`⚠ ${text}`) : warn(`⚠ ${text}`);
+}
+
+/**
+ * The headline: the few facts that decide whether a reader keeps reading. Most severe
+ * first, at most four lines, only the ones that are true. Powers/risks, never token math.
+ */
+function verdict(report: LoadReport): string[] {
+  const lines: string[] = [];
+  const servers = report.agents.flatMap((a) => a.servers);
+  const combos = new Set(report.agents.flatMap((a) => agentWarnings(a)));
+  for (const c of combos) lines.push("  " + danger(bold(`⚠ ${c}`)));
+  const secrets = servers.filter((s) => (s.literalSecrets ?? []).length > 0).length;
+  if (secrets) lines.push("  " + danger(`${secrets} secret${plural(secrets)} written in plain text in a config file.`));
+  const deprecated = servers.filter((s) => s.deprecated).length;
+  if (deprecated) lines.push("  " + warn(`${deprecated} server${plural(deprecated)} run${deprecated === 1 ? "s" : ""} a package its publisher has deprecated.`));
+  const powers = new Set(servers.flatMap((s) => powerLabels((s.estimate?.tools ?? []).map((t) => t.power))));
+  if (powers.size) lines.push("  " + dim("Across your agents, tools can: ") + brand([...powers].join(", ")) + dim("."));
+  return lines.length ? ["", ...lines] : [];
+}
+
 function bar(pct: number): string {
   const width = 24;
   const filled = Math.max(0, Math.min(width, Math.round((pct / 100) * width)));
-  return "█".repeat(filled) + "░".repeat(width - filled);
+  return brand("█".repeat(filled)) + dim("░".repeat(width - filled));
 }
 
 function plural(n: number): string {
@@ -320,5 +353,5 @@ function padEnd(s: string, n: number): string {
 }
 
 function dim(s: string): string {
-  return `\u001b[2m${s}\u001b[0m`;
+  return COLOR ? `\u001b[2m${s}\u001b[0m` : s;
 }
