@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="500" viewBox="0 0 820 500" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14">
+  <defs>
+    <style>
+      .ink{fill:#e7ecf2}.dim{fill:#8695a6}.teal{fill:#37d7c4}.amber{fill:#f0b23e}.red{fill:#f0656b}
+      .b{font-weight:700}
+    </style>
+  </defs>
+  <rect width="820" height="500" rx="12" fill="#0b0f14"/>
+  <rect width="820" height="34" rx="12" fill="#121922"/>
+  <rect y="22" width="820" height="12" fill="#121922"/>
+  <circle cx="20" cy="17" r="6" fill="#f0656b"/><circle cx="40" cy="17" r="6" fill="#f0b23e"/><circle cx="60" cy="17" r="6" fill="#37d7c4"/>
+  <text x="410" y="22" text-anchor="middle" class="dim" font-size="12">vexryn — agent load report</text>
+  <g transform="translate(22,60)">
+    <text class="dim">$ </text><text x="16" class="ink">npx vexryn scan</text>
+    <text y="34" class="teal b">vexryn</text><text x="52" y="34" class="dim"> · agent load report</text>
+    <text y="62" class="ink">Found 12 agent configs, 10 MCP servers across 12 agents</text>
+    <text y="94" class="red b">⚠ One agent can read the web, read your files and send them out.</text>
+    <text y="116" class="red">1 secret written in plain text in a config file.</text>
+    <text y="138" class="amber">4 servers run a package its publisher has deprecated.</text>
+    <text y="160" class="dim">Across your agents, tools can: <tspan class="teal">send messages, read files, run commands, delete records…</tspan></text>
+    <text y="200" class="ink b">CODEX  — 2 servers, 14 tools</text>
+    <text y="222"><tspan class="teal">filesystem</tspan><tspan class="dim" dx="28">14 tools · ~2k tok · catalog @modelcontextprotocol/server-filesystem</tspan></text>
+    <text y="244" dx="18"><tspan class="dim">can: </tspan><tspan class="teal">read files, create, edit or delete files</tspan></text>
+    <text y="266" dx="18" class="red">⚠ is given /  — a whole filesystem/home or a credential path</text>
+    <text y="298" class="ink b">GITHUB COPILOT CLI  — 1 server, 26 tools</text>
+    <text y="320"><tspan class="teal">github</tspan><tspan class="dim" dx="46">26 tools · can: send messages, read files, write files</tspan></text>
+    <text y="342" dx="18" class="red">⚠ uses @modelcontextprotocol/server-github, marked deprecated by its publisher</text>
+    <text y="382" class="dim">100% local · nothing was sent · nothing was executed</text>
+  </g>
+</svg>

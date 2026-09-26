@@ -1,24 +1,39 @@
 # vexryn
 
-**See what your AI agent actually loads — any repo, any stack, no config.**
+**See what your AI coding agent actually loads — and what it can do.** One
+command, any repo, no config. Read-only, 100% local, nothing is sent.
+
+[![npm](https://img.shields.io/npm/v/vexryn?color=37d7c4)](https://www.npmjs.com/package/vexryn)
+[![license](https://img.shields.io/badge/license-Apache--2.0-37d7c4)](LICENSE)
+![node](https://img.shields.io/badge/node-%3E%3D18-8695a6)
+![local](https://img.shields.io/badge/100%25%20local-nothing%20sent-8695a6)
 
 ```bash
 npx vexryn scan
 ```
 
-Vexryn reads the agent configs scattered across your repo (MCP servers, Cursor
-rules, `CLAUDE.md`, Gemini, Windsurf…) and tells you, in plain terms, what your
-agent loads and why it might be slow. **Read-only, 100% local — nothing is sent.**
-Vexryn reads configs, not your code.
+![What vexryn scan shows](assets/scan.svg)
 
-## Why
+Your agent already loaded instruction files, skills and MCP servers before you
+typed a word — and any config change can quietly hand it new powers: a server
+holding a token, a tool that can send messages or run shell commands, a package
+its publisher abandoned. Those configs are scattered across formats and code
+review has no opinion on them. Vexryn reads them — Claude Code, Cursor, VS Code,
+GitHub Copilot, Codex, Gemini, Windsurf, Cline, Roo, Continue, Zed, Kiro,
+OpenCode, Goose — and tells you, in plain words, what each agent loads and what
+its tools can do. It reads configs, never your code, and never runs a server.
 
-Before you type a word, your agent has already loaded instruction files
-(`CLAUDE.md`…), skill and subagent descriptions, and MCP servers — and a config
-change can quietly give it new powers (a new server holding a token, a shell
-command it may run without asking, a hook that runs at every session start).
-Those configs are scattered and unreadable, and code review has no opinion on
-them. Vexryn makes them legible.
+## Why it's different
+
+- **It reads every agent, in its own format** (JSON, TOML, YAML) — not just one.
+- **It says what tools can do**, from a public catalogue of measured servers:
+  *send messages, read files, run commands, delete records* — and flags the
+  dangerous combinations (read the web + read your files + send them out).
+- **It reviews a pull request.** `vexryn diff` turns an unreadable config diff
+  into one comment: *new server `slack` receives `SLACK_BOT_TOKEN`, unpinned ·
+  Claude Code may run `git push` without asking · +2,300 tokens every session.*
+- **Nothing is sent, nothing is executed, no numbers are invented.** An
+  unmeasured server says so. Safe for CI and untrusted repos.
 
 ## The road (perf → review → proof)
 
@@ -135,6 +150,10 @@ Not built yet (honest):
   (package@version → tools). Not before it exists.
 
 ## PR review (`vexryn diff`)
+
+![The vexryn review comment on a pull request](assets/pr-review.svg)
+
+See it on a real pull request: [yl0n0ps/vexryn-scan#1](https://github.com/yl0n0ps/vexryn-scan/pull/1).
 
 ```bash
 vexryn diff --base main            # what my uncommitted/branch changes do
