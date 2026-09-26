@@ -6,17 +6,24 @@
 // `code()`, which masks secrets and keeps markdown, links and @mentions inert.
 
 import path from "node:path";
-import type { ContextItem, McpServer } from "../types.js";
+import type { AgentClient, ContextItem, McpServer } from "../types.js";
+import { agentContexts, type AgentContexts } from "../scan/instructions.js";
 import { discoverConfigs } from "../scan/discover.js";
 import { parseServers, readJsonLoose } from "../scan/parse.js";
 import { claudeCodeContext } from "../scan/claude.js";
 import { readClaudeSettings, type ClaudeSettings, type Hook } from "../scan/settings.js";
 import { promises as fs } from "node:fs";
+import { createHash } from "node:crypto";
 import { gitRoot, isAgentConfigPath, resolveRef, snapshot, type Side } from "./snapshot.js";
 import { projectDir } from "../scan/discover.js";
+import { isExactVersion, lookup, packageSpec, type CatalogHit } from "../scan/catalog.js";
+import { powerLabels } from "../scan/powers.js";
+import { combinations } from "../scan/combos.js";
 import { TOKEN_SHAPE, secretName, blobs, hiddenChars, overridePhrases, plainHttpRemote, secretInText, sensitivePaths, shellInline } from "./rules.js";
 
 export const MARKER = "<!-- vexryn-pr-review -->";
+/** Accepted findings, at the repo root. */
+const ACCEPT_FILE = ".vexryn.json";
 export const NO_CHANGE = "No agent config file changed.";
 
 /** Lines per section and items per inline list. */
@@ -30,6 +37,8 @@ const SETTINGS_FILES = [".claude/settings.json", ".claude/settings.local.json"];
 export interface Snapshot {
   servers: McpServer[];
   context: ContextItem[];
+  /** Always-loaded context of Cursor, Windsurf, Gemini CLI (when present in the repo). */
+  others: AgentContexts;
   settings: ClaudeSettings;
   /** Config files present but not valid JSON. */
   unreadable: string[];
@@ -39,14 +48,17 @@ export interface Snapshot {
   unresolved: string[];
   /** Content of every agent file (reviewed or not), for the text rules. */
   texts: Record<string, string>;
+  /** Finding ids listed in `.vexryn.json`; `invalid` when the file exists but can't be read. */
+  accept: { ids: Set<string>; invalid: boolean };
 }
 
 export interface Review {
   /** What the agent may do — increases first (prefixed ⚠️). */
   powers: string[];
-  /** What Claude Code loads every session. */
-  loadHeader: string | null;
-  load: string[];
+  /** Findings hidden because the BASE side's `.vexryn.json` accepts them. */
+  accepted: number;
+  /** What each agent loads every session: one section per agent whose load changed. */
+  loads: Array<{ header: string; lines: string[] }>;
   /** Agent files whose content changed: read by this review / not read yet. */
   changed: string[];
   unreviewed: string[];
@@ -84,11 +96,13 @@ export async function readSnapshot(side: Side): Promise<Snapshot> {
   return {
     servers: (await parseServers(configs, side.dir)).map((s) => ({ ...s, fromRelPath: posix(s.fromRelPath) })),
     context: (await claudeCodeContext(side.dir, false)).items,
+    others: await agentContexts(side.dir, false),
     settings: await readClaudeSettings(side.dir),
     unreadable,
     hashes: side.hashes,
     unresolved: side.unresolved,
     texts,
+    accept: await readAccept(side.dir),
   };
 }
 
@@ -99,6 +113,8 @@ export function compare(base: Snapshot, head: Snapshot): Review {
     ...unreadableLines(base, head),
     ...serverLines(base, head),
     ...serverFactLines(base, head),
+    ...catalogLines(base, head),
+    ...comboLines(base, head),
     ...shadowLines(base, head),
     ...textLines(base, head),
     ...(settingsComparable
@@ -112,29 +128,53 @@ export function compare(base: Snapshot, head: Snapshot): Review {
   // Increases first, keeping each group's order.
   powers.sort((x, y) => Number(y.startsWith(WARN)) - Number(x.startsWith(WARN)));
 
+  // Accepted findings come from the BASE side only: a change can't silence its own findings.
+  let accepted = 0;
+  const shown: string[] = [];
+  for (const l of powers) {
+    if (!l.startsWith(WARN)) shown.push(l);
+    else if (base.accept.ids.has(findingId(l))) accepted++;
+    else shown.push(`${l} <sub>${findingId(l)}</sub>`);
+  }
+  const newlyAccepted = [...head.accept.ids].filter((id) => !base.accept.ids.has(id)).length;
+  if (newlyAccepted) {
+    const n = newlyAccepted;
+    shown.unshift(`${WARN}${code(ACCEPT_FILE)} accepts ${n} more finding${plural(n)} — ${n === 1 ? "it stops" : "they stop"} being reported once this is merged`);
+  }
+  if (head.accept.invalid && !base.accept.invalid) shown.unshift(`${WARN}${code(ACCEPT_FILE)} is not valid JSON — no finding is accepted from it`);
+
   const files = [...new Set([...Object.keys(base.hashes), ...Object.keys(head.hashes)])].sort();
   const changed = files.filter((f) => base.hashes[f] !== head.hashes[f]);
+  // A file whose load this review counts for some agent (AGENTS.md, an always-apply rule…) is reviewed.
+  const counted = new Set([base, head].flatMap((s) => Object.values(s.others).flatMap((items) => (items ?? []).flatMap((c) => [c.key, ...(c.names ?? [])]))));
+  const reviewed = (f: string) => isAgentConfigPath(f) || counted.has(f);
+  const claude = loadLines(base, head);
+  const others = (Object.keys({ ...base.others, ...head.others }) as AgentClient[]).map((client) =>
+    loadSection(client, base.others[client] ?? [], head.others[client] ?? []),
+  );
   return {
-    powers,
-    ...loadLines(base, head),
-    changed: changed.filter(isAgentConfigPath),
-    unreviewed: changed.filter((f) => !isAgentConfigPath(f)),
+    powers: shown,
+    accepted,
+    loads: [claude, ...others].filter((l): l is { header: string; lines: string[] } => l !== null),
+    changed: changed.filter(reviewed),
+    unreviewed: changed.filter((f) => !reviewed(f)),
   };
 }
 
 export function renderReview(r: Review): string {
   const head = [MARKER, "### Vexryn — agent config review", ""];
-  if (r.powers.length === 0 && r.load.length === 0 && r.changed.length === 0 && r.unreviewed.length === 0) {
+  if (r.powers.length === 0 && r.accepted === 0 && r.loads.length === 0 && r.changed.length === 0 && r.unreviewed.length === 0) {
     return [...head, NO_CHANGE].join("\n") + "\n";
   }
   const body: string[] = [];
-  if (r.powers.length > 0 || r.load.length > 0) {
+  if (r.powers.length > 0 || r.loads.length > 0) {
     body.push("These changes affect what your AI agent may do or what it loads.", "");
   } else {
     body.push("Agent config files changed, but not in any field this review reads.", "");
   }
   if (r.powers.length > 0) body.push("**What the agent may do**", ...bullets(r.powers), "");
-  if (r.loadHeader) body.push(r.loadHeader, ...bullets(r.load), "");
+  if (r.accepted > 0) body.push(`${r.accepted} accepted finding${plural(r.accepted)} not shown (listed in ${code(ACCEPT_FILE)}).`, "");
+  for (const l of r.loads) body.push(l.header, ...bullets(l.lines), "");
 
   const files = [
     r.changed.length ? `Changed agent files: ${list(r.changed)}.` : "",
@@ -143,9 +183,11 @@ export function renderReview(r: Review): string {
   const foot = [
     ...(files.length ? [files.join(" "), ""] : []),
     "<sub>This review reads MCP servers, Claude Code permissions, permission mode, extra directories, hooks, " +
-      "plugins and always-loaded context (CLAUDE.md, skills, subagents); other fields aren't reviewed. " +
+      "plugins and always-loaded context (CLAUDE.md, skills, subagents; Cursor and Windsurf rules, AGENTS.md, GEMINI.md); " +
+      "other fields aren't reviewed. " +
       "Static read: nothing was executed, nothing was sent. An MCP server's tool list can't be known " +
-      "without running it — run `vexryn scan --deep` locally on servers you trust.</sub>",
+      "without running it — run `vexryn scan --deep` locally on servers you trust. To accept a ⚠️ finding, list the id " +
+      "that ends it in `.vexryn.json` (`{\"accept\": [{\"id\": \"vx-…\", \"reason\": \"…\"}]}`); it is read from the base branch.</sub>",
   ];
 
   const size = (lines: string[]) => [...head, ...lines, ...foot].join("\n").length;
@@ -359,27 +401,68 @@ function argDelta(before: string[] = [], after: string[] = []): string {
     .join("; ");
 }
 
-const RUNNERS = new Set(["npx", "bunx", "pnpx", "uvx"]);
-
 /**
  * A package runner fetching a package without an exact version: what runs can
  * change any day. No claim for local paths, URLs or git specs.
  */
 function unpinned(s: McpServer): boolean {
-  const runner = path.basename(s.command ?? "").replace(/\.(cmd|exe)$/i, "");
-  if (!RUNNERS.has(runner)) return false;
-  const args = s.args ?? [];
-  let pkg: string | undefined;
-  for (let i = 0; i < args.length && pkg === undefined; i++) {
-    const a = args[i];
-    if (/^--(package|from)=/.test(a)) pkg = a.slice(a.indexOf("=") + 1);
-    else if (a === "-p" || a === "--package" || a === "--from") pkg = args[i + 1];
-    else if (!a.startsWith("-")) pkg = a;
+  const spec = s.command ? packageSpec(s.command, s.args ?? []) : null;
+  return !!spec && !isExactVersion(spec.version);
+}
+
+// --- Vexryn catalogue ------------------------------------------------------
+
+const hitOf = (s: McpServer): CatalogHit | null => (s.command ? lookup(packageSpec(s.command, s.args ?? [])) : null);
+
+/** What the catalogue knows about each new/changed server: powers, traps, deprecation. */
+function catalogLines(base: Snapshot, head: Snapshot): string[] {
+  const lines: string[] = [];
+  for (const s of newOrChanged(base, head)) {
+    const hit = hitOf(s);
+    if (!hit) continue;
+    const who = `MCP server ${code(s.name)} (${code(s.fromRelPath)})`;
+    const m = hit.measured;
+    if (m) {
+      const src = `Vexryn catalogue: ${code(`${hit.package}@${hit.version}`)}${hit.exact ? "" : ", latest measured — the config isn't pinned"}, measured ${m.measuredAt.slice(0, 10)}`;
+      const n = `${m.tools.length} tool${plural(m.tools.length)}`;
+      const can = powerLabels(m.tools.map((t) => t.power));
+      lines.push(can.length ? `${WARN}${who} can ${can.join(", ")} — ${n} (${src})` : `${who}: ${n}, no power recognized (${src})`);
+      for (const t of m.tools) {
+        if (t.flags?.phrases.length) lines.push(`${WARN}${who}: tool ${code(t.name)}'s description contains the phrase ${list(t.flags.phrases)}`);
+        if (t.flags?.hidden) lines.push(`${WARN}${who}: tool ${code(t.name)}'s description contains ${t.flags.hidden} invisible character${plural(t.flags.hidden)}`);
+      }
+    } else {
+      lines.push(`${who}: version ${code(hit.version)} isn't in the Vexryn catalogue (latest measured: ${code(hit.latest)})`);
+    }
+    if (hit.deprecated && hit.version === hit.latest) {
+      lines.push(`${WARN}${who} uses ${code(hit.package)}, marked deprecated by its publisher: ${code(hit.deprecated.slice(0, 120))}`);
+    }
   }
-  if (!pkg || /^[./~]|:\/\/|^(git|github|file|link)[:+]/.test(pkg)) return false;
-  // npm: name@version (skip a scope's leading @); uv: name==version or name@version.
-  const version = runner === "uvx" ? pkg.split(/==|@/)[1] : pkg.slice(1).split("@")[1];
-  return !(version && /^\d+\.\d+\.\d+([-+][\w.-]+)?$/.test(version));
+  return lines;
+}
+
+/** Dangerous combinations the change creates, per agent and project directory (catalogue tools). */
+function comboLines(base: Snapshot, head: Snapshot): string[] {
+  const combos = (snap: Snapshot) => {
+    const powers = new Map<string, Set<string>>();
+    for (const s of snap.servers) {
+      const k = `${s.client}\u0000${projectDir(s.fromRelPath)}`;
+      const set = powers.get(k) ?? new Set<string>();
+      for (const t of hitOf(s)?.measured?.tools ?? []) if (t.power) set.add(t.power);
+      powers.set(k, set);
+    }
+    return new Map([...powers].map(([k, set]) => [k, combinations(set as Set<never>)]));
+  };
+  const before = combos(base);
+  const lines: string[] = [];
+  for (const [k, facts] of combos(head)) {
+    const [client, dir] = k.split("\u0000");
+    const where = dir === "." ? "at the repo root" : `in ${code(dir)}`;
+    for (const f of facts.filter((f) => !(before.get(k) ?? []).includes(f))) {
+      lines.push(`${WARN}${client} ${where}: ${f[0].toLowerCase()}${f.slice(1)} (tools per the Vexryn catalogue)`);
+    }
+  }
+  return lines;
 }
 
 // --- Claude Code settings --------------------------------------------------
@@ -442,9 +525,17 @@ function pluginLines(base: Record<string, boolean>, head: Record<string, boolean
 
 // --- Always-loaded context -------------------------------------------------
 
-const AGGREGATES: Record<string, string> = { skills: "Skill descriptions", agents: "Subagent descriptions" };
+const AGGREGATES: Record<string, string> = {
+  skills: "Skill descriptions",
+  agents: "Subagent descriptions",
+  "cursor-rules": "Always-apply rules",
+  "cursor-rule-descriptions": "Rule descriptions",
+  "windsurf-rules": "Always-on rules",
+  "windsurf-rule-descriptions": "Rule descriptions",
+};
 
-function loadLines(baseSnap: Snapshot, headSnap: Snapshot): Pick<Review, "loadHeader" | "load"> {
+/** Claude Code's section, with the notice about symlinks the review won't follow. */
+function loadLines(baseSnap: Snapshot, headSnap: Snapshot): { header: string; lines: string[] } | null {
   const load: string[] = [];
   // A root file that is an unfollowable symlink on either side has no honest number.
   // ponytail: an unfollowable SKILL.md/agent link still shifts its aggregate; name it if that shows up.
@@ -454,6 +545,15 @@ function loadLines(baseSnap: Snapshot, headSnap: Snapshot): Pick<Review, "loadHe
   }
   const base = baseSnap.context.filter((c) => !unresolved.has(c.key));
   const head = headSnap.context.filter((c) => !unresolved.has(c.key));
+  const section = loadSection("Claude Code", base, head);
+  if (load.length === 0) return section;
+  const [tb, ta] = [sum(base), sum(head)];
+  return { header: `**Loads every session (Claude Code): ${fmt(tb)} → ${fmt(ta)} tokens (${signed(ta - tb)})**`, lines: [...load, ...(section?.lines ?? [])] };
+}
+
+/** One agent's always-loaded context, before → after; null when nothing changed. */
+function loadSection(client: AgentClient, base: ContextItem[], head: ContextItem[]): { header: string; lines: string[] } | null {
+  const load: string[] = [];
   const before = new Map(base.map((c) => [c.key, c]));
   const after = new Map(head.map((c) => [c.key, c]));
   for (const key of new Set([...before.keys(), ...after.keys()])) {
@@ -474,9 +574,33 @@ function loadLines(baseSnap: Snapshot, headSnap: Snapshot): Pick<Review, "loadHe
       load.push(`${code(key)}: ${fmt(bt)} → ${fmt(at)} tokens (${signed(at - bt)})`);
     }
   }
-  if (load.length === 0) return { loadHeader: null, load };
+  if (load.length === 0) return null;
   const [tb, ta] = [sum(base), sum(head)];
-  return { loadHeader: `**Loads every session (Claude Code): ${fmt(tb)} → ${fmt(ta)} tokens (${signed(ta - tb)})**`, load };
+  return { header: `**Loads every session (${client}): ${fmt(tb)} → ${fmt(ta)} tokens (${signed(ta - tb)})**`, lines: load };
+}
+
+// --- Accepted findings -------------------------------------------------------
+
+/** A finding's stable id: its text without dates, so a re-measured catalogue entry keeps its id. */
+function findingId(line: string): string {
+  return "vx-" + createHash("sha256").update(line.replace(/\d{4}-\d{2}-\d{2}/g, "")).digest("hex").slice(0, 8);
+}
+
+async function readAccept(dir: string): Promise<Snapshot["accept"]> {
+  let text: string;
+  try {
+    text = await fs.readFile(path.join(dir, ACCEPT_FILE), "utf8");
+  } catch {
+    return { ids: new Set(), invalid: false };
+  }
+  try {
+    const list = (JSON.parse(text) as { accept?: unknown }).accept;
+    if (!Array.isArray(list)) return { ids: new Set(), invalid: true };
+    const ids = list.map((e) => (typeof e === "string" ? e : (e as { id?: unknown })?.id)).filter((x): x is string => typeof x === "string" && /^vx-[0-9a-f]{8}$/.test(x));
+    return { ids: new Set(ids), invalid: false };
+  } catch {
+    return { ids: new Set(), invalid: true };
+  }
 }
 
 // --- Formatting ------------------------------------------------------------

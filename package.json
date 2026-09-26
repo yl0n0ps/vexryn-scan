@@ -1,6 +1,6 @@
 {
   "name": "vexryn",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "See what your AI agent actually loads \u2014 any repo, any stack, no config.",
   "type": "module",
   "bin": {
@@ -8,7 +8,8 @@
   },
   "files": [
     "dist",
-    "NOTICE"
+    "NOTICE",
+    "catalog/catalog.json"
   ],
   "engines": {
     "node": ">=18"
@@ -17,7 +18,7 @@
     "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
     "dev": "node --loader tsx src/cli.ts",
     "scan": "npm run build && node dist/cli.js scan",
-    "test": "npm run build && node test/global-check.mjs && node test/wire-check.mjs && node test/proxy-check.mjs && node test/context-check.mjs && node test/snapshot-check.mjs && node test/settings-check.mjs && node test/diff-check.mjs && node test/diff-edge-check.mjs && node test/action-check.mjs && node test/mcp-check.mjs && node test/rules-check.mjs && node test/diff-rules-check.mjs && node test/powers-check.mjs && node test/measured-check.mjs && node test/deep-check.mjs",
+    "test": "npm run build && node test/global-check.mjs && node test/wire-check.mjs && node test/proxy-check.mjs && node test/context-check.mjs && node test/snapshot-check.mjs && node test/settings-check.mjs && node test/diff-check.mjs && node test/diff-edge-check.mjs && node test/action-check.mjs && node test/mcp-check.mjs && node test/rules-check.mjs && node test/diff-rules-check.mjs && node test/powers-check.mjs && node test/measured-check.mjs && node test/deep-check.mjs && node test/combos-check.mjs && node test/catalog-check.mjs && node test/catalog-use-check.mjs && node test/instructions-check.mjs",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

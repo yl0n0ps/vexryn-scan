@@ -12,19 +12,26 @@ import type { McpServer, ServerEstimate, ToolInfo } from "../types.js";
 import { countToolTokens } from "./tokens.js";
 import { classifyTool } from "./powers.js";
 import { toolHash } from "./measured.js";
+import { toolFlags } from "../diff/rules.js";
 
 const CONNECT_TIMEOUT_MS = 15_000;
 
-/** Introspect one server → a measured estimate, or an error estimate. */
-export async function introspectServer(server: McpServer): Promise<ServerEstimate> {
+/**
+ * Introspect one server → a measured estimate, or an error estimate. `env`, when
+ * given, is the child's WHOLE environment (the catalogue job passes a minimal one);
+ * by default the user's own environment, as their agent would.
+ */
+export async function introspectServer(server: McpServer, timeoutMs = CONNECT_TIMEOUT_MS, env?: Record<string, string>): Promise<ServerEstimate> {
+  const client = new Client({ name: "vexryn-scan", version: "0.0.1" }, { capabilities: {} });
   try {
-    const tools = await withTimeout(listTools(server), CONNECT_TIMEOUT_MS);
+    const tools = await withTimeout(listTools(client, server, env), timeoutMs);
     const detailed: ToolInfo[] = tools.map((t) => ({
       name: t.name,
       description: t.description ?? "",
       tokens: countToolTokens(t),
       power: classifyTool(t),
       hash: toolHash(t.description ?? "", t.inputSchema),
+      flags: toolFlags(t.description ?? ""),
     }));
     const approxTokens = detailed.reduce((sum, t) => sum + t.tokens, 0);
     return {
@@ -32,6 +39,7 @@ export async function introspectServer(server: McpServer): Promise<ServerEstimat
       approxTokens,
       source: "introspect",
       tools: detailed,
+      raw: tools,
     };
   } catch (err) {
     return {
@@ -40,6 +48,9 @@ export async function introspectServer(server: McpServer): Promise<ServerEstimat
       source: "introspect-failed",
       error: err instanceof Error ? err.message : String(err),
     };
+  } finally {
+    // Also on a timeout: closing the client ends the server process it launched.
+    await client.close().catch(() => {});
   }
 }
 
@@ -49,24 +60,19 @@ interface RawTool {
   inputSchema?: unknown;
 }
 
-async function listTools(server: McpServer): Promise<RawTool[]> {
-  const client = new Client({ name: "vexryn-scan", version: "0.0.1" }, { capabilities: {} });
-  const transport = buildTransport(server);
-  try {
-    await client.connect(transport);
-    const res = await client.listTools();
-    return (res.tools ?? []) as RawTool[];
-  } finally {
-    await client.close().catch(() => {});
-  }
+async function listTools(client: Client, server: McpServer, env?: Record<string, string>): Promise<RawTool[]> {
+  await client.connect(buildTransport(server, env));
+  const res = await client.listTools();
+  return (res.tools ?? []) as RawTool[];
 }
 
-function buildTransport(server: McpServer) {
+function buildTransport(server: McpServer, env?: Record<string, string>) {
   if (server.transport === "stdio" && server.command) {
     return new StdioClientTransport({
       command: server.command,
       args: server.args ?? [],
-      env: process.env as Record<string, string>,
+      env: env ?? (process.env as Record<string, string>),
+      stderr: env ? "ignore" : "inherit",
     });
   }
   if (server.transport === "http" && server.url) {

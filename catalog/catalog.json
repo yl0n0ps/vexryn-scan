@@ -1,0 +1,3755 @@
+{
+  "schema": 1,
+  "servers": {
+    "npm:@agentdeskai/browser-tools-mcp": {
+      "deprecated": null,
+      "latest": "2.0.2",
+      "versions": {
+        "2.0.2": {
+          "measuredAt": "2026-09-26T00:04:50.803Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "listBrowserTabs",
+              "tokens": 91,
+              "power": null,
+              "hash": "ac5adfc9c706c571be74d93ce7d363ea22c8f917d15c839df5166e46c2a5ada9"
+            },
+            {
+              "name": "getConsoleLogs",
+              "tokens": 288,
+              "power": null,
+              "hash": "207cfdb269da6f217c1ae97d071b179f6d2b6af3e72b64fd9359cece94f251fd"
+            },
+            {
+              "name": "getConsoleErrors",
+              "tokens": 276,
+              "power": null,
+              "hash": "9448ada7baed474016700b068c4cf339f6e669a383f732d7f5acb403a7111c2d"
+            },
+            {
+              "name": "getNetworkLogs",
+              "tokens": 290,
+              "power": null,
+              "hash": "7db4cc4a9e71f607f8057b3454654cf482c2246b6b958bf1eaf9223daa91f732"
+            },
+            {
+              "name": "getNetworkErrors",
+              "tokens": 263,
+              "power": null,
+              "hash": "b1d1d81926fce26ea180c52bf99ec7131c7a9ba023ec769c8918eb4e7650d333"
+            },
+            {
+              "name": "getSelectedElement",
+              "tokens": 149,
+              "power": null,
+              "hash": "d7af7cfbf44870bc1e00a5b2990c59c3ca2eec22cc94316527ac2fb996d422e4"
+            },
+            {
+              "name": "getPageInfo",
+              "tokens": 64,
+              "power": null,
+              "hash": "ac8296fc2ca741c03b3fbff53776deff1fb84e256e5c1e0973a400f0107327e1"
+            },
+            {
+              "name": "getConnectionStatus",
+              "tokens": 43,
+              "power": null,
+              "hash": "d1863d8af760e41ec53134da1fbce8047d58e07e3130cd2f555216b2ce135526"
+            },
+            {
+              "name": "takeScreenshot",
+              "tokens": 183,
+              "power": null,
+              "hash": "537144f2befac9ebeee93d303d8a11b3f2331f2a2435b8b365f6dc48ac31f15f"
+            },
+            {
+              "name": "refreshBrowser",
+              "tokens": 144,
+              "power": null,
+              "hash": "4a353ceff4610e93087b1bbf19abb8a147c12394f9a349ff0a0da9c6f1c08687"
+            },
+            {
+              "name": "getBrowserStorage",
+              "tokens": 228,
+              "power": null,
+              "hash": "20f8e172511e33b09f1cbd71945bec37842e2dbf9bbd7bb6d2863ddb184788c3"
+            },
+            {
+              "name": "wipeLogs",
+              "tokens": 161,
+              "power": null,
+              "hash": "0d443fb98e3a98d252c05444fc53fe8043636412b8bfc13b15450c7cca0f3d62"
+            },
+            {
+              "name": "runAccessibilityAudit",
+              "tokens": 183,
+              "power": null,
+              "hash": "8ac69cd8e96d3ca24246c453e9807c242828ea9352ad746914716c4b0f1dd8a7"
+            },
+            {
+              "name": "runPerformanceAudit",
+              "tokens": 179,
+              "power": null,
+              "hash": "a29e7fd81a5c2b4c58c942c14c97e0d1d31f874723cb00421a7f541c96e370c3"
+            },
+            {
+              "name": "runSEOAudit",
+              "tokens": 181,
+              "power": null,
+              "hash": "9711200cd4b5bb90c9b650e1dcec6212cb287ec3fdefcadaef55c866bd93e066"
+            },
+            {
+              "name": "runBestPracticesAudit",
+              "tokens": 187,
+              "power": null,
+              "hash": "757885c9e75025c0f33576fce99bb1fd205a66777c229198a2d68f8b8757579e"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@apify/actors-mcp-server": {
+      "deprecated": null,
+      "latest": "0.16.0",
+      "versions": {
+        "0.16.0": {
+          "measuredAt": "2026-09-26T00:06:27.799Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "search-actors",
+              "tokens": 1161,
+              "power": null,
+              "hash": "2269c2754f6b847b22e2e9ce00cd463579d3455df28fd50209c9e94a32087deb"
+            },
+            {
+              "name": "fetch-actor-details",
+              "tokens": 510,
+              "power": null,
+              "hash": "5c5d0a6e92f2c0f034b68e0a346d21d161dcf69a07625d030cc33501de878be4"
+            },
+            {
+              "name": "call-actor",
+              "tokens": 907,
+              "power": null,
+              "hash": "aa29c3e13fda42d71233fdd5128f46502e78202cca22182566a9f81cbd25cf15"
+            },
+            {
+              "name": "get-actor-run",
+              "tokens": 327,
+              "power": null,
+              "hash": "7eb07d5604a4c78cf5547587ab880355dc27fc3d7dc3c0318b98b1df4a400c8d"
+            },
+            {
+              "name": "get-dataset-items",
+              "tokens": 441,
+              "power": null,
+              "hash": "9488eb81a0befaaaeeb65c3a2431776dfed6f036b361511f3735a690abd87b3e"
+            },
+            {
+              "name": "get-key-value-store-record",
+              "tokens": 197,
+              "power": null,
+              "hash": "7c1b75f1ddb1184bbc9e0b6964d56d191c28de900f613775baaf95b13d2602e9"
+            },
+            {
+              "name": "abort-actor-run",
+              "tokens": 202,
+              "power": null,
+              "hash": "307e136d43636aa74cee2d33ae6cb6ff4f5021baac51ad15338954b8540c8aeb"
+            },
+            {
+              "name": "search-apify-docs",
+              "tokens": 575,
+              "power": null,
+              "hash": "a3e76b20ac09f376a0aa0f5839dd2d3d107146b50a461dd658b253117eb52e69"
+            },
+            {
+              "name": "fetch-apify-docs",
+              "tokens": 195,
+              "power": "network.fetch",
+              "hash": "feab4b7b45c37f51cc7a178c9f985e3364fcf0d022ab0b8d0de4efb861fc3552"
+            },
+            {
+              "name": "report-problem",
+              "tokens": 276,
+              "power": null,
+              "hash": "2f87d16b70c0763ad4fedcf68dfe534a409135c1bb6244bc2133ada5c9081f2a"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@azure/mcp": {
+      "deprecated": null,
+      "latest": "3.0.0-beta.47",
+      "versions": {
+        "3.0.0-beta.47": {
+          "measuredAt": "2026-09-26T00:05:00.331Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "documentation",
+              "tokens": 250,
+              "power": null,
+              "hash": "4c2442891d76d9ecd89500088898b124af89403e1d613472bd47eae1d4e00ecf"
+            },
+            {
+              "name": "azd",
+              "tokens": 228,
+              "power": null,
+              "hash": "79020b204e258a646b74f49b37200d7898f5c96825f99a1c12d470aa63bd07d0"
+            },
+            {
+              "name": "foundry",
+              "tokens": 214,
+              "power": null,
+              "hash": "4da0a7370dbee20f51102cca95268aca8adcce25a037a7df022989e33dcab788"
+            },
+            {
+              "name": "arm",
+              "tokens": 194,
+              "power": null,
+              "hash": "63c9f6d28699b8447e7cfc1b65d2fb221a2de247bf6129a96ccfa0385629d88d"
+            },
+            {
+              "name": "get_azure_bestpractices",
+              "tokens": 430,
+              "power": null,
+              "hash": "bd4af4eb0043e16e4acd756810577a940b817e8d5fc8cfac1f6df7f1bff7b448"
+            },
+            {
+              "name": "adme",
+              "tokens": 186,
+              "power": null,
+              "hash": "4404fd65d8d2636bf8853ff12bad9c90fe8761569d9b0e8b49d9aa89afda1131"
+            },
+            {
+              "name": "aks",
+              "tokens": 231,
+              "power": null,
+              "hash": "ec45607bd08b9e0a2aacba0e7219465fe54450741e4f51e4ac988e0f4927165a"
+            },
+            {
+              "name": "appconfig",
+              "tokens": 189,
+              "power": null,
+              "hash": "d6a71e270fb1d4f593bcde7d584760a789ab9d84010b2c95550d41a797ab077b"
+            },
+            {
+              "name": "applens",
+              "tokens": 206,
+              "power": null,
+              "hash": "19503c4287909bedca973ad3f8a85f272fa8ec78bc51f6e1f5585c48234b0df1"
+            },
+            {
+              "name": "appservice",
+              "tokens": 168,
+              "power": null,
+              "hash": "9935e6c422237e09eb0a16f9a8f4cd7064ecc7fc1012dcc569538ac17f4d8899"
+            },
+            {
+              "name": "role",
+              "tokens": 186,
+              "power": null,
+              "hash": "cc96b33bed9dad8f9ad3fd5580f1a03d9d10f2733b95a216f748c2b71d96ec38"
+            },
+            {
+              "name": "azurebackup",
+              "tokens": 218,
+              "power": null,
+              "hash": "868c688c8f54b54d3ad889b79b0c90e1976ba22b3043a906a81a20636ec6c3eb"
+            },
+            {
+              "name": "datadog",
+              "tokens": 187,
+              "power": null,
+              "hash": "fcb3d86e1717cfc58e446df5d0dba015e26b989b1440234afc84b571aa6150ba"
+            },
+            {
+              "name": "managedlustre",
+              "tokens": 199,
+              "power": null,
+              "hash": "d31fe1855c3710d526249a5a097967e1bf10b0dc43b6486ad339baeb26c72eae"
+            },
+            {
+              "name": "azuremigrate",
+              "tokens": 253,
+              "power": null,
+              "hash": "a68ce7894ae0e7f089ca78ccf67738cb3048c328867335b14b12bffb98d2ecf6"
+            },
+            {
+              "name": "azureterraform",
+              "tokens": 197,
+              "power": null,
+              "hash": "cd78f168507a72bb8bbbe6d187a70f02ac0e8c4f7b7fa5a1e25f2484d5633e3d"
+            },
+            {
+              "name": "azureterraformbestpractices",
+              "tokens": 189,
+              "power": null,
+              "hash": "9d530a276c726e927244aaa492c27c1f80ba09440fad26f794011059377a4116"
+            },
+            {
+              "name": "deploy",
+              "tokens": 209,
+              "power": null,
+              "hash": "449d02899251abbc9996d14fda9ad6f919bb81d5794c7736ab01d654f20c021e"
+            },
+            {
+              "name": "deviceregistry",
+              "tokens": 195,
+              "power": null,
+              "hash": "73a5104776c8d9dbe876a48210f400ce692d3f7a49e6adb441fa387005639906"
+            },
+            {
+              "name": "eventgrid",
+              "tokens": 167,
+              "power": null,
+              "hash": "46b184ac83ec4d0bfbf4595c81d2948d5412a45db81e9db517883bf5ec4d7410"
+            },
+            {
+              "name": "acr",
+              "tokens": 172,
+              "power": null,
+              "hash": "c678810a7d193cb435ae667cc35136e492ef6733c52e55ec06e89605119f09b8"
+            },
+            {
+              "name": "advisor",
+              "tokens": 206,
+              "power": null,
+              "hash": "6b7379a46d94dc9e4baad88dd6420e4e8484ecec3598e49fb7795e42e5ceaa6b"
+            },
+            {
+              "name": "bicepschema",
+              "tokens": 195,
+              "power": null,
+              "hash": "a8703f5f042fd0a425e6103e5a905f3340ff6ccc83e265641602f6940867d001"
+            },
+            {
+              "name": "cosmos",
+              "tokens": 176,
+              "power": null,
+              "hash": "f24762df41fd2593b670e9dd55d8a8f952fd8e82fe9233e788a06b509c975eae"
+            },
+            {
+              "name": "cloudarchitect",
+              "tokens": 164,
+              "power": null,
+              "hash": "72d611444f0bf42b26b7dfb35dd5c47cece311f785b36bf461120152625e7339"
+            },
+            {
+              "name": "communication",
+              "tokens": 161,
+              "power": null,
+              "hash": "915507139e6423d2b64f553a0e80f24a9deee74d54b95f9829a840f3d2517d64"
+            },
+            {
+              "name": "compute",
+              "tokens": 342,
+              "power": null,
+              "hash": "1ad8e8bd7d313862348bae214565c2f8a075689b78bc70f03e80093ce942bfd4"
+            },
+            {
+              "name": "confidentialledger",
+              "tokens": 184,
+              "power": null,
+              "hash": "640529708f490fad8bd8f87d5b91ee47041db9b2e77ee2861433ef7b6def08e2"
+            },
+            {
+              "name": "containerapps",
+              "tokens": 173,
+              "power": null,
+              "hash": "16fd78d382129a072b4ae9fa2767b105046507c1a3c0178bdaa1a3cfb8e2a8d4"
+            },
+            {
+              "name": "eventhubs",
+              "tokens": 176,
+              "power": null,
+              "hash": "583f46cef81254cc28e6492d6cc38ec1a4f43852ff545e86e171fb9a9dd209b8"
+            },
+            {
+              "name": "fileshares",
+              "tokens": 159,
+              "power": null,
+              "hash": "f89bb349ee1204e808ed82f77f3c1b274ca31a3d94fd12580d07d1b27870b111"
+            },
+            {
+              "name": "foundryextensions",
+              "tokens": 225,
+              "power": null,
+              "hash": "c69bdebcd19c1ead7e5a43b240dd47659e0b0ab14ca50693281be3d72f02ae30"
+            },
+            {
+              "name": "functionapp",
+              "tokens": 162,
+              "power": null,
+              "hash": "99ec59ee70fb566a24adcbe005b70a4c6a8cb20cc4b205b0e277faa171ffd4d1"
+            },
+            {
+              "name": "functions",
+              "tokens": 186,
+              "power": null,
+              "hash": "49294fde65453f553006a839013319fd81cd09b3fdde3991720cc5eee8efab62"
+            },
+            {
+              "name": "grafana",
+              "tokens": 183,
+              "power": null,
+              "hash": "56fdda3cc39e90ba9d012faba9254baaf9ab0b00bf0cf121745463fcf5d4b571"
+            },
+            {
+              "name": "insights",
+              "tokens": 189,
+              "power": null,
+              "hash": "bfccb231ef6f75ccb4cbc8523ef085ddeb6b253f0cee21a18cd76dfb0bbdee8e"
+            },
+            {
+              "name": "iothub",
+              "tokens": 163,
+              "power": null,
+              "hash": "e8d99b952546ff36d6aa181cc048adc6f3858c99ec27469a94f4b4e4df4d2d32"
+            },
+            {
+              "name": "iotoperations",
+              "tokens": 218,
+              "power": null,
+              "hash": "365b2f035e22da954470f9dc95f6934e786e13e71a167b7bb7b5dd43bb72f488"
+            },
+            {
+              "name": "keyvault",
+              "tokens": 162,
+              "power": null,
+              "hash": "96c6cf4d48afddb304a065e94fb73e93df547d09e2b359dc17de9df3dda73585"
+            },
+            {
+              "name": "kusto",
+              "tokens": 192,
+              "power": null,
+              "hash": "37b8a928553b4e7cdfe232c449be74aaf741a3c931d16ef8230a985584a95438"
+            },
+            {
+              "name": "loadtesting",
+              "tokens": 190,
+              "power": null,
+              "hash": "e901275e71f88b27ada9b18498649e7507f84a306e3a8eb865b7d51a029f0d18"
+            },
+            {
+              "name": "marketplace",
+              "tokens": 162,
+              "power": null,
+              "hash": "813b8d3874dc14f3720f26ae9b3f0a36944e30202cbe377beb0685c07cecdbe3"
+            },
+            {
+              "name": "quota",
+              "tokens": 166,
+              "power": null,
+              "hash": "c7340572d565a3b1a8f13d4e69de74bba121519a7f1ea4e69e59f42f58ba9005"
+            },
+            {
+              "name": "monitor",
+              "tokens": 266,
+              "power": null,
+              "hash": "2b7a302d1cb96691f5e2f8053b09cf19f6d3eebbf113ab50011b9184d62777b0"
+            },
+            {
+              "name": "applicationinsights",
+              "tokens": 183,
+              "power": null,
+              "hash": "3ba4ca2acb854e77ecbeb19ec3d2b6cdbf067eb99e002c0cc1bf982381d92f28"
+            },
+            {
+              "name": "mysql",
+              "tokens": 184,
+              "power": null,
+              "hash": "09f83b2b213cc47ad3f0e7fb14ea1aaef2d32cff2705552f2c185e0056200b35"
+            },
+            {
+              "name": "optimization",
+              "tokens": 186,
+              "power": null,
+              "hash": "3d3a52a19ab5dcec8de51086c08645748475da9fab1dd1b8c3f6aaa9b759532c"
+            },
+            {
+              "name": "policy",
+              "tokens": 172,
+              "power": null,
+              "hash": "ee5c64294fb8a586176f17fa6aaee918c237e69bad6ad4d60f7cd0d2ccbe0e25"
+            },
+            {
+              "name": "postgres",
+              "tokens": 185,
+              "power": null,
+              "hash": "09175590fecf8304c9d30108546aa340610ae20b50bb80e1781e27179a0969f4"
+            },
+            {
+              "name": "pricing",
+              "tokens": 205,
+              "power": null,
+              "hash": "5d1ae56f26425cda57dcaa4df68319cd717925f86e6fddde5d634433085b8668"
+            },
+            {
+              "name": "redis",
+              "tokens": 195,
+              "power": null,
+              "hash": "0550888a0f7354c50c8c47814eb5d6ef5f7f01c4ef2d76e0f9cc61e3546ca525"
+            },
+            {
+              "name": "resiliency",
+              "tokens": 208,
+              "power": null,
+              "hash": "094783df3fc4eb3d9316764ad2eb445dc535cb9ae58ea51e4da0d50a2ebc8ce1"
+            },
+            {
+              "name": "resourcehealth",
+              "tokens": 174,
+              "power": null,
+              "hash": "e0cfcc9c9ab2a4b1bff6f56effdefdb6642aa20076f220d0e012f42c758d31ee"
+            },
+            {
+              "name": "search",
+              "tokens": 216,
+              "power": null,
+              "hash": "e258000fc454e31b36c05b742059042f4e49bc6f87bef6de9189a9ef9ea04637"
+            },
+            {
+              "name": "speech",
+              "tokens": 219,
+              "power": null,
+              "hash": "b870e6e0f7b4c1292259bd6ed18bd00509a527b6838102b8554f4da2176d2bef"
+            },
+            {
+              "name": "servicebus",
+              "tokens": 222,
+              "power": null,
+              "hash": "efd3c456f70d60f67cc503c26207820ca3bec3ce782ad2a1d43d1ae14f20c074"
+            },
+            {
+              "name": "servicefabric",
+              "tokens": 191,
+              "power": null,
+              "hash": "4c3e7aa53cae44023031a0b02a661c7f151edbfcba89d0077eb7fe876051c067"
+            },
+            {
+              "name": "signalr",
+              "tokens": 170,
+              "power": null,
+              "hash": "6bf2336108f9ea0d93c71bbcacc4462af2bc8179f63cc1fabb17dda3b6014a5f"
+            },
+            {
+              "name": "sreagent",
+              "tokens": 194,
+              "power": null,
+              "hash": "634734bb3afdeb729fd235a01ba77e2bfcbb00ae386f7770b2ca9529ecae7043"
+            },
+            {
+              "name": "sql",
+              "tokens": 188,
+              "power": null,
+              "hash": "ad69a59882f1c31e13077056348825be8d22bb962c8c412297c2ef421aea1349"
+            },
+            {
+              "name": "storage",
+              "tokens": 260,
+              "power": null,
+              "hash": "898c661b81676f1643ac2f9be175dcb606418902763bd1125750b1e5062fe4d2"
+            },
+            {
+              "name": "storagesync",
+              "tokens": 193,
+              "power": null,
+              "hash": "9dd82ff0ae4ceb44b6761571f3130ddaca9c78a1684ca30e6910a31738b823df"
+            },
+            {
+              "name": "virtualdesktop",
+              "tokens": 177,
+              "power": null,
+              "hash": "8c279bbbf5101b634927f5069bc4b82cfe2de52c1ef7a84ff2da9cd7dac073fb"
+            },
+            {
+              "name": "wellarchitectedframework",
+              "tokens": 195,
+              "power": null,
+              "hash": "91247447e3bb9316ad632825a9e084940fc6269ad04b6b98474504ebce8dbf8b"
+            },
+            {
+              "name": "workbooks",
+              "tokens": 188,
+              "power": null,
+              "hash": "4dc90d1362d65d83d26b583f4e1ae6d077d04920b5bab9ef4e0d08bc9a0f2202"
+            },
+            {
+              "name": "extension_azqr",
+              "tokens": 254,
+              "power": null,
+              "hash": "e5c2159dde081fdadf1f151f2d19827b93c2675edd5b7dceb0c99c3764f725da"
+            },
+            {
+              "name": "extension_cli_generate",
+              "tokens": 151,
+              "power": null,
+              "hash": "bd7ff7db257b1f47eb8e1856d444c2e6eb477d0deca37096ca66fa5d3d21144e"
+            },
+            {
+              "name": "extension_cli_install",
+              "tokens": 143,
+              "power": null,
+              "hash": "2211be3e3ed85a9208b110d73dc0f87da8dde6a0a7c77162bdfa3af84c746e33"
+            },
+            {
+              "name": "group_list",
+              "tokens": 121,
+              "power": null,
+              "hash": "433a4324751d1c15cf89215ef2a8a42e211d8c49c3b76188bf3c8395979c7d0b"
+            },
+            {
+              "name": "group_resource_list",
+              "tokens": 163,
+              "power": null,
+              "hash": "2dbb8529e6846bc14700a96050fb08bf5c67bbb68f7c082904ff94664d52fbf4"
+            },
+            {
+              "name": "subscription_list",
+              "tokens": 154,
+              "power": null,
+              "hash": "829c191c8abdffb4523f1d91ccb143977e05af6625d809ff517eaa07e31582e0"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@browserbasehq/mcp": {
+      "deprecated": null,
+      "latest": "3.0.0",
+      "versions": {
+        "3.0.0": {
+          "measuredAt": "2026-09-26T00:03:11.620Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "start",
+              "tokens": 41,
+              "power": null,
+              "hash": "ee4ebaad9ea9a74131ff49d2a659d8ff0537a58eb8f78e41caa0c63fc7f2ec82"
+            },
+            {
+              "name": "end",
+              "tokens": 40,
+              "power": null,
+              "hash": "0ffe026fff8a010953fbdcab77ff0933cb859bb1b11d331d245bf2ac6492179d"
+            },
+            {
+              "name": "navigate",
+              "tokens": 58,
+              "power": "network.fetch",
+              "hash": "312da32a3712c2aed5c16527cddc1b8c21241f5cf780ed53c4aa10f076947b5c"
+            },
+            {
+              "name": "act",
+              "tokens": 60,
+              "power": null,
+              "hash": "094f318f240d763fa01af4e8493480f8fa8bd506badccec4bc9087e9222f9baf"
+            },
+            {
+              "name": "observe",
+              "tokens": 60,
+              "power": null,
+              "hash": "01c2cf46ab1d3e3abc000befeb04b5ef8425a142e3c4a626734a556d927e8658"
+            },
+            {
+              "name": "extract",
+              "tokens": 49,
+              "power": null,
+              "hash": "f569ac9a359d5a432f3fbb3825a08870f35caac325099ec8d399e5e9ac31410c"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@browsermcp/mcp": {
+      "deprecated": null,
+      "latest": "0.1.3",
+      "versions": {
+        "0.1.3": {
+          "measuredAt": "2026-09-26T00:06:55.410Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "browser_navigate",
+              "tokens": 63,
+              "power": "network.fetch",
+              "hash": "4b3cfa45a1bc28d33218a1ec88166e1989d8b3e15885bdeb4e7b1acc567cd1e8"
+            },
+            {
+              "name": "browser_go_back",
+              "tokens": 47,
+              "power": null,
+              "hash": "106f2f8101443562b0b4ff1ea8024dcdbf5a17eb01461d2aeb83045eaeb22a58"
+            },
+            {
+              "name": "browser_go_forward",
+              "tokens": 47,
+              "power": null,
+              "hash": "4a37cf3689784661e60b7c7452cdf3a9bb141c23453ae38a50d75496807eb86c"
+            },
+            {
+              "name": "browser_snapshot",
+              "tokens": 58,
+              "power": null,
+              "hash": "cdd58d5738248ca33d78ef46bb07b8a91f2f907b16b02563cdedf05e02247c51"
+            },
+            {
+              "name": "browser_click",
+              "tokens": 92,
+              "power": null,
+              "hash": "b94ee352f4875464999f759571886be8054039585fc27e0afc6eee09472b5b7b"
+            },
+            {
+              "name": "browser_hover",
+              "tokens": 91,
+              "power": null,
+              "hash": "01bea69e45bb636cd91287be7a2c928b32da03496c9645ede6e466601651b32e"
+            },
+            {
+              "name": "browser_type",
+              "tokens": 131,
+              "power": null,
+              "hash": "2935ce9c80faf6b075355a545588b21692f7d2164012685258ee7ab269cbf6be"
+            },
+            {
+              "name": "browser_select_option",
+              "tokens": 131,
+              "power": null,
+              "hash": "b0b4580b80fbc0b13ac551ed0a385b6f6d48754fcfffb1a664dbd0726dbe3c12"
+            },
+            {
+              "name": "browser_press_key",
+              "tokens": 82,
+              "power": null,
+              "hash": "8cb98db649bb97dea56db077fdffd21ba731e0e6f308cc2a1ca438c5ceed79e5"
+            },
+            {
+              "name": "browser_wait",
+              "tokens": 66,
+              "power": null,
+              "hash": "d514a3128419427a7f7731bf120633fc008f5e029b307a9a22e07dfc1f862db0"
+            },
+            {
+              "name": "browser_get_console_logs",
+              "tokens": 49,
+              "power": null,
+              "hash": "623f507b880f9c91569c5f00b192413f91507a7ed539fc990c1caa261270cddf"
+            },
+            {
+              "name": "browser_screenshot",
+              "tokens": 48,
+              "power": null,
+              "hash": "79bf93d9f2e05f69247b64d089d1013e807e5620d9429227f83bb04ebf66a9e7"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@hubspot/mcp-server": {
+      "deprecated": null,
+      "latest": "0.4.0",
+      "versions": {
+        "0.4.0": {
+          "measuredAt": "2026-09-26T00:05:03.765Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "hubspot-get-user-details",
+              "tokens": 216,
+              "power": null,
+              "hash": "c7885676ee21abdff9988d70af35113d6f03837bcb2d57ee5975d33d1b0e30e2"
+            },
+            {
+              "name": "hubspot-list-objects",
+              "tokens": 471,
+              "power": null,
+              "hash": "66f503fd63ce10a87d2d74d87fddbd478e59c9c548f08a3f93b0b774492ba70a"
+            },
+            {
+              "name": "hubspot-search-objects",
+              "tokens": 930,
+              "power": null,
+              "hash": "653d7bb76461cdf697135668d143bd008a0e1d6d0a54d60d358d81785ae91643"
+            },
+            {
+              "name": "hubspot-batch-create-associations",
+              "tokens": 591,
+              "power": null,
+              "hash": "5eaf1ee0d2d9d7e15e3b5eeea4ae0a696e3b1a9039aca035795c40d71c9f3d95"
+            },
+            {
+              "name": "hubspot-get-association-definitions",
+              "tokens": 304,
+              "power": null,
+              "hash": "8e708a4fe00f856175289c13ad89b761a2afadf56f2e0a507bf323268aac78a4"
+            },
+            {
+              "name": "hubspot-list-associations",
+              "tokens": 456,
+              "power": null,
+              "hash": "868529c91e697559318b5bd976b43b00185ba9fced22a8f3795b3b6e168e9151"
+            },
+            {
+              "name": "hubspot-batch-create-objects",
+              "tokens": 529,
+              "power": null,
+              "hash": "52cce41b9e26ff0c3fcd6d6e348141ae12acdd2df7222f6de76ca7fc993ab3e0"
+            },
+            {
+              "name": "hubspot-batch-update-objects",
+              "tokens": 463,
+              "power": null,
+              "hash": "2c009c7324603db2e42aeaefc8eb3553eac725729d200d8ccfc087591abff85d"
+            },
+            {
+              "name": "hubspot-batch-read-objects",
+              "tokens": 313,
+              "power": null,
+              "hash": "ab296e8c546f882f24eed3ae7471ffd264cbe475b7cae7bf281cbbbba9b64a42"
+            },
+            {
+              "name": "hubspot-list-properties",
+              "tokens": 288,
+              "power": null,
+              "hash": "2e7fc771dba4de411ff08009058742f8b8581544ccab184182d95b6e56751a1c"
+            },
+            {
+              "name": "hubspot-get-property",
+              "tokens": 210,
+              "power": null,
+              "hash": "ba5efcda14b838a4c47277e4af1f8aef58b82e2d9ea0b4e9343b20e39e0cacf7"
+            },
+            {
+              "name": "hubspot-create-property",
+              "tokens": 845,
+              "power": null,
+              "hash": "de0124e605153026e81ed2530ab8f717c892217c16089186834c010c99488211"
+            },
+            {
+              "name": "hubspot-update-property",
+              "tokens": 635,
+              "power": null,
+              "hash": "b995a45d04d8b8f75e1fa2cf2fe639cc09d0e519ae7f80317c80a293c606374a"
+            },
+            {
+              "name": "hubspot-create-engagement",
+              "tokens": 536,
+              "power": null,
+              "hash": "b8ac1dfb73039ae1bcb0017028285b68a5369936f65b4a3bcc6fafbf9c538a5a"
+            },
+            {
+              "name": "hubspot-get-engagement",
+              "tokens": 94,
+              "power": null,
+              "hash": "ca91d7a8fce372cbc6dd850beab3bdc340188fea66a3371ca041da1b2d6563e5"
+            },
+            {
+              "name": "hubspot-update-engagement",
+              "tokens": 497,
+              "power": null,
+              "hash": "10a87f809a70a481a78335abc555a4e8e37e4915ed46ce1d4a444881d3779a7b"
+            },
+            {
+              "name": "hubspot-generate-feedback-link",
+              "tokens": 139,
+              "power": null,
+              "hash": "e299c6435693064a9cde8a758954e4f5ec2fbbc90f417957bda5ab70d0c378df"
+            },
+            {
+              "name": "hubspot-get-schemas",
+              "tokens": 149,
+              "power": null,
+              "hash": "19d2f49bfc4b234f4201e07ab18090d1478fac6586f0a0034c4393526ce82dda"
+            },
+            {
+              "name": "hubspot-get-link",
+              "tokens": 387,
+              "power": null,
+              "hash": "ee80b728831d2fe82fd038e3dafbaeeba501572c1400cbc18a496c5a950fc495"
+            },
+            {
+              "name": "hubspot-list-workflows",
+              "tokens": 214,
+              "power": null,
+              "hash": "9d7d3102b0c160de7929dea8d83dad378a91e510f6f4f766b4b75e8dd3de898f"
+            },
+            {
+              "name": "hubspot-get-workflow",
+              "tokens": 164,
+              "power": null,
+              "hash": "4e731559f15014e61beef3fded717e377f34a51c86541d78f1640413e468f96c"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@kimtaeyoon83/mcp-server-youtube-transcript": {
+      "deprecated": null,
+      "latest": "0.1.1",
+      "versions": {
+        "0.1.1": {
+          "measuredAt": "2026-09-26T00:06:11.266Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "get_transcript",
+              "tokens": 80,
+              "power": null,
+              "hash": "57c2a9c0b9e7e3301a989a60e79f59b319a166eaf259d1592730c1a9c8b364a4"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@modelcontextprotocol/server-aws-kb-retrieval": {
+      "deprecated": "Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.",
+      "latest": "0.6.2",
+      "versions": {
+        "0.6.2": {
+          "measuredAt": "2026-09-26T00:02:26.055Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "retrieve_from_aws_kb",
+              "tokens": 101,
+              "power": null,
+              "hash": "65d208b8a85fef6266ef31a515270524512e755aeed73e07c1e789b639d8a3a8"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@modelcontextprotocol/server-brave-search": {
+      "deprecated": "Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.",
+      "latest": "0.6.2",
+      "versions": {
+        "0.6.2": {
+          "measuredAt": "2026-09-26T00:01:35.690Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "brave_web_search",
+              "tokens": 161,
+              "power": "network.fetch",
+              "hash": "62ec62a6abe84fb8bce9af9ccc6aea1112f31eb753b08309b4fe43a7e536f588"
+            },
+            {
+              "name": "brave_local_search",
+              "tokens": 156,
+              "power": "network.fetch",
+              "hash": "1056896afbfb1e9a66a9cfb9c77389751a240c224b992997e072ba9bf3aacc15"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@modelcontextprotocol/server-everything": {
+      "deprecated": null,
+      "latest": "2026.8.31",
+      "versions": {
+        "2026.8.31": {
+          "measuredAt": "2026-09-26T00:01:14.654Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "echo",
+              "tokens": 55,
+              "power": null,
+              "hash": "a89708fe7cef3b448be9ed26df5004392211f43e9f73d7ef5f52b28e3c015c3f"
+            },
+            {
+              "name": "get-annotated-message",
+              "tokens": 103,
+              "power": null,
+              "hash": "aab2b691556b54aaa2c663e84941bc080affe93f78aebdea26974b4d0f37b97f"
+            },
+            {
+              "name": "get-env",
+              "tokens": 46,
+              "power": null,
+              "hash": "d01da1e04e88a24264d6f179b561344c39b9a36f60f4ff918aebe946b0e83cb0"
+            },
+            {
+              "name": "get-resource-links",
+              "tokens": 79,
+              "power": null,
+              "hash": "0200e8b086ba55d256e25e6d05640d4761981b8f343f346f74aa4782a2e7339d"
+            },
+            {
+              "name": "get-resource-reference",
+              "tokens": 85,
+              "power": null,
+              "hash": "f1ce19656cc44cd48101592155f29d7af0b7cf4a6c66f4d742a0684eb0a82df2"
+            },
+            {
+              "name": "get-structured-content",
+              "tokens": 74,
+              "power": null,
+              "hash": "4f80c5f3d9ef7eadb7f3c8dd8e099238a182828b6e04295b804a303fe75d1e0a"
+            },
+            {
+              "name": "get-sum",
+              "tokens": 70,
+              "power": null,
+              "hash": "d834d56136b3fd6e801a3d1a3ec22e84512e51290263e9e68bae53de5b2a9f15"
+            },
+            {
+              "name": "get-tiny-image",
+              "tokens": 43,
+              "power": null,
+              "hash": "f8d0e1e5b59692c38a877b9eaaf9a5dbf47e318a8f1cb5128ce9153bef2d6871"
+            },
+            {
+              "name": "gzip-file-as-resource",
+              "tokens": 203,
+              "power": null,
+              "hash": "fa84d50110ac67e481f359d57481537ff49a32d86c5049fb35384aef7873dbe9"
+            },
+            {
+              "name": "toggle-simulated-logging",
+              "tokens": 52,
+              "power": null,
+              "hash": "68d6d81d670ef0b46a3ad529b15698474f352dd0d3c8597edfc60373e26f9df2"
+            },
+            {
+              "name": "toggle-subscriber-updates",
+              "tokens": 48,
+              "power": null,
+              "hash": "1fc007309a112fdf238170a96641bd16a15beb391329af260fdedafeb63429f4"
+            },
+            {
+              "name": "trigger-long-running-operation",
+              "tokens": 85,
+              "power": null,
+              "hash": "517924f22c03bfbc509adefc8160609c2ff190cffc63199dea78cbe08d02f085"
+            },
+            {
+              "name": "simulate-research-query",
+              "tokens": 132,
+              "power": null,
+              "hash": "b46e88487cc3b9e1917e9e6816ff63e10b2abbb402b9985f02e55603330f1c49"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@modelcontextprotocol/server-filesystem": {
+      "deprecated": null,
+      "latest": "2026.8.31",
+      "versions": {
+        "2026.8.31": {
+          "measuredAt": "2026-09-26T00:01:03.277Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "read_file",
+              "tokens": 106,
+              "power": "file.read",
+              "hash": "198b7257d6cdcb3fbfa7bfeb3dc7910f54199b6f0a210aa9ad9caa6fac88ca74"
+            },
+            {
+              "name": "read_text_file",
+              "tokens": 185,
+              "power": "file.read",
+              "hash": "29ef170f851b4b83959899eb970bb49d512f7f09a3dafa8de5729f145c945952"
+            },
+            {
+              "name": "read_media_file",
+              "tokens": 91,
+              "power": "file.read",
+              "hash": "0b8453f1d032f7b88d471cab16e41685cb36298b734f7d891dab293eb4cff7fb"
+            },
+            {
+              "name": "read_multiple_files",
+              "tokens": 139,
+              "power": "file.read",
+              "hash": "377a366a1225f9df3c9388e7f647fccc39cf657889badaa95d6484c5318230c4"
+            },
+            {
+              "name": "write_file",
+              "tokens": 91,
+              "power": "file.write",
+              "hash": "0ceaeedd5aa3895265a91b0cd3be20e6b49bd65f9b535aeaf9c5219300d7b3ce"
+            },
+            {
+              "name": "edit_file",
+              "tokens": 162,
+              "power": "file.write",
+              "hash": "5272d67bc2a33ef87e99bc70be63f2ad1721232b44c54a65e92bf2410f75fc97"
+            },
+            {
+              "name": "create_directory",
+              "tokens": 94,
+              "power": "file.write",
+              "hash": "5e46e4d0701784d3e28a67b446afc313d0b0025a9c0b355b294034fd7c68d082"
+            },
+            {
+              "name": "list_directory",
+              "tokens": 96,
+              "power": "file.read",
+              "hash": "f6a60ec46d367c958dfed7f283cb81c05deca401071282c060d77c8e956a9892"
+            },
+            {
+              "name": "list_directory_with_sizes",
+              "tokens": 129,
+              "power": "file.read",
+              "hash": "65880074323f3b34198cd54657907fcb37b65a6b8da1eeeb0977377b421652e7"
+            },
+            {
+              "name": "directory_tree",
+              "tokens": 132,
+              "power": "file.read",
+              "hash": "d8d55fe716795f146584a7a5397bcb7cb86e62b0554f8b93ecbc2e51c968183c"
+            },
+            {
+              "name": "move_file",
+              "tokens": 109,
+              "power": "file.write",
+              "hash": "a617b4ba682c60459b7eea22124a239f6a12ecc026a371a8387683c93dc39cd4"
+            },
+            {
+              "name": "search_files",
+              "tokens": 148,
+              "power": "file.read",
+              "hash": "3eeffb1c6d23cf83d88fa1a5a7d475d7ed40bf94cd2420ab87c201c20b3eeb6d"
+            },
+            {
+              "name": "get_file_info",
+              "tokens": 91,
+              "power": "file.read",
+              "hash": "9aeb9241cf118cd048f7ffba8119a8e87ecb665845499b1eb004841993387ad7"
+            },
+            {
+              "name": "list_allowed_directories",
+              "tokens": 77,
+              "power": null,
+              "hash": "0e12304c57209f3e8fc767f7666c5f29fd022c7cdb38f8421a7afb127797f119"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@modelcontextprotocol/server-github": {
+      "deprecated": "Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.",
+      "latest": "2025.4.8",
+      "versions": {
+        "2025.4.8": {
+          "measuredAt": "2026-09-26T00:01:17.693Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "create_or_update_file",
+              "tokens": 178,
+              "power": "file.write",
+              "hash": "98df7292ac8120f06dcd789dade10729d1dbdd3e9b636b10ee87628d8adb9939"
+            },
+            {
+              "name": "search_repositories",
+              "tokens": 115,
+              "power": null,
+              "hash": "a8b2a7f206bbf1b514c9ed50cf2bc1d880acb7b7f0a86920b1c5d16e9010891f"
+            },
+            {
+              "name": "create_repository",
+              "tokens": 107,
+              "power": null,
+              "hash": "713f4c1f238a14c34187055fe1e8837db4d20c1cfc45e82099acbe9568b42214"
+            },
+            {
+              "name": "get_file_contents",
+              "tokens": 121,
+              "power": "file.read",
+              "hash": "4762957fba144ee839318af269a2e03ff0d5d7132e0028e6daf3f94e5f408ee7"
+            },
+            {
+              "name": "push_files",
+              "tokens": 178,
+              "power": "file.write",
+              "hash": "580d7ee72aba2165f4c10de7b8c9933022283ee0e9c246e3c8d636f8e95bb734"
+            },
+            {
+              "name": "create_issue",
+              "tokens": 120,
+              "power": null,
+              "hash": "5b73b991b375b7f9d6bfe48d38addbaadb7853cca657de7f2ae8289bdfb6563f"
+            },
+            {
+              "name": "create_pull_request",
+              "tokens": 200,
+              "power": null,
+              "hash": "68df1f773babf85c0701c33e82a2e50de567be7917f7277f0121c2155471b80a"
+            },
+            {
+              "name": "fork_repository",
+              "tokens": 108,
+              "power": null,
+              "hash": "996f530fab99060e44b4a719e0c07000adc7ab6f27f946bde7ac5608ccce7ffa"
+            },
+            {
+              "name": "create_branch",
+              "tokens": 127,
+              "power": null,
+              "hash": "f59549714e80f50604eba707bdd21667364376d6ab993093de84ac4097c408d6"
+            },
+            {
+              "name": "list_commits",
+              "tokens": 94,
+              "power": null,
+              "hash": "911802468df4bea19b680536bed8dfad9c5e921058c8d8d1f14c698e976a4601"
+            },
+            {
+              "name": "list_issues",
+              "tokens": 149,
+              "power": null,
+              "hash": "11edad93dee014f1e8cb67338da69ece97742af40f3f32cb6aa875249107d10f"
+            },
+            {
+              "name": "update_issue",
+              "tokens": 143,
+              "power": null,
+              "hash": "d64113d1fb53c158fb4f8f03e985433eca2b2802bf5a608ee2b1ab81e96b4f3e"
+            },
+            {
+              "name": "add_issue_comment",
+              "tokens": 87,
+              "power": "external-message.send",
+              "hash": "d95e90cdfc59537bf8dec318ad81508e69f6329208b2d901e167d0fd1eb8bdb8"
+            },
+            {
+              "name": "search_code",
+              "tokens": 96,
+              "power": null,
+              "hash": "340da6f6d6eb854c04b36cfce624155c2d88867e666f55f7301cddab6886a045"
+            },
+            {
+              "name": "search_issues",
+              "tokens": 151,
+              "power": null,
+              "hash": "9f0d0b54d1ac09d397ea5f08a1b50d93b55f2f5d148162a673ab25d06327fc82"
+            },
+            {
+              "name": "search_users",
+              "tokens": 110,
+              "power": null,
+              "hash": "11f148b0ccbe5d53117a47772d01affb92df84ad6f02ad7edea687a162502f7d"
+            },
+            {
+              "name": "get_issue",
+              "tokens": 81,
+              "power": null,
+              "hash": "5a8d049a1412f8b3be3ceecbb15fc8b3f1d57ff6bf1d3cc050f15629e3ae7171"
+            },
+            {
+              "name": "get_pull_request",
+              "tokens": 99,
+              "power": null,
+              "hash": "6745807d6651880335eceb47c5408e7180fe62607b9349c63311848064ed0f9a"
+            },
+            {
+              "name": "list_pull_requests",
+              "tokens": 226,
+              "power": null,
+              "hash": "97d6d7e9a17ba303591fdfba82c189d611bbac950f8e168dd1fdc0f17b052dad"
+            },
+            {
+              "name": "create_pull_request_review",
+              "tokens": 360,
+              "power": null,
+              "hash": "902e60efc8fb65b79721f45bcf17c71ce8cd62e00e1d40239b0987ab2c3b65ab"
+            },
+            {
+              "name": "merge_pull_request",
+              "tokens": 159,
+              "power": null,
+              "hash": "59330acd25b9f2f4f43af476734b09c30ffa6fc70532998f7a350287b636b705"
+            },
+            {
+              "name": "get_pull_request_files",
+              "tokens": 103,
+              "power": null,
+              "hash": "1f8e8a0fe0d602b2b4520a9ee72112a407fe1c3e2b295d758a7f2311d8e12670"
+            },
+            {
+              "name": "get_pull_request_status",
+              "tokens": 105,
+              "power": null,
+              "hash": "6edca4a839599a1c776455168fe085568f9c256f72d645d25505d8c3161364c2"
+            },
+            {
+              "name": "update_pull_request_branch",
+              "tokens": 128,
+              "power": null,
+              "hash": "852871dbecf0fb3a6983a5c3ccd16c8fc78bfe532795abea158c5ebff4d2f7e6"
+            },
+            {
+              "name": "get_pull_request_comments",
+              "tokens": 101,
+              "power": null,
+              "hash": "89a9e8642a7d4dabb7088ddec0328c4b345840704b2ed29882029e23bceda5a4"
+            },
+            {
+              "name": "get_pull_request_reviews",
+              "tokens": 100,
+              "power": null,
+              "hash": "f8624c689a4801ee648f557d294d0d55078e517db4c563726e20e3ec4a92aff5"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@modelcontextprotocol/server-google-maps": {
+      "deprecated": "Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.",
+      "latest": "0.6.2",
+      "versions": {
+        "0.6.2": {
+          "measuredAt": "2026-09-26T00:01:38.182Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "maps_geocode",
+              "tokens": 45,
+              "power": null,
+              "hash": "0469e0222deb15ff03436e48dfb3c388889c00fd49317e24e8eac63b6efb2ed5"
+            },
+            {
+              "name": "maps_reverse_geocode",
+              "tokens": 56,
+              "power": null,
+              "hash": "c983ec25be590a0bbff865bedc72979c7b3dd5855a2be91cf80341034915944b"
+            },
+            {
+              "name": "maps_search_places",
+              "tokens": 95,
+              "power": null,
+              "hash": "6f9fb571b5b6c13955c3b0ded9536a942221f95ab9cc9415b12e8022e59aed0e"
+            },
+            {
+              "name": "maps_place_details",
+              "tokens": 50,
+              "power": null,
+              "hash": "20ec533e70e5e34ff71c3a7ec96456b9dd5c81ccde19e72b88406f6d59f49b3f"
+            },
+            {
+              "name": "maps_distance_matrix",
+              "tokens": 124,
+              "power": null,
+              "hash": "d7a5316e08d7d322c47219c985a9c3f01e79ae0fb5835ca3406a337b3965be39"
+            },
+            {
+              "name": "maps_elevation",
+              "tokens": 78,
+              "power": null,
+              "hash": "1766f7713b2734278209a55a7ee66a5bb9cd54156b2cb63c8323e7d21582304c"
+            },
+            {
+              "name": "maps_directions",
+              "tokens": 99,
+              "power": null,
+              "hash": "da98fbb4c8817d471d8da9ec543067b9fadd4bc2804fb3184ad13a1c5ab35764"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@modelcontextprotocol/server-memory": {
+      "deprecated": null,
+      "latest": "2026.8.31",
+      "versions": {
+        "2026.8.31": {
+          "measuredAt": "2026-09-26T00:01:06.692Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "create_entities",
+              "tokens": 129,
+              "power": "memory.write",
+              "hash": "d817baac1b670f3ab50b1faf5b5e597c11f3e3f230708396c006f359b7330a8b"
+            },
+            {
+              "name": "create_relations",
+              "tokens": 134,
+              "power": "memory.write",
+              "hash": "9d7972ad5d01a4bb2833096fddaa2220bd42d22b0805788a37fb6040bebb093b"
+            },
+            {
+              "name": "add_observations",
+              "tokens": 119,
+              "power": "memory.write",
+              "hash": "d12ba0c9dc70e0cfbe63514ce011d11df8edfe0dd43d57562fa4a0a184d85537"
+            },
+            {
+              "name": "delete_entities",
+              "tokens": 74,
+              "power": "data.delete",
+              "hash": "5683141eabf43e0b4d07a166e0e1e927e50314fe21c84890f8fba9593f21a59a"
+            },
+            {
+              "name": "delete_observations",
+              "tokens": 119,
+              "power": "data.delete",
+              "hash": "a45f522741b9882d46e56a817d2868b15c97c94b43ac120257d2d21c3e119f44"
+            },
+            {
+              "name": "delete_relations",
+              "tokens": 133,
+              "power": "data.delete",
+              "hash": "5ecc253fefc0695a46c2846cb7e7efd33a18d32310f8154e33bd460edac1e4f4"
+            },
+            {
+              "name": "read_graph",
+              "tokens": 40,
+              "power": null,
+              "hash": "a9305467c1cb5092aa4671c4e8512308a703b20f57228f1069c73abf8344d795"
+            },
+            {
+              "name": "search_nodes",
+              "tokens": 72,
+              "power": null,
+              "hash": "697d565d5efae2a4254d8b6887f96b18ca6d890b7aea458570ec4468de8d3d76"
+            },
+            {
+              "name": "open_nodes",
+              "tokens": 71,
+              "power": null,
+              "hash": "74e45aabbbdb55fc4a5049a4d9debc3ff9a231ec1531af68682e1e88c198f42a"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@modelcontextprotocol/server-postgres": {
+      "deprecated": "Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.",
+      "latest": "0.6.2",
+      "versions": {
+        "0.6.2": {
+          "measuredAt": "2026-09-26T00:01:22.162Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "query",
+              "tokens": 30,
+              "power": null,
+              "hash": "4843c4c0cd49bd4166a985828ede1ae4b65107a1e61e90b9fc4c671ebdc29018"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@modelcontextprotocol/server-puppeteer": {
+      "deprecated": "Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.",
+      "latest": "2025.5.12",
+      "versions": {
+        "2025.5.12": {
+          "measuredAt": "2026-09-26T00:01:33.339Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "puppeteer_navigate",
+              "tokens": 129,
+              "power": "network.fetch",
+              "hash": "89a85ccf023ae66bad53d7ea4414b9a902380a211936a5ea08741d8483fce87f"
+            },
+            {
+              "name": "puppeteer_screenshot",
+              "tokens": 142,
+              "power": null,
+              "hash": "d8cb95bb97016160984ac2aa5bbd8dbf2dc2f4108237d16925871433b33dbfe7"
+            },
+            {
+              "name": "puppeteer_click",
+              "tokens": 47,
+              "power": null,
+              "hash": "fd88640257a98f3a9b224aa4b7c804c41eac319b28e08e4132f4fb21d77cfbc0"
+            },
+            {
+              "name": "puppeteer_fill",
+              "tokens": 60,
+              "power": null,
+              "hash": "14f10592ef695c8420f7794ae4f30e6cd3dba02077d9529cef715fc978136d30"
+            },
+            {
+              "name": "puppeteer_select",
+              "tokens": 65,
+              "power": null,
+              "hash": "a62e7bef47b224b82e023b6ace833eb2b5e8d98c1a3e33ce71f22bba75b1272f"
+            },
+            {
+              "name": "puppeteer_hover",
+              "tokens": 47,
+              "power": null,
+              "hash": "f2aa8abc8f230dfa0b162709f9c66e8a43336f52855fb7ccbf488f608337d386"
+            },
+            {
+              "name": "puppeteer_evaluate",
+              "tokens": 48,
+              "power": null,
+              "hash": "e8459cfe3ec39638c1f41d1e1a8ad2db2d0be7f7fee1d8e936f4d0d8408a9190"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@modelcontextprotocol/server-sequential-thinking": {
+      "deprecated": null,
+      "latest": "2026.8.31",
+      "versions": {
+        "2026.8.31": {
+          "measuredAt": "2026-09-26T00:01:10.546Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "sequentialthinking",
+              "tokens": 862,
+              "power": null,
+              "hash": "af862020331f8afb0c826ec98b73efef1d763def73448282f8cdf9f1cf6ebcee"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@modelcontextprotocol/server-slack": {
+      "deprecated": "Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.",
+      "latest": "2025.4.25",
+      "versions": {
+        "2025.4.25": {
+          "measuredAt": "2026-09-26T00:01:19.718Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "slack_list_channels",
+              "tokens": 76,
+              "power": null,
+              "hash": "1bf4a4321eae5b2de00dc0c6fd8268e8f08783197a1b0420789e73c6d535e48e"
+            },
+            {
+              "name": "slack_post_message",
+              "tokens": 70,
+              "power": "external-message.send",
+              "hash": "acac38cdafb743b630e76d6ec3341bdaca5dcab6ce562454a58adba243387d9c"
+            },
+            {
+              "name": "slack_reply_to_thread",
+              "tokens": 124,
+              "power": "external-message.send",
+              "hash": "0c7e8d89fd79722b959bb816b90a0ef08df515edeeda346535b9fd66ffde1372"
+            },
+            {
+              "name": "slack_add_reaction",
+              "tokens": 95,
+              "power": null,
+              "hash": "3d723f7be109d40dfd600859ddf97f91225d39a215671b38fd6489d1312cf898"
+            },
+            {
+              "name": "slack_get_channel_history",
+              "tokens": 73,
+              "power": null,
+              "hash": "77d63c53d90fb2b57dd954f583c3258d766058f2fd95f4cb21ccb7c17bfab259"
+            },
+            {
+              "name": "slack_get_thread_replies",
+              "tokens": 110,
+              "power": null,
+              "hash": "b73a4a2f87116046aa02f0fba6423b2f73d9a966d836a6610cef07ec81aaf449"
+            },
+            {
+              "name": "slack_get_users",
+              "tokens": 80,
+              "power": null,
+              "hash": "a7d08a4bc7d6be3b34ecee3768b860e02bf6182e475d274acc593b9b0674768d"
+            },
+            {
+              "name": "slack_get_user_profile",
+              "tokens": 51,
+              "power": null,
+              "hash": "97fc6cbd1fbf33073f265ac3f81c93157cf461d52904872d00a74ec79588a53c"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@notionhq/notion-mcp-server": {
+      "deprecated": null,
+      "latest": "2.5.2",
+      "versions": {
+        "2.5.2": {
+          "measuredAt": "2026-09-26T00:02:38.324Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "API-get-user",
+              "tokens": 590,
+              "power": null,
+              "hash": "7da48c24f5ff778d2863655b9a2d11b88c5c62e78d58d5624621abfbf5e8994a"
+            },
+            {
+              "name": "API-get-users",
+              "tokens": 649,
+              "power": null,
+              "hash": "66f7a1e947f46a62aac0d1ffc874acec95d52ad12b7c8c3b0dbedfef5cee1c1f"
+            },
+            {
+              "name": "API-get-self",
+              "tokens": 581,
+              "power": null,
+              "hash": "d0030a8ada99e9d0a608efd27787a07ef37cdb188cba8c0edf02a6829eda707d"
+            },
+            {
+              "name": "API-post-search",
+              "tokens": 1083,
+              "power": null,
+              "hash": "c77e50c3a60e71ae2bce74608995dfb8566cc5b1fb569b42a3781a72a65b85e0"
+            },
+            {
+              "name": "API-get-block-children",
+              "tokens": 678,
+              "power": null,
+              "hash": "bda9ab381ea74856b435f50626c6ca146ac36c7e6792ae47b3ca398c39427633"
+            },
+            {
+              "name": "API-patch-block-children",
+              "tokens": 698,
+              "power": null,
+              "hash": "4918e227aa0fc869be06327e15af833735b09b7ce8c63b3ad26689bdb89529b2"
+            },
+            {
+              "name": "API-retrieve-a-block",
+              "tokens": 597,
+              "power": null,
+              "hash": "901c7780323b9bcbd4d04448d161c1b726b824b43d488bce0fe97ebfe1595c9f"
+            },
+            {
+              "name": "API-update-a-block",
+              "tokens": 712,
+              "power": null,
+              "hash": "1ea36022e910f722a59dba5cf456843fd6f35c295611fcbfd1aae2110f72895d"
+            },
+            {
+              "name": "API-delete-a-block",
+              "tokens": 596,
+              "power": "data.delete",
+              "hash": "0fffa552d376001394d8b1c5645e2027355458a7042aa8bf61fbaa4dd2c1d375"
+            },
+            {
+              "name": "API-retrieve-a-page",
+              "tokens": 665,
+              "power": null,
+              "hash": "cfe2c4976589f7b4b3211021c2a8d7a0379c94ad8a137c516a15e44cf4e493fa"
+            },
+            {
+              "name": "API-patch-page",
+              "tokens": 875,
+              "power": null,
+              "hash": "6891acdfe419a91ae862def3aa294da5bbcfb1d303e28cdc3a05e2e55a3949cc"
+            },
+            {
+              "name": "API-post-page",
+              "tokens": 805,
+              "power": null,
+              "hash": "248b0daaca5397b5e0306a7028de6716ee969521cb1a944816f890807f941ba0"
+            },
+            {
+              "name": "API-retrieve-a-page-property",
+              "tokens": 688,
+              "power": null,
+              "hash": "5a6f248b175dc95dcf8d42231ad7d3d6142cfd623558d4497751f4b10553dcda"
+            },
+            {
+              "name": "API-retrieve-a-comment",
+              "tokens": 672,
+              "power": null,
+              "hash": "7755eef1f1d7e852e936e4d3b09f92e839d5f11fe1e8d2a00f3b78b2c7c386f0"
+            },
+            {
+              "name": "API-create-a-comment",
+              "tokens": 710,
+              "power": null,
+              "hash": "6abe5f36f3dddc8392f55a16c238a664f6fdd9c3d49dc61c55342787dae6c2eb"
+            },
+            {
+              "name": "API-query-data-source",
+              "tokens": 755,
+              "power": null,
+              "hash": "229d4eb3427b2508da978add683cdaa2f633960c0a52f1481251897baf3f69ef"
+            },
+            {
+              "name": "API-retrieve-a-data-source",
+              "tokens": 602,
+              "power": null,
+              "hash": "8d5d84f90bf28a134a13876e14c261bbaee35adedf495b376f5c39925ae03f40"
+            },
+            {
+              "name": "API-update-a-data-source",
+              "tokens": 705,
+              "power": null,
+              "hash": "b3cc582542d07f0fafde35adc385c89a660d58e7904a31ae3f8fb877315c25a9"
+            },
+            {
+              "name": "API-create-a-data-source",
+              "tokens": 672,
+              "power": null,
+              "hash": "ef563f3de68377435d9d0229403aa7a72ea8c5606546a90e5185baee812bace4"
+            },
+            {
+              "name": "API-list-data-source-templates",
+              "tokens": 624,
+              "power": null,
+              "hash": "6ce3041fbeba6d9ac10a53c07232ac66e6f801e6845fa2f491515e69c5c1d43a"
+            },
+            {
+              "name": "API-retrieve-a-database",
+              "tokens": 598,
+              "power": null,
+              "hash": "69f2d89beb38273f5ce687cdd142f1034186c0c431ffc82ddd3e2c505dadf722"
+            },
+            {
+              "name": "API-move-page",
+              "tokens": 627,
+              "power": null,
+              "hash": "de2ac06640e04e015064aa403e01f3b3632756ea6d3ce350421d336177c117e1"
+            },
+            {
+              "name": "API-retrieve-page-markdown",
+              "tokens": 691,
+              "power": null,
+              "hash": "7751d70c940e21c5eec7118cc2844506d1359059219a358f28d24832834d4a48"
+            },
+            {
+              "name": "API-update-page-markdown",
+              "tokens": 1267,
+              "power": null,
+              "hash": "d700994744909547fe240610146245d3c6859c2021e3704bd177fff0e3ca92f9"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@perplexity-ai/mcp-server": {
+      "deprecated": null,
+      "latest": "1.3.0",
+      "versions": {
+        "1.3.0": {
+          "measuredAt": "2026-09-26T00:04:42.019Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "perplexity_ask",
+              "tokens": 370,
+              "power": null,
+              "hash": "aaaab9c192e6b43d08ae7d6ebf0796f87f84070c221a8dfbad33f58084f34b84"
+            },
+            {
+              "name": "perplexity_research",
+              "tokens": 199,
+              "power": null,
+              "hash": "d63ad646c89e26d1ff22c6be0d04d7c1fde4536c79e33d598a614a8cf07d3d20"
+            },
+            {
+              "name": "perplexity_reason",
+              "tokens": 368,
+              "power": null,
+              "hash": "6a2e7fa37c55700ce38ebb305c289ae65574b8a5bfaa5b52363dc40a454a07f7"
+            },
+            {
+              "name": "perplexity_search",
+              "tokens": 424,
+              "power": "network.fetch",
+              "hash": "6b15e4513cde88ad8d3b1cf2416047754a85f46c64930fa6b915a05bb7298fd1"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@pinecone-database/mcp": {
+      "deprecated": null,
+      "latest": "0.3.0",
+      "versions": {
+        "0.3.0": {
+          "measuredAt": "2026-09-26T00:06:51.794Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "search-docs",
+              "tokens": 84,
+              "power": null,
+              "hash": "ca803df66b2e582ac529c0b7ed74750feb8f36bbe6d45366e2bd3d1e71cd2d80"
+            },
+            {
+              "name": "list-indexes",
+              "tokens": 349,
+              "power": null,
+              "hash": "d3ee99e83b9b95e2511d214ed6255a89f6cc3ef41a3f27cdd462f0a0dcd0d862"
+            },
+            {
+              "name": "describe-index",
+              "tokens": 401,
+              "power": null,
+              "hash": "e8d1f405427be7d8f503e9fca32de345e96d793bab36eba192cafe878ed44e3d"
+            },
+            {
+              "name": "describe-index-stats",
+              "tokens": 401,
+              "power": null,
+              "hash": "e1d5070cbb19b0e375fc7857e8912b55c61a83073e3c05647a012055eef94f54"
+            },
+            {
+              "name": "create-index-for-model",
+              "tokens": 821,
+              "power": null,
+              "hash": "1ea3c082537eaac3d0b74f6ec3c9e935fad0a12835e64e2ba0d4c29aca7e0f0e"
+            },
+            {
+              "name": "upsert-records",
+              "tokens": 557,
+              "power": null,
+              "hash": "b4cd784a0452534b3a9541c0b25032bf8d2f15aaacbcfa0375db739d6d2a726d"
+            },
+            {
+              "name": "search-records",
+              "tokens": 1157,
+              "power": null,
+              "hash": "01ed6c150d540585b32131c0ccd1301f39fa53ebb13a7a1804fdd4a3424f664f"
+            },
+            {
+              "name": "rerank-documents",
+              "tokens": 769,
+              "power": null,
+              "hash": "143118c7a35baccf480cadf08514eec40758d9b25ef1e53cf035ac6c08a254d0"
+            },
+            {
+              "name": "cascading-search",
+              "tokens": 1130,
+              "power": null,
+              "hash": "090cf63c1299f5d7c686240d2429956f09030e5634cbcda1a7d00f72546cfd3b"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@playwright/mcp": {
+      "deprecated": null,
+      "latest": "0.0.82",
+      "versions": {
+        "0.0.82": {
+          "measuredAt": "2026-09-26T00:02:29.020Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "browser_close",
+              "tokens": 45,
+              "power": null,
+              "hash": "75a7fb9015e5f3e599a07b9a1f09338629ed04fd1cab31d2382f2289f2e4dba3"
+            },
+            {
+              "name": "browser_resize",
+              "tokens": 80,
+              "power": null,
+              "hash": "608c5213a41593749b2830e62fa5d2f3f56ff45a66b7c4d55ee658e06e7a3a30"
+            },
+            {
+              "name": "browser_console_messages",
+              "tokens": 165,
+              "power": null,
+              "hash": "1b8ed2271cb306c997d8a83c37208dd924483e9049b9cd0b73eb77f239c7b4f4"
+            },
+            {
+              "name": "browser_handle_dialog",
+              "tokens": 85,
+              "power": null,
+              "hash": "67063646df0ad36ea7d0ece49c377b682ef2b025c491098941e6b1a418aa9a2e"
+            },
+            {
+              "name": "browser_emulate_media",
+              "tokens": 254,
+              "power": null,
+              "hash": "a8fb0a1d5a00cec4c665718edb70a72f69e4a1e9ef664a26afb3528badfb0b30"
+            },
+            {
+              "name": "browser_evaluate",
+              "tokens": 168,
+              "power": null,
+              "hash": "605d56eef63471a3c7c000219c4d5237301b269ee3449856fac060673b4311e9"
+            },
+            {
+              "name": "browser_file_upload",
+              "tokens": 86,
+              "power": "file.share",
+              "hash": "bceacaa2a83d858b09806ddd2888e08b038d5f953db2d4eb682596f10f263408"
+            },
+            {
+              "name": "browser_drop",
+              "tokens": 212,
+              "power": null,
+              "hash": "269c33cf544717e3514ef89466cc357591e792bf03f87509e798fec93584f5f9"
+            },
+            {
+              "name": "browser_find",
+              "tokens": 194,
+              "power": null,
+              "hash": "3d71a65a2e1f12264adb9d0710a30267938e76e54278bebec4a2610fda854ff6"
+            },
+            {
+              "name": "browser_fill_form",
+              "tokens": 229,
+              "power": null,
+              "hash": "358829c0e16d916ce2e814898ddcdd9aafcbf03f69be2d24f58ba9e15a10e38b"
+            },
+            {
+              "name": "browser_press_key",
+              "tokens": 83,
+              "power": null,
+              "hash": "ff9cb6a88741a046a3c066ae7e5e0ef71248c4f1d0a03e4f293a492fc71c2fa6"
+            },
+            {
+              "name": "browser_type",
+              "tokens": 172,
+              "power": null,
+              "hash": "f6efbc9490722fb466e60cbeedc51da009f9cdb95c1aa032c7b9ce91fc9008ff"
+            },
+            {
+              "name": "browser_navigate",
+              "tokens": 64,
+              "power": "network.fetch",
+              "hash": "30514cc8da7b80190177ae3cf5c2ecaa6128e7756151698d0fb0db9b9c354dc3"
+            },
+            {
+              "name": "browser_navigate_back",
+              "tokens": 53,
+              "power": null,
+              "hash": "2554b12929969fe86a10b723cc2e9f068c3356ec2c4206dc4384fd5381d3ae1e"
+            },
+            {
+              "name": "browser_network_requests",
+              "tokens": 168,
+              "power": null,
+              "hash": "1f6ea7b1663f9b94a5e784086462ee45c0820422d5c611597b906c5b4a084fb1"
+            },
+            {
+              "name": "browser_network_request",
+              "tokens": 190,
+              "power": null,
+              "hash": "f04b8a2bc96b0e1ea7f39b25b7533144d1116042ba37f5522e5bdc8dd6fa5e26"
+            },
+            {
+              "name": "browser_run_code_unsafe",
+              "tokens": 182,
+              "power": "shell.exec",
+              "hash": "9c9dccae87558b1bdce0d2b504732c15b6c51e42c0c8e1f65f144f42a41e8998"
+            },
+            {
+              "name": "browser_take_screenshot",
+              "tokens": 309,
+              "power": null,
+              "hash": "249d4a44884112d792f71f1eee77daec4a7ae8113f2401ba077799e0766dee15"
+            },
+            {
+              "name": "browser_snapshot",
+              "tokens": 169,
+              "power": null,
+              "hash": "d9a0060a0d42a067f6a432086c26599897065ed4783b8478a57895a52c9a1b03"
+            },
+            {
+              "name": "browser_click",
+              "tokens": 180,
+              "power": null,
+              "hash": "e84095f477c1a867fad839dcc42536d4a85e8aac079a113530863cc6064309f2"
+            },
+            {
+              "name": "browser_drag",
+              "tokens": 157,
+              "power": null,
+              "hash": "0a56abac219c23555c2d502de95897ab094542497daa777b6f76477be1a86365"
+            },
+            {
+              "name": "browser_hover",
+              "tokens": 96,
+              "power": null,
+              "hash": "903b598be49554f49c95e2b4637b3003b140f8ab2ec77b6b67d9ef621706b873"
+            },
+            {
+              "name": "browser_select_option",
+              "tokens": 136,
+              "power": null,
+              "hash": "0aa07647d7b36d1fff2106a15baa8bdd94a4d0c96dd5a3601da55204e6d330a1"
+            },
+            {
+              "name": "browser_tabs",
+              "tokens": 128,
+              "power": "network.fetch",
+              "hash": "087bf47ed27a9f4d132fcd53de5863bae837f4a4b5f9fdd2906ea87c338254e2"
+            },
+            {
+              "name": "browser_wait_for",
+              "tokens": 103,
+              "power": null,
+              "hash": "1119f8796d921f8c8443560d64840c1651ab319a0a5adf09d8f5418d6beb66b7"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@sentry/mcp-server": {
+      "deprecated": null,
+      "latest": "0.42.0",
+      "versions": {
+        "0.42.0": {
+          "measuredAt": "2026-09-26T00:02:45.820Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "find_organizations",
+              "tokens": 153,
+              "power": null,
+              "hash": "5aa04ff923692a2dabf19ee95a363a1ff453199374da0619d5984300ce83b16f"
+            },
+            {
+              "name": "find_projects",
+              "tokens": 290,
+              "power": null,
+              "hash": "bafd8dc13e182aebb15eba60a0b99ebc1580403a8b88b1fa4790fc0a61d5046d"
+            },
+            {
+              "name": "update_issue",
+              "tokens": 1274,
+              "power": null,
+              "hash": "637643dcab5716ab2d443654341dec587b37049090214a021b3220fc0aa67ef1"
+            },
+            {
+              "name": "search_events",
+              "tokens": 1094,
+              "power": null,
+              "hash": "408cf48ca9e4310b51a05119eaa812d349e65acc7a430246145f7e1f29e9caae"
+            },
+            {
+              "name": "analyze_issue_with_seer",
+              "tokens": 613,
+              "power": null,
+              "hash": "1351592f3b831221b5dfa53f1fae2649fdc593a6cf39edbe7074ae157a79fcae"
+            },
+            {
+              "name": "search_issues",
+              "tokens": 824,
+              "power": null,
+              "hash": "0cce6e7152d07f8d3507bf5505037e2a7b338b8442745e8375531d61f83df43f"
+            },
+            {
+              "name": "get_sentry_resource",
+              "tokens": 604,
+              "power": "network.fetch",
+              "hash": "663a1d3bffcd35bf349e4a9f3c7e8d93c3671f273da836c1ab2cb65d8685d33d"
+            },
+            {
+              "name": "search_sentry_tools",
+              "tokens": 383,
+              "power": null,
+              "hash": "ac48b9b899a508f57954565e3c3901685ae70a2dc1b4a79a083d47b199f52d9d"
+            },
+            {
+              "name": "execute_sentry_tool",
+              "tokens": 257,
+              "power": null,
+              "hash": "a5af5e07420ff3fade698ab6ac2d27ae0b7778a675569ba78a37bf3c422dcb22"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@shopify/dev-mcp": {
+      "deprecated": null,
+      "latest": "1.16.0",
+      "versions": {
+        "1.16.0": {
+          "measuredAt": "2026-09-26T00:05:33.141Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "feedback",
+              "tokens": 785,
+              "power": null,
+              "hash": "55d16b734573320bbb963e5c3dcdd0a4d5e433542fbaffd3f5ed2fee7e1a9ba5"
+            },
+            {
+              "name": "learn_shopify_api",
+              "tokens": 3149,
+              "power": null,
+              "hash": "a22c3e62465257f37bcd37e7e478d68b2bbdc4b8c114c23b89b8f16cbdf2446d"
+            },
+            {
+              "name": "search_docs_chunks",
+              "tokens": 302,
+              "power": null,
+              "hash": "7213c2e641080489e9f3c2bd81a7f141a34997056718f32c66bae51ddcada59e"
+            },
+            {
+              "name": "validate",
+              "tokens": 818,
+              "power": null,
+              "hash": "cc82ab748bdc37570033b13209e71b17ed870cac4951e434dc74e67f5d062757"
+            },
+            {
+              "name": "validate_theme",
+              "tokens": 442,
+              "power": null,
+              "hash": "43f3d4a9cf71f43ff15528ff407d8d7914c3738684bc9f1fd75a8121ae299762"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@supabase/mcp-server-supabase": {
+      "deprecated": null,
+      "latest": "0.13.0",
+      "versions": {
+        "0.13.0": {
+          "measuredAt": "2026-09-26T00:02:55.367Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "search_docs",
+              "tokens": 450,
+              "power": null,
+              "hash": "36c8593724c7e0c891ecbf315c5e6e6d481d635598be7f0e185e3752a5de968d"
+            },
+            {
+              "name": "list_organizations",
+              "tokens": 51,
+              "power": null,
+              "hash": "da840673a088b6e03f4cd82b17086e7076bd53c22ff5934c705fde0e1c3efb9a"
+            },
+            {
+              "name": "get_organization",
+              "tokens": 65,
+              "power": null,
+              "hash": "90462774254429ceccae93e86dcff0c40390d1a20dbd1b433ac32006cd5932b8"
+            },
+            {
+              "name": "list_projects",
+              "tokens": 66,
+              "power": null,
+              "hash": "c2858cde1c035f15c9731522e2a598c05ded215d68b37244519b17e4a4f3a5cc"
+            },
+            {
+              "name": "get_project",
+              "tokens": 62,
+              "power": null,
+              "hash": "81287548b57c0a990aeb2955b3e9262e9eb84a0966eefb8d03b6890ab431fa03"
+            },
+            {
+              "name": "get_cost",
+              "tokens": 113,
+              "power": null,
+              "hash": "b8d2ce2d4fe22103a2289d5abf7ef31ac80a407af1d161017a557e311490ca7e"
+            },
+            {
+              "name": "confirm_cost",
+              "tokens": 128,
+              "power": null,
+              "hash": "fc7eaf36c403e357b28563c6fdee19f8580b3de6b48121177b5b21492cb322c0"
+            },
+            {
+              "name": "create_project",
+              "tokens": 246,
+              "power": null,
+              "hash": "86c6feb9bb42b002c084f7c7049dd9fc4c5c7ad94186be51273ac0f3a9eb5001"
+            },
+            {
+              "name": "pause_project",
+              "tokens": 57,
+              "power": null,
+              "hash": "8e9f05542fadc02bd0412590d3e00c1a33347f8cc80a257621d099e01dc4b8c9"
+            },
+            {
+              "name": "restore_project",
+              "tokens": 57,
+              "power": null,
+              "hash": "17edcff1e3202705972dbc09e391de3d6bb972faa4f4d83ae56ec6d55d56e80c"
+            },
+            {
+              "name": "list_tables",
+              "tokens": 156,
+              "power": null,
+              "hash": "c21e31103092aa82dd6fbe3a89650326e1e22ebd2a44f6b9642786715f3c435f"
+            },
+            {
+              "name": "list_extensions",
+              "tokens": 57,
+              "power": null,
+              "hash": "f650aea394b96f757c0c8c4f342f25a10105cea7145e26ad9fd3e2b5218a3482"
+            },
+            {
+              "name": "list_migrations",
+              "tokens": 58,
+              "power": null,
+              "hash": "0a32e133ab51b79b29e2a044bafa22fa4a35d93e39a19efa9cbb3012a0389ae9"
+            },
+            {
+              "name": "apply_migration",
+              "tokens": 182,
+              "power": null,
+              "hash": "f95145b91b118eb9da660e4103116c4c9b6ad75b47021d82deef4c50a59cd02e"
+            },
+            {
+              "name": "execute_sql",
+              "tokens": 176,
+              "power": null,
+              "hash": "c13349c93ca98d4fa4112d5c2348be2859fdabea907889850c5c36ac94fb9aa2"
+            },
+            {
+              "name": "query_logs",
+              "tokens": 760,
+              "power": null,
+              "hash": "380a68c8b85f568957791f3ee29f8ed1ff79516fff509c7d3a30ef375ce003ed"
+            },
+            {
+              "name": "get_advisors",
+              "tokens": 146,
+              "power": null,
+              "hash": "9644f8e0397b0e76118719b12e8abdbbfb11543763be34fb331c6d77627dfb59"
+            },
+            {
+              "name": "get_project_url",
+              "tokens": 59,
+              "power": null,
+              "hash": "8c0a1b8d02f526c564822c2011e989b7f2e53b74ad202e18a0533fe103e66352"
+            },
+            {
+              "name": "get_publishable_keys",
+              "tokens": 138,
+              "power": null,
+              "hash": "0187d4cbb00aef21b251d87ee47e05ceb9d22471adc70721adfad26e58067267"
+            },
+            {
+              "name": "generate_typescript_types",
+              "tokens": 61,
+              "power": null,
+              "hash": "e366d56c8e2fd094ba53679c8d62e7be31a19dca2b57fda65f88be1910edb40e"
+            },
+            {
+              "name": "list_edge_functions",
+              "tokens": 61,
+              "power": null,
+              "hash": "1c1c9ef1bb868350a6db3ff0f05264ec33004b7ce8b058598d5dfead63ae951e"
+            },
+            {
+              "name": "get_edge_function",
+              "tokens": 76,
+              "power": null,
+              "hash": "51e0390bf740a599db2056579ea17922636a592500f07d62ca5385cfd046d653"
+            },
+            {
+              "name": "deploy_edge_function",
+              "tokens": 413,
+              "power": null,
+              "hash": "b6ccebb55616a73eb85eb84ee914a94f2b3f3741c4abedf008e0c2805b675bbd"
+            },
+            {
+              "name": "create_branch",
+              "tokens": 160,
+              "power": null,
+              "hash": "5f69370e6717b91948c446b71ef92d70b0fc81ce1a04b337ce8df168cc037d0b"
+            },
+            {
+              "name": "list_branches",
+              "tokens": 83,
+              "power": null,
+              "hash": "4de848e687612e059e3bb139d81d4d6f3ff07b876e66b012e1d3a26ebc68d20d"
+            },
+            {
+              "name": "delete_branch",
+              "tokens": 55,
+              "power": null,
+              "hash": "03cf583ad4156922f03bfcde8f96c7753e2ca0ea594c3fd42707f3dc6f0db4e3"
+            },
+            {
+              "name": "merge_branch",
+              "tokens": 63,
+              "power": null,
+              "hash": "6ea67d2a41181244c68c7886545646c33d14fdf056f05a85d01c9f8cea157b27"
+            },
+            {
+              "name": "reset_branch",
+              "tokens": 89,
+              "power": null,
+              "hash": "86808e4a2743070cbc4e1b8b7a75ba44e8e27e98ca88db36623613a3b3d6ebeb"
+            },
+            {
+              "name": "rebase_branch",
+              "tokens": 77,
+              "power": null,
+              "hash": "4c5e3304da925ba009f091196dc8c4beb19a0f07b5d63182f90c73304781f87e"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@upstash/context7-mcp": {
+      "deprecated": null,
+      "latest": "4.1.1",
+      "versions": {
+        "4.1.1": {
+          "measuredAt": "2026-09-26T00:02:34.075Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "resolve-library-id",
+              "tokens": 607,
+              "power": null,
+              "hash": "79be48fd8736aef9e7b2e4ba932e0ae38fabb04b421f41e0e9c45c7d236565a4"
+            },
+            {
+              "name": "query-docs",
+              "tokens": 374,
+              "power": null,
+              "hash": "8b9668e19245d5c5b3d8346c14f56db2e0bd5e29f4da43acf1afa1479fee11f5"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@winor30/mcp-server-datadog": {
+      "deprecated": null,
+      "latest": "1.8.0",
+      "versions": {
+        "1.8.0": {
+          "measuredAt": "2026-09-26T00:06:47.282Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "list_incidents",
+              "tokens": 63,
+              "power": null,
+              "hash": "5a205573fe582738d9c0857e05b9a1bb20807268cd6742f0b78ec87658a74a0a"
+            },
+            {
+              "name": "get_incident",
+              "tokens": 45,
+              "power": null,
+              "hash": "8403963d515c265d38b0aba43c809d3d931f3ed563cf6b1b9d416d3a8bac6ecb"
+            },
+            {
+              "name": "query_metrics",
+              "tokens": 110,
+              "power": null,
+              "hash": "75ef33be931ede8c106de3999fbc9284c023a703bc96d67c17a0c1f505744efb"
+            },
+            {
+              "name": "get_logs",
+              "tokens": 107,
+              "power": null,
+              "hash": "dda7d7676085e3aa1156a6d7c5a6170fb068a5f82d3a7a1368ec119bbf5ecfb4"
+            },
+            {
+              "name": "get_all_services",
+              "tokens": 112,
+              "power": null,
+              "hash": "f60eddd23cc3017685c803611a7d03fb7a1bba0bb2694e5b8c6bc83e54357cb4"
+            },
+            {
+              "name": "get_monitors",
+              "tokens": 98,
+              "power": null,
+              "hash": "6044830f8b8c24c1c8a6b0e83d7039c413aee8717c17718b57145cbdae412bb5"
+            },
+            {
+              "name": "list_dashboards",
+              "tokens": 65,
+              "power": null,
+              "hash": "b4fe70329ff23e254c861ae27c76f351c9f5978021bfd779fdc95615c33e0933"
+            },
+            {
+              "name": "get_dashboard",
+              "tokens": 39,
+              "power": null,
+              "hash": "580548d6dfde706ab4e0aff85fea68bfc48e22c122b0aeedc6e1b1d7619877cd"
+            },
+            {
+              "name": "list_traces",
+              "tokens": 159,
+              "power": null,
+              "hash": "20ac898316cd2c29c8050eff8b2b471a133f08d3f0aa4510e7ace00b6535f09c"
+            },
+            {
+              "name": "mute_host",
+              "tokens": 113,
+              "power": null,
+              "hash": "1df58d6509bf0f7b803ec2723c7403bfb0a9b83bd4987bac906f8787aa2bb7e6"
+            },
+            {
+              "name": "unmute_host",
+              "tokens": 50,
+              "power": null,
+              "hash": "77fdec478d8cdb4f4d487add0a6287040f1c94ff3c3c2ae2bb88b966bbe533bb"
+            },
+            {
+              "name": "list_hosts",
+              "tokens": 178,
+              "power": null,
+              "hash": "6340e87b9eb170e13db05f83d553bd6fb4de41efbb3ea7a6c649b2a589030fa0"
+            },
+            {
+              "name": "get_active_hosts_count",
+              "tokens": 78,
+              "power": null,
+              "hash": "c3188301b4d62480d5d4d1681d2d7e5763102b23962a6a5981ef7ffc37dcf884"
+            },
+            {
+              "name": "list_downtimes",
+              "tokens": 41,
+              "power": null,
+              "hash": "dc9560174a54a84a1c5e271fcc0d4fe3bd1d9d9b98cb5c800345403f9ff58392"
+            },
+            {
+              "name": "schedule_downtime",
+              "tokens": 180,
+              "power": null,
+              "hash": "449a6f981340a9516bcc3218ec5d1cacc0b300a0d8222639019b4e4233e4b093"
+            },
+            {
+              "name": "cancel_downtime",
+              "tokens": 44,
+              "power": null,
+              "hash": "2f75b5aba14fd51a7ae7167e4474331a84fd655e5b887dfbbbc7b667eacdb208"
+            },
+            {
+              "name": "get_rum_applications",
+              "tokens": 34,
+              "power": null,
+              "hash": "d3df6eac3674af221979d8dc981c1473dac5dca70eb7ef5a1129e182de73578f"
+            },
+            {
+              "name": "get_rum_events",
+              "tokens": 112,
+              "power": null,
+              "hash": "0e8756f3635b3e442ee77e54c3f09ce7ccb90ad67c8835237f1195b0268402a2"
+            },
+            {
+              "name": "get_rum_grouped_event_count",
+              "tokens": 119,
+              "power": null,
+              "hash": "9196406acceec97532f43fb06df261e1a64055d17ee81302ac31bc8d65cb03e6"
+            },
+            {
+              "name": "get_rum_page_performance",
+              "tokens": 137,
+              "power": null,
+              "hash": "67681022b002d8031fc4ceffc1e0fe95cc6af6b31aee46780289c05869e5472e"
+            },
+            {
+              "name": "get_rum_page_waterfall",
+              "tokens": 79,
+              "power": null,
+              "hash": "9e2b716c7018f134df3baa0c7b92387ca80b4367d5636110c0d4a338f3935e2f"
+            }
+          ]
+        }
+      }
+    },
+    "npm:@wonderwhy-er/desktop-commander": {
+      "deprecated": null,
+      "latest": "0.2.51",
+      "versions": {
+        "0.2.51": {
+          "measuredAt": "2026-09-26T00:04:07.725Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "get_config",
+              "tokens": 232,
+              "power": null,
+              "hash": "8a97e20459a69ac709204126e8210e8a9dd63e9dfc70d0e359770db7fbc9e8cd"
+            },
+            {
+              "name": "set_config_value",
+              "tokens": 279,
+              "power": null,
+              "hash": "4071cbe808c2e5d1644f01f84562dfe3325c2e78ac5ecdd779c3452abc0231aa"
+            },
+            {
+              "name": "read_file",
+              "tokens": 950,
+              "power": "file.read",
+              "hash": "c3bfad629489b29e1a02c2857c38c539976f12b2258e2f66ab33e89be5ef65d3"
+            },
+            {
+              "name": "read_multiple_files",
+              "tokens": 226,
+              "power": "file.read",
+              "hash": "df0f0f8aa9895e219c85361a660e223b0afb2a5bd3a25f63709d172768696a5c"
+            },
+            {
+              "name": "write_file",
+              "tokens": 648,
+              "power": "file.write",
+              "hash": "3a35525caaec6e64c7b12d9997b0d96acb9f9b36d909947841cda35b961f438d"
+            },
+            {
+              "name": "write_pdf",
+              "tokens": 854,
+              "power": null,
+              "hash": "eec508bca151525649fb8b69e02687f31203efb1d3d65c8e0c01410e4eb695d6"
+            },
+            {
+              "name": "create_directory",
+              "tokens": 171,
+              "power": "file.write",
+              "hash": "fe6352001bb71fc7e5561f31961dbca762db13210c0ecdaf866a584e14f5394a"
+            },
+            {
+              "name": "list_directory",
+              "tokens": 469,
+              "power": "file.read",
+              "hash": "4bd358034e836eec08e50c8bbd602391ef2d3fd1d7f9f9cb6317533686b046eb"
+            },
+            {
+              "name": "move_file",
+              "tokens": 185,
+              "power": "file.write",
+              "hash": "940524d3c061a342b1093b9b8e48181d4644046b3468b65f25b94591bb7b79e8"
+            },
+            {
+              "name": "start_search",
+              "tokens": 1337,
+              "power": null,
+              "hash": "eac037b029c750320e405d2149b85e00489181efcbbbd713f841183c8de32014"
+            },
+            {
+              "name": "get_more_search_results",
+              "tokens": 338,
+              "power": null,
+              "hash": "a635a5e95bb9e8abb102372c03074ed3091c18dfdb5954f537cd9904002ce074"
+            },
+            {
+              "name": "stop_search",
+              "tokens": 156,
+              "power": null,
+              "hash": "39100c48573e71dab7612f7b25c40b5e31b5d2bc55a7d696dbd71a6bced8145a"
+            },
+            {
+              "name": "list_searches",
+              "tokens": 114,
+              "power": null,
+              "hash": "ae7d5b549bdbe343c7b80346a6378c8ed03ade2444716d2e0b9ceb892c9e5f2f"
+            },
+            {
+              "name": "get_file_info",
+              "tokens": 247,
+              "power": "file.read",
+              "hash": "4543c9d5d258268e368bd2338a8585f40f5112e406ff61615cebeac3723f593c"
+            },
+            {
+              "name": "edit_block",
+              "tokens": 839,
+              "power": null,
+              "hash": "926a61a39f8c7460d19226ed507402e9d03befcbe40cd595ea68ff43d531d836"
+            },
+            {
+              "name": "start_process",
+              "tokens": 1054,
+              "power": "shell.exec",
+              "hash": "8d10dfa5a6b405cba8068208870b4e6363705bc55aeb1ece13a10b8fc4b25d99"
+            },
+            {
+              "name": "read_process_output",
+              "tokens": 496,
+              "power": null,
+              "hash": "9c4d657a0529a8101b6c5309988c0930b8e68eddd45ce6fc2a20040b48dd6793"
+            },
+            {
+              "name": "interact_with_process",
+              "tokens": 797,
+              "power": "shell.exec",
+              "hash": "c3c4c7967b6f56ef3863e485f67ff6102dbc927cc085a899684342cf7d5b2669"
+            },
+            {
+              "name": "force_terminate",
+              "tokens": 88,
+              "power": null,
+              "hash": "fd5d2804ca0596acf6a80b5bc0659bfe79882b6595417d9c349b57a442edb1a2"
+            },
+            {
+              "name": "list_sessions",
+              "tokens": 171,
+              "power": null,
+              "hash": "792e6fbee5f63361f2135e4a3c46d119dc5e2b1e35ab7cb394209e825172d31c"
+            },
+            {
+              "name": "list_processes",
+              "tokens": 97,
+              "power": null,
+              "hash": "4485156fc8e74caec28e827f8e0d74502aeec3488937ff26a238f44053756f98"
+            },
+            {
+              "name": "kill_process",
+              "tokens": 102,
+              "power": null,
+              "hash": "28f598954a9968a60868e4350fc006696dff4c0b183fcfde3b3c778b04e4d677"
+            },
+            {
+              "name": "get_usage_stats",
+              "tokens": 99,
+              "power": null,
+              "hash": "1a9136a0de1c3dc3edf1f87793fa197879c7257940610b80e056cc7804e01cd5"
+            },
+            {
+              "name": "get_recent_tool_calls",
+              "tokens": 242,
+              "power": null,
+              "hash": "e59f2422a05bf46899c4712240d5849b00059350425b7e688ec39134ce277296"
+            },
+            {
+              "name": "give_feedback_to_desktop_commander",
+              "tokens": 369,
+              "power": null,
+              "hash": "67163db285235ed2756c9024a7469c0a529b10fb50fa5dd0d9659a417a72c9f5"
+            },
+            {
+              "name": "get_prompts",
+              "tokens": 430,
+              "power": null,
+              "hash": "0fdfe355095e23f18fc87da72c4463a1ff4cafc73177617151b576bb137f82fa"
+            }
+          ]
+        }
+      }
+    },
+    "npm:chrome-devtools-mcp": {
+      "deprecated": null,
+      "latest": "1.10.1",
+      "versions": {
+        "1.10.1": {
+          "measuredAt": "2026-09-26T00:03:28.656Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "click",
+              "tokens": 136,
+              "power": null,
+              "hash": "22adf42ec8421699964f9d0f9e59bf0b4058e641464e18ed1cddbe0f60ca9f86"
+            },
+            {
+              "name": "close_page",
+              "tokens": 87,
+              "power": null,
+              "hash": "0ab8cd34d65f4edb1aa843c217b443a04db0df42475e671c635ae75b6272ff1d"
+            },
+            {
+              "name": "drag",
+              "tokens": 134,
+              "power": null,
+              "hash": "92fe1776ef77b3227a66a7d6b78f8ccdf21d9a8886f1fbc945a1e1caf2e4f2ff"
+            },
+            {
+              "name": "emulate",
+              "tokens": 394,
+              "power": null,
+              "hash": "069a711bee757c66d74011401193752d4f698c83b31c6c09d3cdcc08128cef0c"
+            },
+            {
+              "name": "evaluate_script",
+              "tokens": 298,
+              "power": null,
+              "hash": "8be0ae65d569cbab81107581b75d144909a11c063af2e095f555e71a6e79da3e"
+            },
+            {
+              "name": "fill",
+              "tokens": 166,
+              "power": null,
+              "hash": "f730b1024c5a6912e38b846331a2917c60abeebdff96e67643f1353eb665a530"
+            },
+            {
+              "name": "fill_form",
+              "tokens": 249,
+              "power": null,
+              "hash": "a4eaa22e44a50ccc373a75e478ad399873e473d6bf23d7364bda09c738bc6a35"
+            },
+            {
+              "name": "get_console_message",
+              "tokens": 111,
+              "power": null,
+              "hash": "362cf992a86232891022912b379a6aca78e306ba367660ef548f8f552c601458"
+            },
+            {
+              "name": "get_css_styles",
+              "tokens": 251,
+              "power": null,
+              "hash": "8a4ea81dfbf96f614b5e604e60abef2aa1bbe74a99909b80cc24847f58664e9c"
+            },
+            {
+              "name": "get_network_request",
+              "tokens": 219,
+              "power": null,
+              "hash": "50cdcc5a3063298e606ada367dba1976ecaaeeee398238f6923cf9a8177a27f4"
+            },
+            {
+              "name": "handle_dialog",
+              "tokens": 121,
+              "power": null,
+              "hash": "67622b3962887f49ddf60219ea9531565cc45995dd12b7f591b79182a1a5e8a0"
+            },
+            {
+              "name": "hover",
+              "tokens": 115,
+              "power": null,
+              "hash": "70dbfb53e8e65cec533c1272ed125b8be9297643f6fa847ac915fd5762b8a921"
+            },
+            {
+              "name": "lighthouse_audit",
+              "tokens": 174,
+              "power": null,
+              "hash": "7b8d2e9b467380f96086e5502b14791aa4e77948d42843f236fde98727fc3caa"
+            },
+            {
+              "name": "list_console_messages",
+              "tokens": 328,
+              "power": null,
+              "hash": "02a47bbf1b7269588ce433899492a1ac5fdb8b36fddf0296a4fdb8e164ee5615"
+            },
+            {
+              "name": "list_network_requests",
+              "tokens": 273,
+              "power": null,
+              "hash": "83e7d994f00e4fdb00657b843720a319a60eceb49162001fa013052b9b7457ed"
+            },
+            {
+              "name": "list_pages",
+              "tokens": 52,
+              "power": null,
+              "hash": "00bee6a2d51fe64d43c6ee9d9d921b4d854fed3fde7a19d2d767a576314061fa"
+            },
+            {
+              "name": "navigate_page",
+              "tokens": 263,
+              "power": "network.fetch",
+              "hash": "3a448b38b5614230e18f22468d2d36ead2494efb20bceb3b7a4da377660fafef"
+            },
+            {
+              "name": "new_page",
+              "tokens": 217,
+              "power": "network.fetch",
+              "hash": "6edf27d026ea9993e0df4fa32229801e362102e73093adb966da11618970c37e"
+            },
+            {
+              "name": "performance_analyze_insight",
+              "tokens": 169,
+              "power": null,
+              "hash": "6db7988b60f6081b2c3b29f3906d3abd8fa0c34696375066d424e7b856cbdee2"
+            },
+            {
+              "name": "performance_start_trace",
+              "tokens": 230,
+              "power": null,
+              "hash": "c259d6586431f70193d79c7f41d2c02e689e2d3bc23f61e8e3d5d927cc4a49eb"
+            },
+            {
+              "name": "performance_stop_trace",
+              "tokens": 124,
+              "power": null,
+              "hash": "88d85bf9f670b0515e47813ae935107977964037a26ee01892c34d7a16bfb5cd"
+            },
+            {
+              "name": "press_key",
+              "tokens": 170,
+              "power": null,
+              "hash": "8e01cfdc7f29136d4c4a1a46319122150ad3812f398e529397af0ab40f459fff"
+            },
+            {
+              "name": "resize_page",
+              "tokens": 104,
+              "power": null,
+              "hash": "825d0560dcfaa03a7844fae43f002230a7efb31ad5edb0e12be38de3027c3212"
+            },
+            {
+              "name": "select_page",
+              "tokens": 105,
+              "power": null,
+              "hash": "e4209b0c19b2c03234ce6da275d09f48a32ac7cc953fbc8adec43d363464c060"
+            },
+            {
+              "name": "take_heapsnapshot",
+              "tokens": 118,
+              "power": null,
+              "hash": "b5ef9fd14fa755857f88b6e73c454ae0152ac8fb3961fdf3b7752e69a25698d7"
+            },
+            {
+              "name": "take_screenshot",
+              "tokens": 255,
+              "power": null,
+              "hash": "ff247be3d1a6b7183a005c05c990b5f7a055f87b1955f1d468bff32a9e69e1d5"
+            },
+            {
+              "name": "take_snapshot",
+              "tokens": 190,
+              "power": null,
+              "hash": "c092fee2694bf32604628ad9bae9d654ce4ec080158004c19be9b6a7f30d097b"
+            },
+            {
+              "name": "type_text",
+              "tokens": 118,
+              "power": null,
+              "hash": "afd7a0df6bd67ff0601a351eac6ce7dc7b1f9b476eb31e3fa261b01d055f2366"
+            },
+            {
+              "name": "upload_file",
+              "tokens": 177,
+              "power": null,
+              "hash": "df086b02ae51ebb89dca26dbbdadeea4041dba98557edf591486d0e489a182f3"
+            },
+            {
+              "name": "wait_for",
+              "tokens": 160,
+              "power": null,
+              "hash": "9fc96b23e0834e88fdfeed2ae7ce7e6b394636340e251113e837510971245b0a"
+            }
+          ]
+        }
+      }
+    },
+    "npm:exa-mcp-server": {
+      "deprecated": null,
+      "latest": "3.4.1",
+      "versions": {
+        "3.4.1": {
+          "measuredAt": "2026-09-26T00:03:48.029Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "web_search_exa",
+              "tokens": 253,
+              "power": "network.fetch",
+              "hash": "5130566bce7dd8d9c340447ae0eb9738831c7fb5afe264f22a0f3b6ce9e791c2"
+            },
+            {
+              "name": "web_fetch_exa",
+              "tokens": 159,
+              "power": "network.fetch",
+              "hash": "5a49a13d5f2791e949ecddac2be64eb28ca43ea02f97141fffed43030483999c"
+            }
+          ]
+        }
+      }
+    },
+    "npm:figma-developer-mcp": {
+      "deprecated": null,
+      "latest": "0.13.2",
+      "versions": {
+        "0.13.2": {
+          "measuredAt": "2026-09-26T00:03:38.390Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "get_figma_data",
+              "tokens": 274,
+              "power": null,
+              "hash": "830709798d0b4bb7261e40e7079cb06e7f7d5758fca8f4012f2f409c244ed7f0"
+            },
+            {
+              "name": "download_figma_images",
+              "tokens": 635,
+              "power": null,
+              "hash": "c50a1b716ba23b2531577d59fc11b9cf730b54d91a4c66aaaaa5574e1e6c22b7"
+            }
+          ]
+        }
+      }
+    },
+    "npm:firecrawl-mcp": {
+      "deprecated": null,
+      "latest": "3.25.5",
+      "versions": {
+        "3.25.5": {
+          "measuredAt": "2026-09-26T00:02:52.009Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "firecrawl_scrape",
+              "tokens": 1716,
+              "power": "network.fetch",
+              "hash": "ff5d9bb040edc6af516a3fd72ba8dc629d85bd8df90567fae71239a07a9ad446"
+            },
+            {
+              "name": "firecrawl_map",
+              "tokens": 226,
+              "power": "network.fetch",
+              "hash": "7d5c3982b7a506fd29584e0cb3fd5982ea54b352e977a5123f1dda3f51b2d870"
+            },
+            {
+              "name": "firecrawl_search",
+              "tokens": 1800,
+              "power": null,
+              "hash": "593e8de1a84795ea90cdd8ac5d234c7eafaeddd9c32a3aebf3052bee9ef5f23e"
+            },
+            {
+              "name": "firecrawl_find_tools",
+              "tokens": 563,
+              "power": "network.fetch",
+              "hash": "6e4d937a549c8a8670ffb824ccffe654433a4f4c8f5f00e8a2168cb343449070"
+            },
+            {
+              "name": "firecrawl_search_feedback",
+              "tokens": 471,
+              "power": null,
+              "hash": "374fe3563b0e6549a981d3d8f4ce2a948a6299ce61a47c9b86bfe55cd543ed79"
+            },
+            {
+              "name": "firecrawl_feedback",
+              "tokens": 930,
+              "power": "network.fetch",
+              "hash": "2760053a87860da83b7ff1aa710fddfb1542e8c32a92a078346e3653711f04b1"
+            },
+            {
+              "name": "firecrawl_crawl",
+              "tokens": 883,
+              "power": "network.fetch",
+              "hash": "83b2adce39438bc9d444087bb8b095723967892489962225ff47f2e30687bf28"
+            },
+            {
+              "name": "firecrawl_check_crawl_status",
+              "tokens": 88,
+              "power": null,
+              "hash": "aa906c65bba395c6146f373e5200c58dc40e443b01ef815b20b585d850a52827"
+            },
+            {
+              "name": "firecrawl_extract",
+              "tokens": 163,
+              "power": "network.fetch",
+              "hash": "78fdb4110706d7aeef3c6d5d4a7785a51aa251254fafad962bdd5bdc5beed1b7"
+            },
+            {
+              "name": "firecrawl_agent",
+              "tokens": 292,
+              "power": "network.fetch",
+              "hash": "919159cafcda86924416a0b547513e8217daa0a588e0cafd662c42c69f231173"
+            },
+            {
+              "name": "firecrawl_agent_status",
+              "tokens": 167,
+              "power": null,
+              "hash": "8002f5d595ed805a9a502598c3db6951cce38e7000de7d5c56616afd731feabf"
+            },
+            {
+              "name": "firecrawl_interact",
+              "tokens": 791,
+              "power": "network.fetch",
+              "hash": "1bc85f209588402c809b7806259ae646a58f75502c86201f6d47ea0954b7ba78"
+            },
+            {
+              "name": "firecrawl_interact_stop",
+              "tokens": 82,
+              "power": null,
+              "hash": "56cd30b01b8205ae0fc5b1e7f5612762ca36f496065ccbf2802ababcff4a96be"
+            },
+            {
+              "name": "firecrawl_parse",
+              "tokens": 621,
+              "power": null,
+              "hash": "f95d9b24aef9eb6ef9ee6bfd7982e703cb2ae423fd4ba283a383c923e6f28cc8"
+            },
+            {
+              "name": "firecrawl_monitor_create",
+              "tokens": 355,
+              "power": "external-message.send",
+              "hash": "159a678887bc53130d67c3b13e59b41455a23248c8b1e9824f1a326fab8a9858"
+            },
+            {
+              "name": "firecrawl_monitor_list",
+              "tokens": 104,
+              "power": null,
+              "hash": "f4fbd56e5feaa32be1ab3881309d29788310bf02c848d7a82666c60e56e2781a"
+            },
+            {
+              "name": "firecrawl_monitor_get",
+              "tokens": 76,
+              "power": null,
+              "hash": "9701d140af78cdbe9349600d7795913de3adc840b135ef9ddfe3d8128b55331b"
+            },
+            {
+              "name": "firecrawl_monitor_update",
+              "tokens": 124,
+              "power": null,
+              "hash": "0827911c4cb0293471437a19b59d08b0a63723db0ab82bdeb763bc599019ff32"
+            },
+            {
+              "name": "firecrawl_monitor_delete",
+              "tokens": 78,
+              "power": null,
+              "hash": "b473367eb5cd2bc987de664cc840be4abacdccea4d5b971cc434bc042421b3ed"
+            },
+            {
+              "name": "firecrawl_monitor_run",
+              "tokens": 82,
+              "power": null,
+              "hash": "14026784368ec7382a266361fbf5139fa171adec009573db3849fb151ae2cb44"
+            },
+            {
+              "name": "firecrawl_monitor_checks",
+              "tokens": 145,
+              "power": null,
+              "hash": "fd04e17339a6e9f2017479ef05af40ea10ce9c3837dce390fe018c251f4a21bc"
+            },
+            {
+              "name": "firecrawl_monitor_check",
+              "tokens": 215,
+              "power": null,
+              "hash": "d055dd5a1c091cbde38a5175489f67d808515dc9c0a82e63808e48c70429b81b"
+            },
+            {
+              "name": "firecrawl_research_search_papers",
+              "tokens": 319,
+              "power": null,
+              "hash": "f46a311c4e66db17148f89c5b167d10e9d8ab705c17a12fcf3b8589bc37129a5"
+            },
+            {
+              "name": "firecrawl_research_inspect_paper",
+              "tokens": 164,
+              "power": null,
+              "hash": "c2a0e57fa4fa400cb3faf97a0364661d48b8a7c48eb49f5db3e98b2f0d7db17a"
+            },
+            {
+              "name": "firecrawl_research_related_papers",
+              "tokens": 217,
+              "power": null,
+              "hash": "e3cc7504e5630b05dad464737354c82eb83ed1544fbd0dfa4bd18ecb5bb5acf4"
+            },
+            {
+              "name": "firecrawl_research_read_paper",
+              "tokens": 209,
+              "power": null,
+              "hash": "8396656018cc96a3d300f6a27ed76360c2bcf2e84e63a807445581d74919036b"
+            },
+            {
+              "name": "firecrawl_research_search_github",
+              "tokens": 109,
+              "power": null,
+              "hash": "eec6ccea5d3e0ed8d7c480cb96251bba266c207f4a1df9227e1ab99aedefea2b"
+            },
+            {
+              "name": "firecrawl_developer_search",
+              "tokens": 195,
+              "power": null,
+              "hash": "9a32694e616f1819e866211c1838ab9559383f1fba332b80ead2c46b79016935"
+            },
+            {
+              "name": "firecrawl_credit_usage",
+              "tokens": 273,
+              "power": null,
+              "hash": "f0b28e7a57443b9a1924f8befd14d3b8e6b46c41882c24234cd753cf068ea9bb"
+            }
+          ]
+        }
+      }
+    },
+    "npm:mcp-server-kubernetes": {
+      "deprecated": null,
+      "latest": "4.1.7",
+      "versions": {
+        "4.1.7": {
+          "measuredAt": "2026-09-26T00:03:25.881Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "cleanup",
+              "tokens": 24,
+              "power": null,
+              "hash": "526421c637701ed344ac8b100225fb4929343b7b7867292399c737df24732a4c"
+            },
+            {
+              "name": "kubectl_get",
+              "tokens": 278,
+              "power": null,
+              "hash": "221b6b1fec64b1e9ed8f71b7c2e2d4df89e7a7aebbeae8c5a095450f1fba5685"
+            },
+            {
+              "name": "kubectl_describe",
+              "tokens": 153,
+              "power": null,
+              "hash": "0fba2bff02c42e2a5f7f6042ec51e0bd01757ef94ad550d15366b17705a688b9"
+            },
+            {
+              "name": "kubectl_apply",
+              "tokens": 216,
+              "power": null,
+              "hash": "72f63f788bfb1e65e2fad8b10eb054e52f90794ed0846d8325fc078949f716b4"
+            },
+            {
+              "name": "kubectl_delete",
+              "tokens": 314,
+              "power": null,
+              "hash": "4a239ceb785cfa1d28e6cefb72c5d9701ac45a5616531f579b2d0872d6d77bee"
+            },
+            {
+              "name": "kubectl_create",
+              "tokens": 945,
+              "power": null,
+              "hash": "9a66d10925ac3544896ad1cb33aff7e10c41ea31f2884d79bfa0dc1cd95cc5f2"
+            },
+            {
+              "name": "kubectl_logs",
+              "tokens": 300,
+              "power": null,
+              "hash": "7251ff319d6e28c55de64f34e19a7768c21b7a6526ec025d8c59af88290b3a53"
+            },
+            {
+              "name": "kubectl_scale",
+              "tokens": 140,
+              "power": null,
+              "hash": "5bd4e44926af879f5e2a0c3bfd94047c1e9c5a53ffec84b557c5b2fe85c3bc4d"
+            },
+            {
+              "name": "kubectl_patch",
+              "tokens": 279,
+              "power": null,
+              "hash": "f9b45abe91536b0ae1e961d7f9a35e165100c1338a77d016897c98f03c623bb0"
+            },
+            {
+              "name": "kubectl_rollout",
+              "tokens": 284,
+              "power": null,
+              "hash": "1e1f3d3af927c62f5f4b44ab5d978bed8b4cbe0b5c1d7b401c5c5f6629a52a43"
+            },
+            {
+              "name": "kubectl_context",
+              "tokens": 170,
+              "power": null,
+              "hash": "d730679094e841419a6de2e157b4e3d92f5c435217e3a3f4f93d3b4d50e7e886"
+            },
+            {
+              "name": "kubectl_reconnect",
+              "tokens": 68,
+              "power": null,
+              "hash": "5b567406b9be82b9fa7fb6a992ff0ffcbcd8484a7572871f705c67885b0a80c8"
+            },
+            {
+              "name": "explain_resource",
+              "tokens": 169,
+              "power": null,
+              "hash": "afb59d14ddce49e2d1ff30d0a23596ef76748ddda27dae8282998b84892655fd"
+            },
+            {
+              "name": "install_helm_chart",
+              "tokens": 283,
+              "power": null,
+              "hash": "ec8df422c14a34da99d9389d007d90b9e8ae7548236a242d46bd7beefebdd26d"
+            },
+            {
+              "name": "upgrade_helm_chart",
+              "tokens": 218,
+              "power": null,
+              "hash": "bec577104b557c7dc2a9166bd4b30d167d0534fbebf5c8c10f57c2907b6ab53b"
+            },
+            {
+              "name": "uninstall_helm_chart",
+              "tokens": 98,
+              "power": null,
+              "hash": "896b2632e6937678216a824df39e437c29a9932a3a6a53110fd6f12195b3d3cc"
+            },
+            {
+              "name": "node_management",
+              "tokens": 333,
+              "power": null,
+              "hash": "83929fe519e8fe9b5da4ab0a10b90414cbb0c32ee6ddf031551f3038c1f15fb0"
+            },
+            {
+              "name": "port_forward",
+              "tokens": 83,
+              "power": null,
+              "hash": "a053e581dfa4d166b6fb04d82581ec08ea7478ff06d81371b46c7cfb8ef30ea5"
+            },
+            {
+              "name": "stop_port_forward",
+              "tokens": 36,
+              "power": null,
+              "hash": "c5c281812478df6ce302add5236d448da5716d86835737c09437b0557aa6be78"
+            },
+            {
+              "name": "exec_in_pod",
+              "tokens": 248,
+              "power": "shell.exec",
+              "hash": "e481bd8c44ff3d11e6dfe7f9bc909c77aaf9281447cc419ed4543cf33d57ef67"
+            },
+            {
+              "name": "list_api_resources",
+              "tokens": 151,
+              "power": null,
+              "hash": "e2efe82cae54b57a9839d8b115ecbf8425ef8030daf6f6d9f9b811ce86e08f07"
+            },
+            {
+              "name": "kubectl_generic",
+              "tokens": 264,
+              "power": null,
+              "hash": "94e5758512147991bc02d30d46edd0a22a80c22e4994681af3594d5d3fd6b1d4"
+            },
+            {
+              "name": "ping",
+              "tokens": 34,
+              "power": null,
+              "hash": "1a94792701fd9cc1f8693903593efd89a05c23a75150f96c0c5cf8d26df450c4"
+            }
+          ]
+        }
+      }
+    },
+    "npm:mongodb-mcp-server": {
+      "deprecated": null,
+      "latest": "3.0.4",
+      "versions": {
+        "3.0.4": {
+          "measuredAt": "2026-09-26T00:04:38.392Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "aggregate-db",
+              "tokens": 233,
+              "power": null,
+              "hash": "646a62ec2d1a07bf222d9c82574e7ff98b1434eeb5bece9f7ee4cc3c45dfabc7"
+            },
+            {
+              "name": "aggregate",
+              "tokens": 2370,
+              "power": null,
+              "hash": "d840dadecdc9df35f30d770c0d257d0cec3b4c36efd8f9abddee772f5a28a110"
+            },
+            {
+              "name": "collection-indexes",
+              "tokens": 109,
+              "power": null,
+              "hash": "15cb39e364c63fc923b197aa0c0dde71b99e0738d127f8218ee6bbe02f02840a"
+            },
+            {
+              "name": "collection-schema",
+              "tokens": 174,
+              "power": null,
+              "hash": "1a9a21c1e846345dd02abdfe82d201d46cef3c6028b7fb3f1fb7c4a06417e89b"
+            },
+            {
+              "name": "collection-storage-size",
+              "tokens": 109,
+              "power": null,
+              "hash": "405ef7f5e1a9709f3120f3918b7ed95129bdfc62d15587ea400c9b346293ea60"
+            },
+            {
+              "name": "connect",
+              "tokens": 161,
+              "power": null,
+              "hash": "552167e5c41700923356b65a53a78e0830d257d536186e5878d26c480e4da5ab"
+            },
+            {
+              "name": "count",
+              "tokens": 168,
+              "power": null,
+              "hash": "0a9c5f8c068c380eed26b8c0f028a03a28cf4c212563e08a485af5628bf7273f"
+            },
+            {
+              "name": "create-collection",
+              "tokens": 122,
+              "power": null,
+              "hash": "0db0d117b4bababbf87d1b5d3bf6d7e1a8d941b267f9498b6c371dff194fc1b4"
+            },
+            {
+              "name": "create-index",
+              "tokens": 2069,
+              "power": null,
+              "hash": "1d97c0447d6ee615890725070ba027b49d7f29a65badc5ec7aee53e57b2e221d"
+            },
+            {
+              "name": "db-stats",
+              "tokens": 100,
+              "power": null,
+              "hash": "64d41433479b229ddc8f800a3ae58bb32e59d166facab61d97be86f1a3f8e091"
+            },
+            {
+              "name": "delete-many",
+              "tokens": 156,
+              "power": "data.delete",
+              "hash": "c53fcd2c775ccb5729c5071511480e4de3b8aeac13e96871f5774c391c9b01be"
+            },
+            {
+              "name": "disconnect",
+              "tokens": 71,
+              "power": null,
+              "hash": "290f7e54d543850cebd0e6195e34c6725e680ebe209424ab971069a01bc8be33"
+            },
+            {
+              "name": "drop-collection",
+              "tokens": 124,
+              "power": "data.delete",
+              "hash": "896c9b3d70ed1847a4eeba81230229cc2faeafd5d704f285c42233375e02fdb2"
+            },
+            {
+              "name": "drop-database",
+              "tokens": 100,
+              "power": "data.delete",
+              "hash": "b45dd160b5ecacbf2f3e4450f59ddaa254c35c347b2451784fc481412c0de85b"
+            },
+            {
+              "name": "drop-index",
+              "tokens": 184,
+              "power": null,
+              "hash": "b921e5feffcc941e1ee6e6ec82b88522e3e05becf9905ef93251feb8eb6d277b"
+            },
+            {
+              "name": "explain",
+              "tokens": 2830,
+              "power": null,
+              "hash": "74004335e5eee5692556bed5174be320fc0213c16cb2f6e51f507e2f24228697"
+            },
+            {
+              "name": "export",
+              "tokens": 2844,
+              "power": null,
+              "hash": "f7a7eb65e7b67a3609ba0509239fd9e10c1dbf342e8631799ea1aea0e0879465"
+            },
+            {
+              "name": "find",
+              "tokens": 395,
+              "power": null,
+              "hash": "8fdf19050416f024cbe0adb00dd25bf192dda8c175c4bb52d00bed0c84d9d071"
+            },
+            {
+              "name": "insert-many",
+              "tokens": 188,
+              "power": null,
+              "hash": "7e569b8486a91a064982fcf9c643b09fb925cf336c89d3f85faa0a82bbec1ac8"
+            },
+            {
+              "name": "list-collections",
+              "tokens": 96,
+              "power": null,
+              "hash": "ea41e369ed961269e09b268580a4f190c259d77d4f6423ebaccaba8b7ca3838c"
+            },
+            {
+              "name": "list-connections",
+              "tokens": 63,
+              "power": null,
+              "hash": "7b04b6e6ddb6df600674bbfe7ca4be00f61f15024fae207b1df520c44e6039f9"
+            },
+            {
+              "name": "list-databases",
+              "tokens": 85,
+              "power": null,
+              "hash": "bcb7635a4055e0841bf5e99d14debb528f6d719c0418b68aee321d49978b9599"
+            },
+            {
+              "name": "mongodb-logs",
+              "tokens": 162,
+              "power": null,
+              "hash": "63d3d2c07fe4ff622c25052744cb0274b44263046538370386b69c7feb32d2d6"
+            },
+            {
+              "name": "rename-collection",
+              "tokens": 157,
+              "power": null,
+              "hash": "2a7039337a47c92ce0e5c67ffa8f3dc3f7716305fa673f04097599ae5b8da57b"
+            },
+            {
+              "name": "update-many",
+              "tokens": 229,
+              "power": null,
+              "hash": "a16cde82768a7f6fbf7bf06c60253803bc1889711c3c0c5af77385a61a32540b"
+            },
+            {
+              "name": "atlas-local-create-deployment",
+              "tokens": 196,
+              "power": null,
+              "hash": "5675e237c26907d4d4d342c5d1b92962ebdfeba8c940ddd4d3c076f00b18d06e"
+            },
+            {
+              "name": "atlas-local-list-deployments",
+              "tokens": 52,
+              "power": null,
+              "hash": "edcb8e93a58a60d38ba6947949266bc91c9d756beaff3b595846bd5308c2acdb"
+            },
+            {
+              "name": "atlas-local-delete-deployment",
+              "tokens": 86,
+              "power": null,
+              "hash": "fe3df7fe1b1d0714ed8a8660b76b26ac75e076ba6c5d8e2756bace9d2e81b015"
+            },
+            {
+              "name": "atlas-local-connect-deployment",
+              "tokens": 102,
+              "power": null,
+              "hash": "626e5a5199cd0f959daa96053ec8f1f12a290c768bc5460a40c0c8e7f69b3ed2"
+            },
+            {
+              "name": "search-knowledge",
+              "tokens": 273,
+              "power": null,
+              "hash": "5776503fb0b3640257bbfa8a2ccc96707593086e6ebb5cf154993b991be73e58"
+            },
+            {
+              "name": "list-knowledge-sources",
+              "tokens": 76,
+              "power": null,
+              "hash": "4f383d99f37fc677a286e1167e3055831b3bb6c6d80ea7a9b0a2dbaa58038877"
+            }
+          ]
+        }
+      }
+    },
+    "npm:tavily-mcp": {
+      "deprecated": null,
+      "latest": "0.2.22",
+      "versions": {
+        "0.2.22": {
+          "measuredAt": "2026-09-26T00:03:42.085Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "tavily_search",
+              "tokens": 615,
+              "power": "network.fetch",
+              "hash": "e8cbfefc511a99ace5cc31c637537c8a86fe8bf1892b7dc45ae89e5ff0b46aaf"
+            },
+            {
+              "name": "tavily_extract",
+              "tokens": 178,
+              "power": "network.fetch",
+              "hash": "0880008b4580b93f1700c346cd2f394583c22f7f365bb63c48733af4f97e1aa0"
+            },
+            {
+              "name": "tavily_crawl",
+              "tokens": 412,
+              "power": "network.fetch",
+              "hash": "d71e9dde8b448dc35682f6f64d9bc963256f49feed02c8d2249b1265c81fa1f1"
+            },
+            {
+              "name": "tavily_map",
+              "tokens": 288,
+              "power": null,
+              "hash": "cdc4cf47c144c84b7f94cdaf31b680775f0aa050d4ad170987b2ceb8eb4dc80e"
+            },
+            {
+              "name": "tavily_research",
+              "tokens": 158,
+              "power": null,
+              "hash": "dba3d0df993fabaebb2957fc09a65254d7a371fd4fa4b67e933c09875ea4631f"
+            }
+          ]
+        }
+      }
+    },
+    "pypi:awslabs.aws-documentation-mcp-server": {
+      "deprecated": null,
+      "latest": "1.2.1",
+      "versions": {
+        "1.2.1": {
+          "measuredAt": "2026-09-26T00:07:09.820Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "read_documentation",
+              "tokens": 538,
+              "power": "network.fetch",
+              "hash": "ba72c9d6de2ef8c6285932c9ca6fcfb0637f5ab50c36dcf652750ba320b87e18"
+            },
+            {
+              "name": "read_sections",
+              "tokens": 602,
+              "power": null,
+              "hash": "20ab748c24b3d714262040bc5166544caaa9278eea355390e0411f0682f388d8"
+            },
+            {
+              "name": "search_table",
+              "tokens": 894,
+              "power": null,
+              "hash": "f8dd9262bffd0b6ead15eaf32800eadba0b135becc7953e6e2c843d4a93c832e"
+            },
+            {
+              "name": "search_documentation",
+              "tokens": 946,
+              "power": null,
+              "hash": "40e2642a9013d7e237bb1747f5b20f3ee39854381a147f2d89f106c9176d4183"
+            },
+            {
+              "name": "recommend",
+              "tokens": 398,
+              "power": null,
+              "hash": "b141381df48ab5ea0da5a182942f47096e9769a6de7ffd5a047d0578d4816812"
+            }
+          ]
+        }
+      }
+    },
+    "pypi:mcp-server-docker": {
+      "deprecated": null,
+      "latest": "0.3.0",
+      "versions": {
+        "0.3.0": {
+          "measuredAt": "2026-09-26T00:07:11.902Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "list_containers",
+              "tokens": 156,
+              "power": null,
+              "hash": "4c8fb0ac2a29e5cdc656277ba1a0f3afb308ed2f577fbca0fe5cf5719c94dad0"
+            },
+            {
+              "name": "create_container",
+              "tokens": 459,
+              "power": null,
+              "hash": "6805beaed3f0b90bf72a3d99f127afce38ba02c4d8340d43c655ba9c964cccad"
+            },
+            {
+              "name": "run_container",
+              "tokens": 474,
+              "power": "shell.exec",
+              "hash": "0e4d8c23c33a98bcabd601b2597af455f32949e4db0e7bb7470460a077eddf19"
+            },
+            {
+              "name": "recreate_container",
+              "tokens": 509,
+              "power": null,
+              "hash": "e78e6dbc4390a6723b20f00aa42a311172e432aa530b4d219e7fd58b5d637334"
+            },
+            {
+              "name": "start_container",
+              "tokens": 54,
+              "power": null,
+              "hash": "26575001444ae92dbf485b163363358aa82d73456e7b3d16f15c3b0332fb6313"
+            },
+            {
+              "name": "fetch_container_logs",
+              "tokens": 97,
+              "power": null,
+              "hash": "3bf923cbf7940e4652b66b6bee4885d8d155c5601a7299cec0df06f380bcce77"
+            },
+            {
+              "name": "stop_container",
+              "tokens": 54,
+              "power": null,
+              "hash": "ac32c8995e73a601606c36aaaa8185030eb32a27527d1acd6009bf83dd488d45"
+            },
+            {
+              "name": "remove_container",
+              "tokens": 76,
+              "power": null,
+              "hash": "30d57c76f3741677f0235f340013de9f8054b85ade31c0f77e2f686ddfde4c96"
+            },
+            {
+              "name": "list_images",
+              "tokens": 216,
+              "power": null,
+              "hash": "f89405f75ac64e0215ce85e00da09fb4a0b476ea62e747296a05335cff949974"
+            },
+            {
+              "name": "pull_image",
+              "tokens": 78,
+              "power": null,
+              "hash": "e0b27126a3ce11a4d61cf72ad0ccf06f99223fe37d874db89e143a8fd6d43fbe"
+            },
+            {
+              "name": "push_image",
+              "tokens": 78,
+              "power": null,
+              "hash": "1662600fc85081f88bfb0f321b36d246b7b9e6ab1f7848fa2e9b97280918c922"
+            },
+            {
+              "name": "build_image",
+              "tokens": 106,
+              "power": null,
+              "hash": "55cd0146b44dd19f32c3cc6883a4900506ab3c237501bb3be4fa11fe625e9d4f"
+            },
+            {
+              "name": "remove_image",
+              "tokens": 73,
+              "power": null,
+              "hash": "6b29e1cbca4153241396de2e1cfdc9a651abe54ba99df2716c567606013f2dcb"
+            },
+            {
+              "name": "list_networks",
+              "tokens": 128,
+              "power": null,
+              "hash": "68f453a4b187fd6669da85ee9b6916a1481f8567392059f8336810430a0a263f"
+            },
+            {
+              "name": "create_network",
+              "tokens": 137,
+              "power": null,
+              "hash": "d3e40149621b9f26476db199c519dd9f37eaf2aac9bf5bcfaa51594f0fb0a051"
+            },
+            {
+              "name": "remove_network",
+              "tokens": 54,
+              "power": null,
+              "hash": "37223291fc85a5db91917301a52db6798893e2102df3c61b945684a4b4337e20"
+            },
+            {
+              "name": "list_volumes",
+              "tokens": 31,
+              "power": null,
+              "hash": "82e2211df5cd95f8a231e16a0d80275268bee58ed0c8bdaab7d0f1861961a25b"
+            },
+            {
+              "name": "create_volume",
+              "tokens": 115,
+              "power": null,
+              "hash": "1f27b298466ff62ef918849844388ea153c4866e6ba48df73724c54116bdf476"
+            },
+            {
+              "name": "remove_volume",
+              "tokens": 74,
+              "power": null,
+              "hash": "76d020d076581dc7bc7e11e2c947ec6f30787e2a961e5051bc0d544d5d1a0f1f"
+            }
+          ]
+        }
+      }
+    },
+    "pypi:mcp-server-fetch": {
+      "deprecated": null,
+      "latest": "2026.8.18",
+      "versions": {
+        "2026.8.18": {
+          "measuredAt": "2026-09-26T00:06:57.812Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "fetch",
+              "tokens": 236,
+              "power": "network.fetch",
+              "hash": "e5f099246c3454e19eadfbf6495f60d57aaafcc24b00154ee2292f93619a6931"
+            }
+          ]
+        }
+      }
+    },
+    "pypi:mcp-server-git": {
+      "deprecated": null,
+      "latest": "2026.8.18",
+      "versions": {
+        "2026.8.18": {
+          "measuredAt": "2026-09-26T00:06:59.257Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "git_status",
+              "tokens": 47,
+              "power": null,
+              "hash": "86919120c49a7421578ae78cafe2bbb9bf31dfa85c729af145d0282428a9f1a6"
+            },
+            {
+              "name": "git_diff_unstaged",
+              "tokens": 76,
+              "power": null,
+              "hash": "6982d60b8af73ca019c05465a3a1e6d1b8bcaa7fdcc21cf7c7d41544dcb81c15"
+            },
+            {
+              "name": "git_diff_staged",
+              "tokens": 70,
+              "power": null,
+              "hash": "50094fe8547e37508ed5ac2e5650ef5659fdbe2dbc27106e22b4891a3fe99d22"
+            },
+            {
+              "name": "git_diff",
+              "tokens": 78,
+              "power": null,
+              "hash": "03cbbce9a84505560d0db1cf58c8ef438d8804414d2f728b93bd6ce319758ec9"
+            },
+            {
+              "name": "git_commit",
+              "tokens": 60,
+              "power": null,
+              "hash": "a0c41dd835d7b4fd08215512ef01dee353c36caf4d1de6d3ce150c2d090b03ad"
+            },
+            {
+              "name": "git_add",
+              "tokens": 69,
+              "power": null,
+              "hash": "ac846d41781ba9940dd886de1c50316f2a5a8be0f7b4ba7247402534b7f9f965"
+            },
+            {
+              "name": "git_reset",
+              "tokens": 48,
+              "power": null,
+              "hash": "79552710bbce2e75a8978fed611ec6ce69648738c7060dce2678bb2fdef78535"
+            },
+            {
+              "name": "git_log",
+              "tokens": 261,
+              "power": null,
+              "hash": "e15f0a77a1938d133d573801954c3d068d40945a30c29b766c505f6b26d3d5e2"
+            },
+            {
+              "name": "git_create_branch",
+              "tokens": 95,
+              "power": null,
+              "hash": "b7aa443a335544f1f7263b369e0f588f7c2baa3b4f9cead015400aa3fd51bd1e"
+            },
+            {
+              "name": "git_checkout",
+              "tokens": 61,
+              "power": null,
+              "hash": "d8b77d01d6fdca0c37b22e6a620d3e91e803acb68da55b08f30c6911b537c711"
+            },
+            {
+              "name": "git_show",
+              "tokens": 61,
+              "power": null,
+              "hash": "6445b6be4355169cea4a83ee4e3b3d9b34fdc109393aca032f2b96422bf4b046"
+            },
+            {
+              "name": "git_branch",
+              "tokens": 191,
+              "power": null,
+              "hash": "84b022c7c5279af4afefd6f0bde5a4c449e4faff9ffb9a7ec6643bbda4c8739f"
+            }
+          ]
+        }
+      }
+    },
+    "pypi:mcp-server-qdrant": {
+      "deprecated": null,
+      "latest": "0.8.1",
+      "versions": {
+        "0.8.1": {
+          "measuredAt": "2026-09-26T00:07:07.852Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "qdrant-find",
+              "tokens": 85,
+              "power": null,
+              "hash": "6d15a4decd444f745531501c199bb319dd748ae8dc1fa8fc3808e32f14498892"
+            },
+            {
+              "name": "qdrant-store",
+              "tokens": 101,
+              "power": "memory.write",
+              "hash": "5cad1dd2e6ca60f938157fb91bcb114b25983cca65c1c2dea74efcdebc3cc59b"
+            }
+          ]
+        }
+      }
+    },
+    "pypi:mcp-server-time": {
+      "deprecated": null,
+      "latest": "2026.8.18",
+      "versions": {
+        "2026.8.18": {
+          "measuredAt": "2026-09-26T00:07:00.559Z",
+          "by": "https://github.com/yl0n0ps/vexryn-scan/actions/runs/36203197557",
+          "tools": [
+            {
+              "name": "get_current_time",
+              "tokens": 78,
+              "power": null,
+              "hash": "1483c7f3451e2546495982f92eb079a3d94c1cf31c0922daa5b1f0e8a1e368d2"
+            },
+            {
+              "name": "convert_time",
+              "tokens": 159,
+              "power": null,
+              "hash": "1336b450224d82f9e584bcefaf81b2cc2b6978357c137b8950141b667d75a2db"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

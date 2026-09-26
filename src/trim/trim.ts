@@ -4,9 +4,10 @@
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { McpServer } from "../types.js";
+import type { McpServer, ToolSearch } from "../types.js";
 import type { UsageData } from "../usage/store.js";
 import { fmtTokens } from "../scan/report.js";
+import { countTokens } from "../scan/tokens.js";
 
 export type Verdict = "keep" | "drop" | "unknown";
 
@@ -24,7 +25,11 @@ export interface TrimResult {
   hasUsage: boolean;
 }
 
-export function computeTrim(servers: McpServer[], usage?: UsageData): TrimResult {
+/**
+ * `toolSearch`: how Claude Code loads MCP schemas — deferred by default, so dropping one
+ * of its servers frees its tool NAMES up front, not its schemas.
+ */
+export function computeTrim(servers: McpServer[], usage?: UsageData, toolSearch: ToolSearch = "deferred"): TrimResult {
   const recs: TrimRec[] = [];
   let savedTokens = 0;
   let hasUsage = false;
@@ -35,7 +40,9 @@ export function computeTrim(servers: McpServer[], usage?: UsageData): TrimResult
 
     if (used != null && used === 0) {
       recs.push({ server: s, verdict: "drop", reason: "recorded, never used" });
-      savedTokens += s.estimate?.approxTokens ?? 0;
+      const deferred = s.client === "Claude Code" && toolSearch !== "upfront";
+      // ponytail: "auto" is counted as deferred (the smaller claim); exact once trim sees the whole agent's load.
+      savedTokens += deferred ? (s.estimate?.tools ?? []).reduce((n, t) => n + countTokens(t.name), 0) : (s.estimate?.approxTokens ?? 0);
     } else if (used != null && used > 0) {
       const tools = s.estimate?.tools;
       // Usage is recorded under the NAME the agent uses (wrap --name), the measurement under the launch

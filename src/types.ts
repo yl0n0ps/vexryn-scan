@@ -88,6 +88,8 @@ export interface McpServer {
   usedToolCount?: number | null;
   /** The config file this server came from (display path). */
   fromRelPath: string;
+  /** Its package is marked deprecated by its publisher (Vexryn catalogue, latest version). */
+  deprecated?: { package: string; message: string } | null;
   /**
    * Tool count + token cost, from real introspection (--deep). `null` means
    * not measured: the static scan never executes a server, and never invents a figure.
@@ -109,18 +111,30 @@ export interface ServerEstimate {
   measuredAt?: string;
   /** What changed since the previous local measurement (--deep only). */
   drift?: string[];
+  /** The tool list as the server sent it (live measurement only; never stored or displayed). */
+  raw?: Array<{ name: string; description?: string; inputSchema?: unknown }>;
+  /** Set when the figures come from the Vexryn catalogue: which package version they are for. */
+  catalog?: { package: string; version: string; exact: boolean };
 }
 
 /** One tool as declared by a server, with its measured token cost. */
 export interface ToolInfo {
   name: string;
-  description: string;
+  description?: string;
   /** Real tokens the serialized tool definition adds to context. */
   tokens: number;
   /** What the tool can do, or null when the classifier is not sure. */
   power?: Power | null;
   /** sha256 of description + input schema, to notice a change next time. */
   hash?: string;
+  /** Traps hidden in its description (instruction phrases, invisible characters); the description itself is never shown. */
+  flags?: ToolFlags | null;
+}
+
+/** What a tool description hides: instruction-override phrases (as matched) and invisible characters. */
+export interface ToolFlags {
+  phrases: string[];
+  hidden: number;
 }
 
 /** Something an agent loads into context at every session start (read from disk). */

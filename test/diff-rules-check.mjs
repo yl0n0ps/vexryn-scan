@@ -38,7 +38,8 @@ function step(msg) {
   const r = spawnSync("node", [cli, "diff", repo, "--base", prev, "--head", head], { encoding: "utf8" });
   assert.equal(r.status, 0, r.stderr);
   prev = head;
-  return r.stdout;
+  // Finding ids are checked in diff-rules-check; here the finding text is what matters.
+  return r.stdout.replace(/ <sub>vx-[0-9a-f]{8}<\/sub>/g, "");
 }
 const mcp = (servers) => put(".mcp.json", { mcpServers: servers });
 const line = (out, re) => {
@@ -135,7 +136,10 @@ try {
   assert.ok(!/`ignore all previous instructions`/.test(out), "an unchanged pre-existing phrase is not re-flagged");
   const agents = line(out, /`AGENTS\.md` adds text containing the phrase/);
   assert.match(agents, /`<IMPORTANT>`, `before using this tool`/);
-  assert.match(out, /^Not reviewed yet: .*`AGENTS\.md`/m, "still honest about load counts");
+  // Honest about load counts: Cursor is set up here, so its root AGENTS.md load is counted;
+  // a rule with no frontmatter is applied by hand only, so it is not.
+  assert.match(out, /^\*\*Loads every session \(Cursor\): /m, "AGENTS.md is loaded by Cursor every session");
+  assert.match(out, /Not reviewed yet: `\.cursor\/rules\/style\.mdc`/, "still honest about load counts");
 
   // Sensitive paths handed to a server.
   put(".cursor/mcp.json", { mcpServers: { fs: { command: "npx", args: ["-y", "server-filesystem@1.0.0", "/Users/me/project", "/", "~/.ssh"] } } });
@@ -182,6 +186,47 @@ try {
   out = step("blob");
   assert.match(out, /^- ⚠️ MCP server `blob` \(`\.mcp\.json`\): an argument contains a 280-char base64\/hex-looking string$/m);
   assert.equal((out.match(/base64\/hex-looking/g) ?? []).length, 1, "reported once, not also as file text");
+
+  // Accepted findings: every ⚠️ line ends with an id; `.vexryn.json` read from the BASE side hides it.
+  const raw = (base, head) => {
+    const r = spawnSync("node", [cli, "diff", repo, "--base", base, "--head", head], { encoding: "utf8" });
+    assert.equal(r.status, 0, r.stderr);
+    return r.stdout;
+  };
+  const commit = (msg) => {
+    git("add", "-A");
+    git("commit", "-q", "--allow-empty", "-m", msg);
+    return git("rev-parse", "HEAD");
+  };
+  const start = git("rev-parse", "HEAD");
+  mcp({ ok: { command: "node", args: ["srv.js"] }, root: { command: "npx", args: ["-y", "server-filesystem@1.0.0", "/"] } });
+  let rawOut = raw(start, commit("root fs"));
+  const found = line(rawOut, /MCP server `root`.*is given `\/`/);
+  const id = found.match(/ <sub>(vx-[0-9a-f]{8})<\/sub>$/)?.[1];
+  assert.ok(id, `a finding ends with its id: ${found}`);
+  assert.ok(!/<sub>vx-/.test(line(rawOut, /^Changed agent files/)), "only findings carry an id");
+
+  mcp({ ok: { command: "node", args: ["srv.js"] } });
+  const cleanBase = commit("remove root fs");
+  put(".vexryn.json", { accept: [{ id, reason: "throwaway VM, whole disk on purpose" }] });
+  const accepted = commit("accept");
+  assert.match(raw(cleanBase, accepted), /^- ⚠️ `\.vexryn\.json` accepts 1 more finding — it stops being reported once this is merged$/m);
+
+  mcp({ ok: { command: "node", args: ["srv.js"] }, root: { command: "npx", args: ["-y", "server-filesystem@1.0.0", "/"] } });
+  const again = commit("root fs again");
+  rawOut = raw(accepted, again);
+  assert.ok(!/is given `\/`/.test(rawOut), "accepted on the base branch: not shown");
+  assert.match(rawOut, /^1 accepted finding not shown \(listed in `\.vexryn\.json`\)\.$/m);
+  rawOut = raw(cleanBase, again);
+  assert.match(rawOut, /is given `\/`/, "a PR can't accept its own finding");
+  assert.match(rawOut, /accepts 1 more finding/);
+
+  put(".vexryn.json", "{ not json");
+  const broken = commit("broken accept file");
+  assert.match(raw(again, broken), /^- ⚠️ `\.vexryn\.json` is not valid JSON — no finding is accepted from it$/m);
+  mcp({ ok: { command: "node", args: ["srv.js"] }, root: { command: "npx", args: ["-y", "server-filesystem@1.0.0", "~"] } });
+  assert.match(raw(broken, commit("root fs home")), /is given `~`/, "an unreadable accept file hides nothing");
+  prev = git("rev-parse", "HEAD");
 
   console.log("diff-rules-check: all assertions passed");
 } finally {

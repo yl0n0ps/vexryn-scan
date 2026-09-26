@@ -5,6 +5,7 @@
 // verdict: the reader decides.
 
 import path from "node:path";
+import type { ToolFlags } from "../types.js";
 
 // --- Hidden text --------------------------------------------------------------
 
@@ -42,6 +43,17 @@ export function overridePhrases(text: string): string[] {
     if (m && m.index !== undefined) hits.push({ at: m.index, phrase: m[0] });
   }
   return hits.sort((a, b) => a.at - b.at).map((h) => h.phrase);
+}
+
+/**
+ * Traps hidden in a tool's description (tool poisoning): the override phrases it
+ * contains (control characters stripped, 60 chars max) and its invisible
+ * characters. null when there is nothing — the description itself is never kept.
+ */
+export function toolFlags(description: string): ToolFlags | null {
+  const phrases = overridePhrases(description).map((p) => p.replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 60));
+  const hidden = hiddenChars(description);
+  return phrases.length || hidden ? { phrases, hidden } : null;
 }
 
 /** Lengths of long base64/hex-looking runs (encoded payloads, not ids). */

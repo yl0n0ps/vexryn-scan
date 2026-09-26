@@ -8,6 +8,7 @@ import type { AgentClient, AgentLoad, ContextItem, DiscoveredConfig, LoadReport,
 import { countTokens } from "./tokens.js";
 import { plainHttpRemote, secretInText, sensitivePaths, shellInline } from "../diff/rules.js";
 import { powerLabels } from "./powers.js";
+import { combinations } from "./combos.js";
 import { projectDir } from "./discover.js";
 
 // Rough size of a typical model context window, for the "% of window" figure.
@@ -23,6 +24,7 @@ export function assembleReport(
   configs: DiscoveredConfig[],
   servers: McpServer[],
   claude: { items: ContextItem[]; toolSearch: ToolSearch } = { items: [], toolSearch: "deferred" },
+  others: Partial<Record<AgentClient, ContextItem[]>> = {},
 ): LoadReport {
   const subproject = servers.filter(inSubproject);
   const deduped = dedupePerAgent(servers.filter((s) => !inSubproject(s)));
@@ -32,6 +34,8 @@ export function assembleReport(
   const byClient = new Map<AgentClient, McpServer[]>();
   // Claude Code loads its CLAUDE.md/skills even with no MCP server declared.
   if (claude.items.length > 0) byClient.set("Claude Code", []);
+  // So do the other agents with always-loaded rules.
+  for (const [client, items] of Object.entries(others) as [AgentClient, ContextItem[]][]) if (items.length) byClient.set(client, []);
   for (const s of deduped) {
     const list = byClient.get(s.client) ?? [];
     list.push(s);
@@ -41,7 +45,7 @@ export function assembleReport(
   const agents: AgentLoad[] = [];
   for (const [client, list] of byClient) {
     agents.push(
-      client === "Claude Code" ? agentLoad(client, list, claude.items, claude.toolSearch) : agentLoad(client, list, [], "upfront"),
+      client === "Claude Code" ? agentLoad(client, list, claude.items, claude.toolSearch) : agentLoad(client, list, others[client] ?? [], "upfront"),
     );
   }
   agents.sort(
@@ -119,7 +123,11 @@ export function loadPercent(tokens: number): number {
 }
 
 /** Human-readable terminal report. Dependency-free on purpose. */
-export function renderText(report: LoadReport): string {
+/**
+ * `forAgent`: the text goes into an AI agent's context (the MCP tool), so third-party
+ * free text — trap phrases, deprecation notices — is replaced by counts.
+ */
+export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}): string {
   const { configs, agents, totals, deep, includesGlobal } = report;
   const lines: string[] = [];
   const mode = deep ? "MCP measured live" : "static read";
@@ -160,6 +168,7 @@ export function renderText(report: LoadReport): string {
         : `  ${bar(pct)}  ~${pct}%   ~${a.approxTokens.toLocaleString("en-US")} of ` +
             `${CONTEXT_WINDOW_TOKENS.toLocaleString("en-US")} tokens up front`,
     );
+    for (const c of agentWarnings(a)) lines.push(`  ⚠ ${c}`);
     if (a.hasUsage && a.toolCount > 0) {
       lines.push(`  You actually used ${a.usedToolCount} of ${a.toolCount} tools.`);
     }
@@ -177,12 +186,11 @@ export function renderText(report: LoadReport): string {
       );
     }
     for (const s of a.servers) {
-      const where = `${s.fromRelPath} · ${s.scope}` + (s.estimate?.measuredAt ? ` · measured ${s.estimate.measuredAt.slice(0, 10)}` : "");
+      const where = `${s.fromRelPath} · ${s.scope}` + source(s);
       lines.push(`    ${padEnd(s.name, 20)} ${padEnd(renderServerCost(s), 34)} ${dim(where)}`);
-      const can = powerLabels((s.estimate?.tools ?? []).map((t) => t.power));
-      if (can.length) lines.push(`      can: ${can.join(", ")}`);
-      for (const f of serverFacts(s)) lines.push(`      ⚠ ${f}`);
-      for (const d of s.estimate?.drift ?? []) lines.push(`      ⚠ ${plain(d)}`);
+      const notes = serverNotes(s, opts.forAgent);
+      if (notes.can.length) lines.push(`      can: ${notes.can.join(", ")}`);
+      for (const w of notes.warnings) lines.push(`      ⚠ ${w}`);
     }
     lines.push("");
   }
@@ -220,8 +228,28 @@ export function renderText(report: LoadReport): string {
   return lines.join("\n");
 }
 
+/** Dangerous combinations across an agent's known tools (combos.ts). */
+export function agentWarnings(a: AgentLoad): string[] {
+  return combinations(a.servers.flatMap((s) => (s.estimate?.tools ?? []).map((t) => t.power)));
+}
+
+/** What the report says under a server: its powers, then every warning (terminal and HTML alike). */
+export function serverNotes(s: McpServer, forAgent = false): { can: string[]; warnings: string[] } {
+  return {
+    can: powerLabels((s.estimate?.tools ?? []).map((t) => t.power)),
+    warnings: [...serverFacts(s, forAgent), ...(s.estimate?.drift ?? []).map(plain), ...trapFacts(s, forAgent)],
+  };
+}
+
+/** Where a server's figures come from, for the location column. */
+export function source(s: McpServer): string {
+  const e = s.estimate;
+  if (e?.catalog) return ` · catalog ${plain(e.catalog.package)}@${plain(e.catalog.version)} ${e.measuredAt?.slice(0, 10)}${e.catalog.exact ? "" : ", not pinned"}`;
+  return e?.measuredAt ? ` · measured ${e.measuredAt.slice(0, 10)}` : "";
+}
+
 /** Exact facts about a server's launch config (rules.ts). Never a secret value. */
-export function serverFacts(s: McpServer): string[] {
+export function serverFacts(s: McpServer, forAgent = false): string[] {
   const args = s.args ?? [];
   const facts: string[] = [];
   if (s.command && shellInline(s.command, args)) facts.push("runs a shell with inline code or a pipe");
@@ -230,6 +258,25 @@ export function serverFacts(s: McpServer): string[] {
   if (s.url && plainHttpRemote(s.url)) facts.push(`connects over plain http:// (unencrypted) to ${plain(new URL(s.url).hostname)}`);
   for (const name of s.literalSecrets ?? []) facts.push(`${plain(name)} is a literal secret written in the file (not shown)`);
   if (secretInText(s.target)) facts.push("its command or URL contains a credential (not shown)");
+  if (s.deprecated) {
+    const note = forAgent ? "" : `: "${plain(s.deprecated.message).slice(0, 120)}"`;
+    facts.push(`uses ${plain(s.deprecated.package)}, marked deprecated by its publisher${note}`);
+  }
+  return facts;
+}
+
+/** Traps hidden in the server's tool descriptions — the phrases, never the description. */
+export function trapFacts(s: McpServer, forAgent = false): string[] {
+  const facts: string[] = [];
+  for (const t of s.estimate?.tools ?? []) {
+    if (!t.flags) continue;
+    const who = `tool ${plain(t.name)} — its description contains`;
+    const n = t.flags.phrases.length;
+    // Quoting "ignore previous instructions" to an agent would relay the trap itself.
+    if (n && forAgent) facts.push(`${who} ${n} instruction-like phrase${plural(n)}`);
+    else if (n) facts.push(`${who} the phrase ${t.flags.phrases.map((p) => `"${plain(p)}"`).join(", ")}`);
+    if (t.flags.hidden) facts.push(`${who} ${t.flags.hidden} invisible character${plural(t.flags.hidden)}`);
+  }
   return facts;
 }
 
@@ -244,7 +291,7 @@ function renderServerCost(s: McpServer): string {
     return dim(`unreachable — ${truncate(s.estimate.error ?? "failed", 40)}`);
   }
   const used = s.usedToolCount != null ? ` · ${s.usedToolCount} used` : "";
-  return `${s.estimate.toolCount} tools · ~${fmtTokens(s.estimate.approxTokens)} tok${used}`;
+  return `${s.estimate.toolCount} tool${plural(s.estimate.toolCount)} · ~${fmtTokens(s.estimate.approxTokens)} tok${used}`;
 }
 
 /** Compact token count: 299 → "299", 52000 → "52k". */

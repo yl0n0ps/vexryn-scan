@@ -39,7 +39,7 @@ try {
   await client.connect(transport);
 
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map((t) => t.name).sort(), ["agent_config_review", "agent_load_report"], "two tools, no more");
+  assert.deepEqual(tools.map((t) => t.name).sort(), ["agent_config_review", "agent_load_report", "mcp_server_lookup"], "three read-only tools, no more");
   const spec = JSON.stringify(tools);
   for (const forbidden of ["wire", "trim", "wrap", "deep", "write"]) assert.ok(!spec.includes(forbidden), `nothing named ${forbidden} exposed`);
   for (const t of tools) assert.match(t.description, /read-only/i, `${t.name} says it is read-only`);

@@ -22,8 +22,9 @@ import { wireConfigs, unwireConfigs, type WireChange } from "./wire/wire.js";
 import { computeTrim, renderTrim, writeTrimmed } from "./trim/trim.js";
 import { reviewRepo } from "./diff/review.js";
 import { runMcp } from "./mcp/server.js";
+import { claudeCodeContext } from "./scan/claude.js";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;
@@ -60,7 +61,7 @@ async function runScan(args: string[]): Promise<number> {
   const target = args.find((a) => !a.startsWith("-")) ?? ".";
   const root = path.resolve(process.cwd(), target);
 
-  const { configs, servers, claude } = await collectStatic(root, includesGlobal);
+  const { configs, servers, claude, others } = await collectStatic(root, includesGlobal);
 
   if (deep && servers.length > 0) {
     // The same server is often declared for several agents: launch it once.
@@ -91,7 +92,7 @@ async function runScan(args: string[]): Promise<number> {
     process.stderr.write("\n");
   }
 
-  const report = assembleReport(root, deep, includesGlobal, configs, servers, claude);
+  const report = assembleReport(root, deep, includesGlobal, configs, servers, claude, others);
   process.stdout.write(renderText(report));
 
   if (html) {
@@ -192,7 +193,7 @@ async function runTrim(args: string[]): Promise<number> {
   const configs = await discoverConfigs(root);
   const servers = await parseServers(configs, root);
   const usage = await attachLocal(servers);
-  const result = computeTrim(servers, usage);
+  const result = computeTrim(servers, usage, (await claudeCodeContext(root, true)).toolSearch);
   process.stdout.write(renderTrim(result));
 
   if (write && result.hasUsage) {
@@ -246,8 +247,8 @@ function printHelp(): void {
       "    trim [path] [--write]           Suggest what to cut, based on usage",
       "    diff [path] --base <ref> [--head <ref>]",
       "                                    Review agent-config changes (markdown, for a PR)",
-      "    mcp                             Serve the load report + review as two read-only",
-      "                                    MCP tools (stdio), for your own agent to call",
+      "    mcp                             Serve the load report, the review and a catalogue",
+      "                                    lookup as read-only MCP tools, for your own agent",
       "",
       "  Any repo, any stack. scan is read-only & local; wire/wrap sit in the",
       "  path locally to count real calls. Nothing is ever sent.",
