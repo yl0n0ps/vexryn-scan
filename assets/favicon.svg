@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" role="img" aria-label="Vexryn">
+  <!-- Favicon: navy ground for tab contrast, thicker strokes for tiny sizes. -->
+  <rect width="64" height="64" rx="14" fill="#0A0E27"/>
+  <path d="M50 14 L39.5 24.5 M24.5 39.5 L14 50" stroke="#EEF1FA" stroke-width="10"/>
+  <path d="M14 14 L50 50" stroke="#4A90FF" stroke-width="10"/>
+</svg>

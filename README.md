@@ -1,12 +1,14 @@
+<img src="assets/favicon.svg" alt="" width="40" align="left">
+
 # vexryn
 
 **See what your AI coding agent actually loads — and what it can do.** One
 command, any repo, no config. Read-only, 100% local, nothing is sent.
 
-[![npm](https://img.shields.io/npm/v/vexryn?color=37d7c4)](https://www.npmjs.com/package/vexryn)
-[![license](https://img.shields.io/badge/license-Apache--2.0-37d7c4)](LICENSE)
-![node](https://img.shields.io/badge/node-%3E%3D18-8695a6)
-![local](https://img.shields.io/badge/100%25%20local-nothing%20sent-8695a6)
+[![npm](https://img.shields.io/npm/v/vexryn?color=4A90FF&labelColor=141A33)](https://www.npmjs.com/package/vexryn)
+[![license](https://img.shields.io/badge/license-Apache--2.0-4A90FF?labelColor=141A33)](LICENSE)
+![node](https://img.shields.io/badge/node-%3E%3D18-8B93AC?labelColor=141A33)
+![local](https://img.shields.io/badge/100%25%20local-nothing%20sent-C46BFF?labelColor=141A33)
 
 ```bash
 npx vexryn scan

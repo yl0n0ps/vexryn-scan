@@ -134,7 +134,9 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean; versi
 
   const head = banner(opts.version);
   if (head.length) for (const b of head) lines.push(b);
-  else {
+  else if (!COLOR) {
+    // Piped/CI/agent: a plain, parseable header. In a terminal with the banner suppressed
+    // (a recording that draws its own intro) we print nothing here.
     lines.push("");
     lines.push("  vexryn · agent load report");
     lines.push("");

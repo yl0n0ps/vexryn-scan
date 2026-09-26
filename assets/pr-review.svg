@@ -1,24 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="820" height="440" viewBox="0 0 820 440" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14">
-  <style>
-    .ink{fill:#e6edf3}.dim{fill:#8b949e}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#e6edf3}
-    .code{fill:#7ee787}.b{font-weight:700}.amber{fill:#f0b23e}
-  </style>
-  <rect width="820" height="440" rx="10" fill="#0d1117" stroke="#30363d"/>
-  <rect x="1" y="1" width="818" height="40" rx="9" fill="#161b22"/>
-  <circle cx="26" cy="21" r="9" fill="#2f81f7" opacity="0.15"/><text x="26" y="26" text-anchor="middle" font-size="12">🤖</text>
-  <text x="44" y="26" class="ink b">github-actions</text>
-  <rect x="150" y="13" width="34" height="16" rx="8" fill="#30363d"/><text x="167" y="25" text-anchor="middle" class="dim" font-size="11">Bot</text>
-  <text x="196" y="26" class="dim">commented on your pull request</text>
-  <g transform="translate(24,66)">
-    <text class="ink b" font-size="17">Vexryn — agent config review</text>
-    <text y="30" class="dim">These changes affect what your AI agent may do or what it loads.</text>
-    <text y="64" class="ink b">What the agent may do</text>
-    <text y="94"><tspan class="amber">⚠</tspan><tspan class="ink" dx="8">New MCP server </tspan><tspan class="mono">slack</tspan><tspan class="ink"> — unpinned, receives </tspan><tspan class="mono code">SLACK_BOT_TOKEN</tspan></text>
-    <text y="122"><tspan class="amber">⚠</tspan><tspan class="ink" dx="8">MCP server </tspan><tspan class="mono">slack</tspan><tspan class="ink"> can </tspan><tspan class="b" fill="#e6edf3">send messages to external recipients</tspan><tspan class="ink"> — 8 tools</tspan></text>
-    <text y="150"><tspan class="amber">⚠</tspan><tspan class="ink" dx="8">MCP server </tspan><tspan class="mono">slack</tspan><tspan class="ink"> uses </tspan><tspan class="mono">server-slack</tspan><tspan class="ink">, marked deprecated by its publisher</tspan></text>
-    <text y="178"><tspan class="amber">⚠</tspan><tspan class="ink" dx="8">MCP server </tspan><tspan class="mono">files</tspan><tspan class="ink"> is given </tspan><tspan class="mono">~</tspan><tspan class="ink"> — a whole filesystem/home</tspan></text>
-    <text y="206"><tspan class="amber">⚠</tspan><tspan class="ink" dx="8">Claude Code may run </tspan><tspan class="mono code">git push</tspan><tspan class="ink">, </tspan><tspan class="mono code">npm publish</tspan><tspan class="ink"> without asking</tspan></text>
-    <text y="240" class="ink b">Loads every session (Claude Code): 0 → 101 tokens (+101)</text>
-    <text y="300" class="dim" font-size="12">Static read — nothing was executed, nothing was sent. Posted by the vexryn GitHub Action.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="430" viewBox="0 0 820 430" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14">
+  <style>.fg{fill:#EEF1FA}.muted{fill:#8B93AC}.faint{fill:#565E7E}.blue{fill:#4A90FF}.amber{fill:#E6B23C}.coral{fill:#FF5A4E}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.b{font-weight:700}</style>
+  <rect width="820" height="430" rx="10" fill="#0A0E27" stroke="#262E4D"/>
+  <rect x="1" y="1" width="818" height="44" rx="9" fill="#141A33"/>
+  <g transform="translate(20,11) scale(0.34)"><rect width="64" height="64" rx="14" fill="#0A0E27"/><path d="M50 14 L39.5 24.5 M24.5 39.5 L14 50" stroke="#EEF1FA" stroke-width="10"/><path d="M14 14 L50 50" stroke="#4A90FF" stroke-width="10"/></g>
+  <text x="50" y="28" class="fg b">vexryn</text>
+  <rect x="108" y="15" width="34" height="16" rx="8" fill="#262E4D"/><text x="125" y="27" text-anchor="middle" class="muted" font-size="11">Bot</text>
+  <text x="154" y="28" class="muted">reviewed your pull request</text>
+  <g transform="translate(24,70)">
+    <text class="fg b" font-size="17">Vexryn — agent config review</text>
+    <text y="30" class="muted">These changes affect what your AI agent may do or what it loads.</text>
+    <text y="64" class="fg b">What the agent may do</text>
+    <text y="94"><tspan class="amber">⚠</tspan><tspan class="fg" dx="8">New MCP server </tspan><tspan class="mono blue">slack</tspan><tspan class="fg"> — unpinned, receives </tspan><tspan class="mono amber">SLACK_BOT_TOKEN</tspan></text>
+    <text y="122"><tspan class="amber">⚠</tspan><tspan class="fg" dx="8">MCP server </tspan><tspan class="mono blue">slack</tspan><tspan class="fg"> can </tspan><tspan class="b">send messages to external recipients</tspan><tspan class="fg"> — 8 tools</tspan></text>
+    <text y="150"><tspan class="coral">⚠</tspan><tspan class="fg" dx="8">MCP server </tspan><tspan class="mono blue">slack</tspan><tspan class="fg"> uses </tspan><tspan class="mono">server-slack</tspan><tspan class="fg">, marked deprecated by its publisher</tspan></text>
+    <text y="178"><tspan class="coral">⚠</tspan><tspan class="fg" dx="8">MCP server </tspan><tspan class="mono blue">files</tspan><tspan class="fg"> is given </tspan><tspan class="mono">/</tspan><tspan class="fg"> — a whole filesystem/home</tspan></text>
+    <text y="206"><tspan class="amber">⚠</tspan><tspan class="fg" dx="8">Claude Code may run </tspan><tspan class="mono blue">git push</tspan><tspan class="fg">, </tspan><tspan class="mono blue">npm publish</tspan><tspan class="fg"> without asking</tspan></text>
+    <text y="240" class="fg b">Loads every session (Claude Code): 0 → 101 tokens (+101)</text>
+    <text y="296" class="faint" font-size="12">Static read — nothing was executed, nothing was sent. Posted by the vexryn GitHub Action.</text>
   </g>
 </svg>
