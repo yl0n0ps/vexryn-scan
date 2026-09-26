@@ -5,6 +5,7 @@
 import { promises as fs } from "node:fs";
 import type { DiscoveredConfig, McpServer, Scope } from "../types.js";
 import { secretLiteral } from "../diff/rules.js";
+import { readToml, readYaml } from "./formats.js";
 
 /** Config kinds that can declare MCP servers (rules/markdown files cannot). */
 const SERVER_KINDS = new Set([
@@ -16,7 +17,20 @@ const SERVER_KINDS = new Set([
   "claude-desktop",
   "windsurf-mcp",
   "gemini",
+  "codex-toml",
+  "copilot-cli",
+  "cline",
+  "roo-mcp",
+  "continue-yaml",
+  "zed",
+  "kiro",
+  "opencode",
+  "goose",
 ]);
+
+/** File extensions that are TOML / YAML rather than JSON, by kind. */
+const TOML_KINDS = new Set(["codex-toml"]);
+const YAML_KINDS = new Set(["continue-yaml", "goose"]);
 
 /**
  * Extract MCP servers from every config that can declare them.
@@ -29,7 +43,7 @@ export async function parseServers(configs: DiscoveredConfig[], root: string): P
 
   for (const cfg of configs) {
     if (!SERVER_KINDS.has(cfg.kind)) continue;
-    const raw = await readJsonLoose(cfg.path);
+    const raw = await readConfig(cfg.kind, cfg.path);
     if (typeof raw !== "object" || raw === null) continue;
     const obj = raw as Record<string, unknown>;
 
@@ -47,7 +61,7 @@ export async function parseServers(configs: DiscoveredConfig[], root: string): P
         }
       }
     } else {
-      sections.push({ map: obj.mcpServers ?? obj.servers, scope: cfg.scope });
+      sections.push({ map: normalizeServers(cfg.kind, obj), scope: cfg.scope });
     }
 
     for (const section of sections) {
@@ -126,6 +140,76 @@ function stripJsonc(text: string): string {
     }
   }
   return out.replace(/,(\s*[}\]])/g, "$1");
+}
+
+/** Read a config by its format: TOML and YAML for the newer agents, JSONC otherwise. */
+async function readConfig(kind: string, p: string): Promise<unknown | null> {
+  let text: string;
+  try {
+    text = await fs.readFile(p, "utf8");
+  } catch {
+    return null;
+  }
+  if (TOML_KINDS.has(kind)) return readToml(text);
+  if (YAML_KINDS.has(kind)) return readYaml(text);
+  return readJsonLoose(p);
+}
+
+/**
+ * Every agent's server shape → the standard `{ name: { command, args, env, url, headers } }`
+ * map that `extractServers` understands. Name-only credential channels (Codex
+ * `bearer_token_env_var`, Goose `env_keys`) become env entries with an empty value, so
+ * their NAME is surfaced under `receives` and never mistaken for a literal secret.
+ */
+export function normalizeServers(kind: string, obj: Record<string, unknown>): Record<string, unknown> {
+  const asObj = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
+  const named = (v: unknown): Record<string, unknown> => asObj(v);
+  const namesOnly = (v: unknown): Record<string, string> => {
+    const names = Array.isArray(v) ? v : [];
+    return Object.fromEntries(names.filter((n): n is string => typeof n === "string").map((n) => [n, ""]));
+  };
+  const out: Record<string, unknown> = {};
+
+  if (kind === "codex-toml") {
+    for (const [name, def] of Object.entries(named(obj.mcp_servers))) {
+      const d = asObj(def);
+      const headers = { ...asObj(d.http_headers), ...namesOnly(d.env_http_headers), ...(typeof d.bearer_token_env_var === "string" ? { [d.bearer_token_env_var]: "" } : {}) };
+      out[name] = { command: d.command, args: d.args, env: d.env, url: d.url, headers };
+    }
+    return out;
+  }
+  if (kind === "opencode") {
+    for (const [name, def] of Object.entries(named(obj.mcp))) {
+      const d = asObj(def);
+      const cmd = Array.isArray(d.command) ? d.command.filter((x): x is string => typeof x === "string") : [];
+      out[name] = { command: cmd[0], args: cmd.slice(1), env: d.environment, url: d.url, headers: d.headers };
+    }
+    return out;
+  }
+  if (kind === "zed") return named(obj.context_servers);
+  if (kind === "goose") {
+    for (const [name, def] of Object.entries(named(obj.extensions))) {
+      const d = asObj(def);
+      if (d.type === "builtin") continue; // a builtin extension has no launch command to name
+      out[name] = { command: d.cmd, args: d.args, env: { ...asObj(d.envs), ...namesOnly(d.env_keys) }, url: d.uri ?? d.url, headers: d.headers };
+    }
+    return out;
+  }
+  if (kind === "continue-yaml") {
+    const list = Array.isArray(obj.mcpServers) ? obj.mcpServers : [];
+    for (const item of list) {
+      const d = asObj(item);
+      if (typeof d.name === "string") out[d.name] = d;
+    }
+    return out;
+  }
+  // The VS Code family (Copilot CLI, Cline, Roo, Kiro) uses a plain `mcpServers` (or `servers`) object.
+  return { ...named(obj.mcpServers ?? obj.servers) } as Record<string, unknown>;
+}
+
+/** Normalize + extract in one call, for a single already-parsed config object (tests, reuse). */
+export function serversFromConfig(kind: string, obj: Record<string, unknown>): BareServer[] {
+  return extractServers(normalizeServers(kind, obj));
 }
 
 type BareServer = Pick<McpServer, "name" | "transport" | "target" | "command" | "args" | "url" | "receives" | "literalSecrets">;
