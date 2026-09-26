@@ -20,7 +20,7 @@ import { runWrap } from "./proxy/wrap.js";
 import { loadUsage } from "./usage/store.js";
 import { wireConfigs, unwireConfigs, type WireChange } from "./wire/wire.js";
 import { computeTrim, renderTrim, writeTrimmed } from "./trim/trim.js";
-import { reviewRepo } from "./diff/review.js";
+import { renderReview, reviewOf } from "./diff/review.js";
 import { runMcp } from "./mcp/server.js";
 import { claudeCodeContext } from "./scan/claude.js";
 
@@ -79,6 +79,7 @@ async function main(argv: string[]): Promise<number> {
 async function runScan(args: string[]): Promise<number> {
   const deep = args.includes("--deep");
   const html = args.includes("--html");
+  const json = args.includes("--json");
   const includesGlobal = !args.includes("--no-global");
   const target = args.find((a) => !a.startsWith("-")) ?? ".";
   const root = path.resolve(process.cwd(), target);
@@ -114,6 +115,10 @@ async function runScan(args: string[]): Promise<number> {
   }
 
   const report = assembleReport(root, deep, includesGlobal, configs, servers, claude, others);
+  if (json) {
+    process.stdout.write(JSON.stringify(report, null, 2) + "\n");
+    return 0;
+  }
   process.stdout.write(renderText(report, { version: VERSION }));
 
   if (html) {
@@ -241,12 +246,22 @@ async function runDiff(args: string[]): Promise<number> {
   const base = value("--base");
   const head = value("--head");
   if (!base || bad) {
-    process.stderr.write("usage: vexryn diff [path] --base <ref> [--head <ref>]   (head defaults to the working tree)\n");
+    process.stderr.write("usage: vexryn diff [path] --base <ref> [--head <ref>] [--strict] [--json]   (head defaults to the working tree)\n");
     return 2;
   }
   const target = args.find((a, i) => !a.startsWith("-") && args[i - 1] !== "--base" && args[i - 1] !== "--head") ?? ".";
-  process.stdout.write(await reviewRepo(path.resolve(process.cwd(), target), base, head));
-  return 0;
+  const review = await reviewOf(path.resolve(process.cwd(), target), base, head);
+  process.stdout.write(args.includes("--json") ? JSON.stringify(review, null, 2) + "\n" : renderReview(review));
+  return strictExit(args.includes("--strict"), review.open);
+}
+
+/** `--strict`: open ⚠️ findings fail the run (exit 1); accepted ones don't. */
+function strictExit(strict: boolean, open: number): number {
+  if (!strict || open === 0) return 0;
+  process.stderr.write(
+    `vexryn: ${open} open finding${open === 1 ? "" : "s"} (--strict). Accept one by listing its vx- id in .vexryn.json on the base branch.\n`,
+  );
+  return 1;
 }
 
 function printHelp(): void {

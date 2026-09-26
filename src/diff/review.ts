@@ -62,6 +62,8 @@ export interface Review {
   /** Agent files whose content changed: read by this review / not read yet. */
   changed: string[];
   unreviewed: string[];
+  /** ⚠️ findings shown and not accepted by the base side — what `--strict` blocks on. */
+  open: number;
 }
 
 /**
@@ -69,6 +71,11 @@ export interface Review {
  * tree) of the repo containing `dir`. Temp snapshots are always removed.
  */
 export async function reviewRepo(dir: string, base: string, head?: string): Promise<string> {
+  return renderReview(await reviewOf(dir, base, head));
+}
+
+/** The review as data (what `--json` and `--strict` read). */
+export async function reviewOf(dir: string, base: string, head?: string): Promise<Review> {
   const root = await gitRoot(dir);
   const baseSha = await resolveRef(root, base);
   const headSha = head ? await resolveRef(root, head) : null;
@@ -76,7 +83,7 @@ export async function reviewRepo(dir: string, base: string, head?: string): Prom
   try {
     sides.push(await snapshot(root, baseSha));
     sides.push(await snapshot(root, headSha));
-    return renderReview(compare(await readSnapshot(sides[0]), await readSnapshot(sides[1])));
+    return compare(await readSnapshot(sides[0]), await readSnapshot(sides[1]));
   } finally {
     for (const s of sides) await fs.rm(s.dir, { recursive: true, force: true });
   }
@@ -130,11 +137,15 @@ export function compare(base: Snapshot, head: Snapshot): Review {
 
   // Accepted findings come from the BASE side only: a change can't silence its own findings.
   let accepted = 0;
+  let open = 0;
   const shown: string[] = [];
   for (const l of powers) {
     if (!l.startsWith(WARN)) shown.push(l);
     else if (base.accept.ids.has(findingId(l))) accepted++;
-    else shown.push(`${l} <sub>${findingId(l)}</sub>`);
+    else {
+      open++;
+      shown.push(`${l} <sub>${findingId(l)}</sub>`);
+    }
   }
   const newlyAccepted = [...head.accept.ids].filter((id) => !base.accept.ids.has(id)).length;
   if (newlyAccepted) {
@@ -158,12 +169,18 @@ export function compare(base: Snapshot, head: Snapshot): Review {
     loads: [claude, ...others].filter((l): l is { header: string; lines: string[] } => l !== null),
     changed: changed.filter(reviewed),
     unreviewed: changed.filter((f) => !reviewed(f)),
+    open,
   };
+}
+
+/** No agent config file changed: nothing to post. */
+export function isEmpty(r: Review): boolean {
+  return r.powers.length === 0 && r.accepted === 0 && r.loads.length === 0 && r.changed.length === 0 && r.unreviewed.length === 0;
 }
 
 export function renderReview(r: Review): string {
   const head = [MARKER, "### Vexryn — agent config review", ""];
-  if (r.powers.length === 0 && r.accepted === 0 && r.loads.length === 0 && r.changed.length === 0 && r.unreviewed.length === 0) {
+  if (isEmpty(r)) {
     return [...head, NO_CHANGE].join("\n") + "\n";
   }
   const body: string[] = [];
