@@ -324,18 +324,45 @@ const faint = rgb(86, 94, 126); // #565E7E
 const fgc = rgb(238, 241, 250); // #EEF1FA
 
 /** The Vexryn banner: the woven-X mark (a blue stroke through a broken one) + the wordmark. TTY only. */
+// The wordmark as a giant gradient logo (oh-my-logo, ANSI Shadow), shown at the top of
+// a scan in a real terminal. Baked in (no runtime dependency); the per-column blue→violet
+// gradient is applied in code so NO_COLOR yields plain art.
+const LOGO = [
+  "██╗   ██╗███████╗██╗  ██╗██████╗ ██╗   ██╗███╗   ██╗",
+  "██║   ██║██╔════╝╚██╗██╔╝██╔══██╗╚██╗ ██╔╝████╗  ██║",
+  "██║   ██║█████╗   ╚███╔╝ ██████╔╝ ╚████╔╝ ██╔██╗ ██║",
+  "╚██╗ ██╔╝██╔══╝   ██╔██╗ ██╔══██╗  ╚██╔╝  ██║╚██╗██║",
+  " ╚████╔╝ ███████╗██╔╝ ██╗██║  ██║   ██║   ██║ ╚████║",
+  "  ╚═══╝  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═══╝",
+];
+const LOGO_W = 52;
+
+/** One logo line with a per-column blue→violet gradient (spaces stay blank). */
+function gradientLine(line: string): string {
+  if (!COLOR) return "  " + line;
+  let s = "  ";
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === " ") { s += " "; continue; }
+    const t = i / (LOGO_W - 1);
+    const r = Math.round(74 + (196 - 74) * t);
+    const g = Math.round(144 + (107 - 144) * t);
+    s += `\u001b[38;2;${r};${g};255m${ch}`;
+  }
+  return s + "\u001b[0m";
+}
+
+/** The Vexryn banner: the giant gradient wordmark (wide terminals) or a compact one. TTY only. */
 export function banner(version?: string): string[] {
   if (!COLOR || process.env.VEXRYN_NO_BANNER === "1") return [];
-  // Wordmark-first, like the lockup: the blue x is the mark. A block rule in the
-  // brand gradient. Block/word glyphs render everywhere; the woven-X mark lives in
-  // the SVG assets and the favicon.
-  const word = bold(fgc("ve") + blue("x") + fgc("ryn"));
-  const ver = version ? "   " + faint(`v${version}`) : "";
-  return [
-    "",
-    `  ${word}${ver}   ${muted("· see what your agent loads, and what it can do")}`,
-    "",
-  ];
+  const cols = process.stdout.columns ?? 80;
+  const ver = version ? faint(`v${version}`) : "";
+  const tagline = muted("see what your agent loads, and what it can do");
+  if (cols < LOGO_W + 4) {
+    const word = bold(fgc("ve") + blue("x") + fgc("ryn"));
+    return ["", `  ${word}${ver ? "   " + ver : ""}   ${muted("· " + "see what your agent loads")}`, ""];
+  }
+  return ["", ...LOGO.map(gradientLine), `  ${tagline}${ver ? "    " + ver : ""}`, ""];
 }
 
 /** A ⚠ line is coral when it names a secret/credential/deprecation/leak; amber otherwise. */
