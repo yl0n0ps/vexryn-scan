@@ -33,10 +33,14 @@ them. Vexryn makes them legible.
 
 ## Status
 
-Early release — [`vexryn` on npm](https://www.npmjs.com/package/vexryn) (0.2.0). What's real today:
+Early release — [`vexryn` on npm](https://www.npmjs.com/package/vexryn) (0.3.0). What's real today:
 
-- **Discovery (agnostic):** finds agent configs across any repo/stack and multiple
-  agents (MCP, Cursor, Claude, Gemini, Windsurf). Read-only.
+- **Every coding agent (agnostic):** finds and reads the MCP servers of Claude
+  Code, Claude Desktop, Cursor, VS Code / GitHub Copilot (VS Code + CLI), Codex,
+  Gemini CLI, Windsurf, Cline, Roo Code, Continue, Zed, Kiro, OpenCode and Goose —
+  from each one's own format (JSON, JSONC, TOML, YAML), in the repo and user-wide.
+  Read-only. Paths and formats are documented, with sources, in
+  `docs/research/2026-09-26-agent-matrix.md`.
 - **User-wide configs (default):** also reads each agent app's global config —
   Claude Code `~/.claude.json` (user scope + this repo's local scope), Claude
   Desktop, Cursor `~/.cursor/mcp.json`, Windsurf, Gemini CLI, VS Code user
@@ -119,7 +123,10 @@ Not built yet (honest):
   writes, publishing to GitHub or a CRM, and cloud resources aren't classes yet.
 - **Proof of exploitability** — showing a dangerous combination can really be
   abused, in a sandbox — is the next step, not built.
-- **Codex CLI** as an agent (its MCP config and `AGENTS.md`) isn't read yet.
+- **Instruction loading** is counted for Claude Code, Cursor, Windsurf, Gemini CLI,
+  Codex, OpenCode, Kiro, Cline, Roo and Zed. GitHub Copilot, Continue and Goose
+  are read for MCP servers only; their instruction files are named in a review but
+  not yet load-counted.
 - **Usage per launch command** — `wrap` records calls under the server *name*
   the agent uses, not its launch command, so a name reused for a different
   server in another repo mixes their counts in `trim`.

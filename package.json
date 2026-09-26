@@ -1,6 +1,6 @@
 {
   "name": "vexryn",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "See what your AI agent actually loads \u2014 any repo, any stack, no config.",
   "type": "module",
   "bin": {
