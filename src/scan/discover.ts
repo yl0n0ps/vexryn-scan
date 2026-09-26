@@ -43,6 +43,14 @@ const PROJECT_RULES: Rule[] = [
   },
   { match: (r) => r.includes(".gemini/") && r.endsWith(".json"), kind: "gemini", client: "Gemini CLI" },
   { match: (r) => r.includes(".windsurf"), kind: "windsurf", client: "Windsurf" },
+  // The newer agents (matched anywhere in the tree, like the others).
+  { match: (r) => r.endsWith(".codex/config.toml"), kind: "codex-toml", client: "Codex" },
+  { match: (r) => r.endsWith(".copilot/mcp-config.json"), kind: "copilot-cli", client: "GitHub Copilot CLI" },
+  { match: (r) => r.endsWith(".roo/mcp.json"), kind: "roo-mcp", client: "Roo Code" },
+  { match: (r) => /(^|\/)\.continue\/mcpServers\/[^/]+\.(ya?ml|json)$/.test(r), kind: "continue-yaml", client: "Continue" },
+  { match: (r) => r.endsWith(".zed/settings.json"), kind: "zed", client: "Zed" },
+  { match: (r) => r.endsWith(".kiro/settings/mcp.json"), kind: "kiro", client: "Kiro" },
+  { match: (_r, b) => b === "opencode.json" || b === "opencode.jsonc", kind: "opencode", client: "OpenCode" },
 ];
 
 const MAX_DEPTH = 8;
@@ -54,8 +62,11 @@ const MAX_DEPTH = 8;
  * at its project root only, never a subproject's (Claude Code docs: ".mcp.json at your project's root").
  */
 export function projectDir(relPath: string): string {
-  const dir = path.posix.dirname(relPath.split(path.sep).join("/"));
-  return /^\.(claude|cursor|vscode|gemini)$/.test(path.posix.basename(dir)) ? path.posix.dirname(dir) : dir;
+  const parts = path.posix.dirname(relPath.split(path.sep).join("/")).split("/");
+  // A file lives inside an agent-config directory (.claude, .roo, .kiro/settings…):
+  // its project is whatever contains that directory, never the agent dir itself.
+  const i = parts.findIndex((p) => /^\.(claude|cursor|vscode|gemini|codex|roo|zed|kiro|continue|copilot|windsurf|devin)$/.test(p));
+  return (i === -1 ? parts.join("/") : parts.slice(0, i).join("/")) || ".";
 }
 
 export async function discoverConfigs(root: string): Promise<DiscoveredConfig[]> {
@@ -119,6 +130,7 @@ function globalCandidates(home: string): Array<{ path: string; kind: ConfigKind;
           ? path.join(home, "AppData", "Roaming")
           : process.env.APPDATA || path.join(home, "AppData", "Roaming")
         : path.join(home, ".config");
+  const xdg = process.env.XDG_CONFIG_HOME && !process.env.VEXRYN_HOME ? process.env.XDG_CONFIG_HOME : path.join(home, ".config");
 
   return [
     { path: path.join(home, ".claude.json"), kind: "claude-user", client: "Claude Code" },
@@ -135,6 +147,19 @@ function globalCandidates(home: string): Array<{ path: string; kind: ConfigKind;
     },
     { path: path.join(home, ".gemini", "settings.json"), kind: "gemini", client: "Gemini CLI" },
     { path: path.join(appSupport, "Code", "User", "mcp.json"), kind: "vscode-mcp", client: "VS Code" },
+    { path: path.join(home, ".codex", "config.toml"), kind: "codex-toml", client: "Codex" },
+    { path: path.join(home, ".copilot", "mcp-config.json"), kind: "copilot-cli", client: "GitHub Copilot CLI" },
+    { path: path.join(home, ".kiro", "settings", "mcp.json"), kind: "kiro", client: "Kiro" },
+    { path: path.join(home, ".continue", "config.yaml"), kind: "continue-yaml", client: "Continue" },
+    // Zed, OpenCode and Goose use ~/.config on every platform, not the OS app-data dir.
+    { path: path.join(xdg, "goose", "config.yaml"), kind: "goose", client: "Goose" },
+    // Goose on Windows keeps its config under %APPDATA%\\Block\\goose\\config.
+    ...(process.platform === "win32" ? [{ path: path.join(appSupport, "Block", "goose", "config", "config.yaml"), kind: "goose" as ConfigKind, client: "Goose" as AgentClient }] : []),
+    { path: path.join(xdg, "zed", "settings.json"), kind: "zed", client: "Zed" },
+    { path: path.join(xdg, "opencode", "opencode.json"), kind: "opencode", client: "OpenCode" },
+    // Cline and Roo Code (VS Code extensions) keep their MCP settings in the editor's globalStorage.
+    { path: path.join(appSupport, "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "cline_mcp_settings.json"), kind: "cline", client: "Cline" },
+    { path: path.join(appSupport, "Code", "User", "globalStorage", "rooveterinaryinc.roo-cline", "settings", "mcp_settings.json"), kind: "roo-mcp", client: "Roo Code" },
   ];
 }
 

@@ -23,6 +23,15 @@ export function isAgentConfigPath(p: string): boolean {
     base === "CLAUDE.local.md" ||
     /(^|\/)\.(cursor|vscode)\/mcp\.json$/.test(p) ||
     /(^|\/)\.gemini\/settings\.json$/.test(p) ||
+    // the newer agents' MCP configs
+    /(^|\/)\.codex\/config\.toml$/.test(p) ||
+    /(^|\/)\.copilot\/mcp-config\.json$/.test(p) ||
+    /(^|\/)\.roo\/mcp\.json$/.test(p) ||
+    /(^|\/)\.continue\/mcpServers\/[^/]+\.(ya?ml|json)$/.test(p) ||
+    /(^|\/)\.zed\/settings\.json$/.test(p) ||
+    /(^|\/)\.kiro\/settings\/mcp\.json$/.test(p) ||
+    base === "opencode.json" ||
+    base === "opencode.jsonc" ||
     /(^|\/)\.claude\/settings(\.local)?\.json$/.test(p) ||
     /(^|\/)\.claude\/skills\/(.+\/)?SKILL\.md$/.test(p) ||
     /(^|\/)\.claude\/agents\/[^/]+\.md$/.test(p)

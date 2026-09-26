@@ -24,7 +24,7 @@ import { reviewRepo } from "./diff/review.js";
 import { runMcp } from "./mcp/server.js";
 import { claudeCodeContext } from "./scan/claude.js";
 
-const VERSION = "0.2.0";
+const VERSION = "0.3.0";
 
 async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;

@@ -22,6 +22,15 @@ export type AgentClient =
   | "VS Code"
   | "Windsurf"
   | "Gemini CLI"
+  | "Codex"
+  | "GitHub Copilot CLI"
+  | "Cline"
+  | "Roo Code"
+  | "Continue"
+  | "Zed"
+  | "Kiro"
+  | "OpenCode"
+  | "Goose"
   | "Unknown";
 
 /**
@@ -58,6 +67,15 @@ export type ConfigKind =
   | "gemini" // .gemini/settings.json (project or global)
   | "windsurf" // .windsurf rules (project)
   | "windsurf-mcp" // ~/.codeium/windsurf/mcp_config.json
+  | "codex-toml" // .codex/config.toml, ~/.codex/config.toml
+  | "copilot-cli" // .copilot/mcp-config.json, ~/.copilot/mcp-config.json
+  | "cline" // Cline mcp settings (VS Code globalStorage / ~/.cline)
+  | "roo-mcp" // .roo/mcp.json, Roo mcp_settings.json
+  | "continue-yaml" // .continue/mcpServers/*.{yaml,json}, ~/.continue/config.yaml
+  | "zed" // .zed/settings.json, ~/.config/zed/settings.json (context_servers)
+  | "kiro" // .kiro/settings/mcp.json, ~/.kiro/settings/mcp.json
+  | "opencode" // opencode.json(c), ~/.config/opencode/opencode.json (mcp)
+  | "goose" // ~/.config/goose/config.yaml (extensions)
   | "unknown";
 
 /** An MCP server entry parsed from a config file. */

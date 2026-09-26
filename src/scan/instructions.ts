@@ -25,6 +25,8 @@ export type AgentContexts = Partial<Record<AgentClient, ContextItem[]>>;
 
 export async function agentContexts(root: string, includesGlobal: boolean): Promise<AgentContexts> {
   const home = homeDir();
+  // ~/.config on every platform, or XDG_CONFIG_HOME when set (matches discovery of Zed/OpenCode/Goose).
+  const xdg = process.env.XDG_CONFIG_HOME && !process.env.VEXRYN_HOME ? process.env.XDG_CONFIG_HOME : path.join(home, ".config");
   const present = async (repoPaths: string[], homePath: string) =>
     (await anyExists(repoPaths.map((p) => path.join(root, p)))) || (includesGlobal && (await exists(path.join(home, homePath))));
   const out: AgentContexts = {};
@@ -79,7 +81,80 @@ export async function agentContexts(root: string, includesGlobal: boolean): Prom
     if (includesGlobal) for (const n of names) await add(tildify(path.join(home, ".gemini", n)), path.join(home, ".gemini", n));
     if (items.length) out["Gemini CLI"] = items;
   }
+
+  // Codex: ~/.codex/AGENTS.override.md else AGENTS.md, then the repo's AGENTS.md; capped at 32 KiB total.
+  if (await present([".codex"], ".codex")) {
+    const items: ContextItem[] = [];
+    if (includesGlobal) {
+      const g = (await readText(path.join(home, ".codex", "AGENTS.override.md"))) ?? (await readText(path.join(home, ".codex", "AGENTS.md")));
+      file(items, tildify(path.join(home, ".codex", "AGENTS.md")), g);
+    }
+    const projectDoc = (await readText(path.join(root, "AGENTS.override.md"))) ?? agentsMd;
+    file(items, "AGENTS.md", projectDoc && cap(projectDoc, 32 * 1024));
+    if (items.length) out.Codex = items;
+  }
+
+  // OpenCode: AGENTS.md, else CLAUDE.md; global ~/.config/opencode/AGENTS.md else ~/.claude/CLAUDE.md.
+  if ((await anyExists([path.join(root, "opencode.json"), path.join(root, "opencode.jsonc")])) || (includesGlobal && (await exists(path.join(xdg, "opencode"))))) {
+    const items: ContextItem[] = [];
+    if (agentsMd) file(items, "AGENTS.md", agentsMd);
+    else file(items, "CLAUDE.md", await readText(path.join(root, "CLAUDE.md")));
+    if (includesGlobal) {
+      const g = path.join(home, ".config", "opencode", "AGENTS.md");
+      const gt = (await readText(g)) ?? (await readText(path.join(home, ".claude", "CLAUDE.md")));
+      file(items, tildify(g), gt);
+    }
+    if (items.length) out.OpenCode = items;
+  }
+
+  // Kiro: .kiro/steering/*.md with inclusion always (or none), plus AGENTS.md.
+  if (await present([".kiro"], ".kiro")) {
+    const items: ContextItem[] = [];
+    const always = (await rules(root, ".kiro/steering", ".md")).filter((r) => !r.fm.inclusion || r.fm.inclusion === "always");
+    aggregate(items, "kiro-steering", "always steering file", always, (r) => r.body);
+    file(items, "AGENTS.md", agentsMd);
+    if (items.length) out.Kiro = items;
+  }
+
+  // Cline: a .clinerules file or a rules folder, plus AGENTS.md.
+  if (await present([".clinerules", ".cline"], path.join("Documents", "Cline", "Rules"))) {
+    const items: ContextItem[] = [];
+    const fileRule = await readText(path.join(root, ".clinerules"));
+    if (fileRule) file(items, ".clinerules", fileRule);
+    const rs = [...(await rules(root, ".clinerules", ".md")), ...(await rules(root, ".cline/rules", ".md"))];
+    aggregate(items, "cline-rules", "rule file", rs, (r) => r.body);
+    file(items, "AGENTS.md", agentsMd);
+    if (items.length) out.Cline = items;
+  }
+
+  // Roo Code: .roo/rules/ (else .roorules), plus AGENTS.md.
+  if (await present([".roo", ".roorules"], ".roo")) {
+    const items: ContextItem[] = [];
+    const rs = await rules(root, ".roo/rules", ".md");
+    if (rs.length) aggregate(items, "roo-rules", "rule file", rs, (r) => r.body);
+    else file(items, ".roorules", await readText(path.join(root, ".roorules")));
+    file(items, "AGENTS.md", agentsMd);
+    if (items.length) out["Roo Code"] = items;
+  }
+
+  // Zed: the FIRST of its rule-name list at the project root wins; the rest is ignored.
+  if (await present([".zed"], path.join(".config", "zed"))) {
+    const order = [".rules", ".cursorrules", ".windsurfrules", ".clinerules", ".github/copilot-instructions.md", "AGENT.md", "AGENTS.md", "CLAUDE.md", "GEMINI.md"];
+    for (const name of order) {
+      const text = await readText(path.join(root, name));
+      if (text) {
+        out.Zed = [{ key: "zed-rules", label: `${name} (Zed loads the first match; other rule files are ignored)`, tokens: countTokens(text) }];
+        break;
+      }
+    }
+  }
   return out;
+}
+
+/** Trim text to at most `maxBytes` UTF-8 bytes (Codex's project_doc_max_bytes). */
+function cap(text: string, maxBytes: number): string {
+  const buf = Buffer.from(text, "utf8");
+  return buf.length <= maxBytes ? text : buf.subarray(0, maxBytes).toString("utf8");
 }
 
 interface Rule {
