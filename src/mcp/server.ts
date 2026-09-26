@@ -1,4 +1,4 @@
-// `vexryn mcp`: the load report and the config review as two MCP tools over
+// `vexryn mcp`: the load report, the config review and the catalogue lookup as MCP tools over
 // stdio, so the user's own agent can call them from a conversation.
 //
 // Read-only by construction. Nothing that edits a config (wire, trim --write),

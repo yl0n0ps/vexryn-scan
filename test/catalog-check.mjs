@@ -3,7 +3,7 @@
 // holding facts, never tool descriptions. Offline: measures the local mock only.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -66,6 +66,19 @@ try {
       assert.ok(!key.startsWith("local:"), `${key}: no local entry ships`);
       for (const [ver, x] of Object.entries(entry.versions)) assert.match(x.by, /^https:\/\/github\.com\/yl0n0ps\/vexryn-scan\/actions\/runs\/\d+$/, `${key}@${ver} was measured by the public workflow`);
     }
+  }
+  // The shipped catalogue is found by its default path (as in the npm package) and used by a static scan.
+  if (existsSync("catalog/catalog.json")) {
+    const repo = path.join(tmp, "repo");
+    const home = path.join(tmp, "home");
+    mkdirSync(repo);
+    mkdirSync(home);
+    writeFileSync(path.join(repo, ".mcp.json"), JSON.stringify({ mcpServers: { slack: { command: "npx", args: ["-y", "@modelcontextprotocol/server-slack"] } } }));
+    const env = { ...process.env, VEXRYN_HOME: home };
+    delete env.VEXRYN_CATALOG;
+    const out = spawnSync("node", ["dist/cli.js", "scan", repo, "--no-global"], { encoding: "utf8", env }).stdout.replace(/\u001b\[[0-9;]*m/g, "");
+    assert.match(out, /slack\s+\d+ tools · ~\d+ tok .*catalog @modelcontextprotocol\/server-slack@/, out);
+    assert.match(out, /can: send messages to external recipients/);
   }
   console.log("catalog-check: all assertions passed");
 } finally {

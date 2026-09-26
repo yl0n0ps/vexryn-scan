@@ -65,7 +65,8 @@ put(path.join(claude, "plugins", "installed_plugins.json"), {
 });
 
 function scan(extraEnv = {}, ...extra) {
-  const env = { ...process.env, VEXRYN_HOME: home };
+  // No catalogue: this test pins exact accounting with an UNMEASURED server.
+  const env = { ...process.env, VEXRYN_HOME: home, VEXRYN_CATALOG: path.join(home, "no-catalog.json") };
   delete env.ENABLE_TOOL_SEARCH;
   delete env.ANTHROPIC_BASE_URL;
   Object.assign(env, extraEnv);
@@ -120,7 +121,7 @@ try {
   const nested = path.join(home, "work", "proj");
   put(path.join(nested, "CLAUDE.md"), "Project rule.");
   const underHome = execFileSync("node", ["dist/cli.js", "scan", nested], {
-    env: { ...process.env, VEXRYN_HOME: home },
+    env: { ...process.env, VEXRYN_HOME: home, VEXRYN_CATALOG: path.join(home, "no-catalog.json") },
     encoding: "utf8",
   });
   assert.equal((underHome.match(/~\/\.claude\/CLAUDE\.md/g) ?? []).length, 1, "user CLAUDE.md counted once");

@@ -15,7 +15,8 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const home = mkdtempSync(path.join(os.tmpdir(), "vexryn-home-"));
-const env = { ...process.env, VEXRYN_HOME: home };
+// No catalogue here: this test is about usage and trim WITHOUT any measurement.
+const env = { ...process.env, VEXRYN_HOME: home, VEXRYN_CATALOG: path.join(home, "no-catalog.json") };
 
 async function session(name, calls) {
   const transport = new StdioClientTransport({

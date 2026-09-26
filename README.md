@@ -33,7 +33,7 @@ them. Vexryn makes them legible.
 
 ## Status
 
-Early release — [`vexryn` on npm](https://www.npmjs.com/package/vexryn) (0.1.0). What's real today:
+Early release — [`vexryn` on npm](https://www.npmjs.com/package/vexryn) (0.2.0). What's real today:
 
 - **Discovery (agnostic):** finds agent configs across any repo/stack and multiple
   agents (MCP, Cursor, Claude, Gemini, Windsurf). Read-only.
@@ -64,11 +64,30 @@ Early release — [`vexryn` on npm](https://www.npmjs.com/package/vexryn) (0.1.0
   servers locally, reads their real tool list, and counts real tokens with
   `gpt-tokenizer`. Works for ANY server. Opt-in, launches
   the servers' commands on your machine, nothing is sent.
-- **Powers (`--deep`, exact):** from a server's real tool list, Vexryn says in
-  plain words what its tools can do — *can: send messages to external
-  recipients, read files, run shell commands* — with a deterministic
-  classifier (a verb, a noun and an argument shape must agree; unsure = not
-  listed). Never from a package name alone.
+- **Powers (exact):** from a server's real tool list, Vexryn says in plain
+  words what its tools can do — *can: send messages to external recipients,
+  read files, run commands or code* — with a deterministic classifier: the
+  tool's NAME decides (its verb and object: `read_file`, `slack_post_message`,
+  `exec_in_pod`), an argument shape must agree, unsure = not listed. Tuned on
+  the 543 real tools of the catalogue run. Never from a package name alone.
+- **The Vexryn catalogue:** popular MCP servers (npm + PyPI) measured by a
+  public GitHub Actions job — ephemeral VM, dummy credentials, read-only token,
+  never on anyone's machine — and shipped as `catalog/catalog.json`: tool
+  count, token cost, powers, traps and a hash per tool, **never descriptions**.
+  Every entry links to the run that measured it. A static `scan`, the PR
+  review and the MCP tools use it: a config's `npx -y <pkg>@<ver>` or `uvx
+  <pkg>` gets real, dated figures without running anything (the pinned
+  version, or the latest measured one when the config isn't pinned; a pinned
+  version the catalogue lacks borrows nothing). Also says when a package is
+  *marked deprecated by its publisher* — a dozen once-standard servers are.
+- **Traps in tool descriptions:** a tool whose description carries
+  instruction phrases (`<IMPORTANT>`, *before using this tool*, *do not tell
+  the user*) or invisible characters is flagged — the phrases only, never the
+  description; and to an agent (MCP), counts only, so the trap is never relayed.
+- **Dangerous combinations:** per agent, across its MCP tools — *can read web
+  pages, read your files and send them out* (a page it reads could tell it to
+  send your files), *can read web pages and run commands or code*. Built-in
+  tools aren't counted, and the line says so.
 - **Remembered measurements + drift:** `--deep` results are kept locally
   (`~/.vexryn/measured.json`); the static `scan`, the MCP tool and `trim` then
   show real, dated figures without launching anything, and the next `--deep`
@@ -91,13 +110,16 @@ Early release — [`vexryn` on npm](https://www.npmjs.com/package/vexryn) (0.1.0
 Not built yet (honest):
 - **Wiring user-wide configs** — read-only for now (Claude Code rewrites
   `~/.claude.json` while it runs), so usage/trim only cover repo-level servers.
-- **Other agents' instruction files** (`GEMINI.md`, `AGENTS.md`, Cursor rules…)
-  aren't counted yet — only Claude Code's, whose loading rules are documented.
 - **Not visible from config files:** the agent's built-in system prompt, hook
   output (e.g. SessionStart hooks), slash-command files, and connectors added
   through an app UI (claude.ai / desktop) rather than a config file.
-- **Open feed** (OSV format) of measured per-server costs — to be filled from
-  real `--deep` measurements, never by hand.
+- **Catalogue coverage:** 41 of the 51 servers listed in `catalog/servers.json`
+  start with dummy credentials; the others need a real account or database
+  and are simply absent (never estimated). Powers cover 12 classes; database
+  writes, publishing to GitHub or a CRM, and cloud resources aren't classes yet.
+- **Proof of exploitability** — showing a dangerous combination can really be
+  abused, in a sandbox — is the next step, not built.
+- **Codex CLI** as an agent (its MCP config and `AGENTS.md`) isn't read yet.
 - **Usage per launch command** — `wrap` records calls under the server *name*
   the agent uses, not its launch command, so a name reused for a different
   server in another repo mixes their counts in `trim`.
@@ -161,15 +183,36 @@ jobs:
       - uses: yl0n0ps/vexryn-scan@main  # pin to a commit SHA in real use
 ```
 
-Not reviewed yet (honest): other agents' instruction files (`AGENTS.md`,
-`GEMINI.md`, Cursor rules), slash-command files, and MCP tool lists (unknowable
-without running a server).
+With the catalogue, a server the change adds says what it can do: *⚠️ MCP
+server `slack` can send messages to external recipients — 8 tools (Vexryn
+catalogue: `@modelcontextprotocol/server-slack@2025.4.25`, measured …)*, plus
+its publisher's deprecation, traps in its tool descriptions, and any dangerous
+combination the change creates for an agent. The load of **Cursor** (always-apply
+rules, rule descriptions, root `AGENTS.md`), **Windsurf** (global and always-on
+rules, `.windsurfrules`, root `AGENTS.md`) and **Gemini CLI** (`GEMINI.md` or its
+`context.fileName`) is counted when the agent is present, per their docs.
+
+**Accepted findings.** Every ⚠️ line ends with an id (`vx-1a2b3c4d`). List it in
+`.vexryn.json` at the repo root to stop hearing about a risk you've accepted:
+
+```json
+{ "accept": [{ "id": "vx-1a2b3c4d", "reason": "throwaway VM, whole disk on purpose" }] }
+```
+
+It is read from the **base** branch only: a pull request can't silence its own
+findings (it gets a ⚠️ line saying how many it accepts instead).
+
+Not reviewed yet (honest): slash-command files, a server's tools when it isn't
+in the catalogue (unknowable without running it), `.cursorrules` (no longer
+documented).
 
 ## Use it from your agent (`vexryn mcp`)
 
-The same two things, as MCP tools your own agent can call mid-conversation
-("what do you load?", "review my agent-config change"): `agent_load_report`
-and `agent_config_review`. Works with any MCP client (Claude Code, Cursor,
+The same things, as three read-only MCP tools your own agent can call
+mid-conversation: `agent_load_report` ("what do you load?"),
+`agent_config_review` ("review my agent-config change") and
+`mcp_server_lookup` ("what can this MCP server do before I add it?" — from the
+catalogue, nothing launched). Works with any MCP client (Claude Code, Cursor,
 Windsurf, Gemini CLI…).
 
 ```json
@@ -183,7 +226,7 @@ Windsurf, Gemini CLI…).
 (`--deep`) is exposed: an agent must never be able to widen its own powers
 through Vexryn — that's the exact blind spot Vexryn exists to show. Paths are
 confined to the directory the agent started Vexryn in. Secrets are masked as in
-`vexryn diff`. Honest note: this adds two tool names to your agent's context
+`vexryn diff`. Honest note: this adds three tool names to your agent's context
 (Claude Code defers their schemas; other clients load them) — a small,
 deliberate cost.
 

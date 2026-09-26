@@ -23,7 +23,7 @@ import { computeTrim, renderTrim, writeTrimmed } from "./trim/trim.js";
 import { reviewRepo } from "./diff/review.js";
 import { runMcp } from "./mcp/server.js";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;
@@ -246,8 +246,8 @@ function printHelp(): void {
       "    trim [path] [--write]           Suggest what to cut, based on usage",
       "    diff [path] --base <ref> [--head <ref>]",
       "                                    Review agent-config changes (markdown, for a PR)",
-      "    mcp                             Serve the load report + review as two read-only",
-      "                                    MCP tools (stdio), for your own agent to call",
+      "    mcp                             Serve the load report, the review and a catalogue",
+      "                                    lookup as read-only MCP tools, for your own agent",
       "",
       "  Any repo, any stack. scan is read-only & local; wire/wrap sit in the",
       "  path locally to count real calls. Nothing is ever sent.",
