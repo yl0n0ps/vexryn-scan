@@ -231,6 +231,13 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean; versi
   }
   lines.push("  Honest note: this counts what your configs make the agent load. Not counted:");
   lines.push("  the agent's own system prompt, hook output, and your conversation as it grows.");
+  if (COLOR) {
+    lines.push("");
+    lines.push(
+      "  " + green("★ ") + muted("star ") + link("github.com/yl0n0ps/vexryn-scan", "https://github.com/yl0n0ps/vexryn-scan") +
+        muted("   ·   ") + fgc("vexryn diff") + muted(" reviews the change in your next PR"),
+    );
+  }
   lines.push("");
   return lines.join("\n");
 }
@@ -251,7 +258,10 @@ export function serverNotes(s: McpServer, forAgent = false): { can: string[]; wa
 /** Where a server's figures come from, for the location column. */
 export function source(s: McpServer): string {
   const e = s.estimate;
-  if (e?.catalog) return ` · catalog ${plain(e.catalog.package)}@${plain(e.catalog.version)} ${e.measuredAt?.slice(0, 10)}${e.catalog.exact ? "" : ", not pinned"}`;
+  if (e?.catalog) {
+    const pkg = link(`${plain(e.catalog.package)}@${plain(e.catalog.version)}`, registryUrl(e.catalog.eco, e.catalog.package));
+    return ` · catalog ${pkg} ${e.measuredAt?.slice(0, 10)}${e.catalog.exact ? "" : ", not pinned"}`;
+  }
   return e?.measuredAt ? ` · measured ${e.measuredAt.slice(0, 10)}` : "";
 }
 
@@ -319,6 +329,17 @@ const brand = blue;
 const warn = rgb(230, 178, 60); // #E6B23C — a config fact worth a look
 const danger = rgb(255, 90, 78); // #FF5A4E — a secret, a deprecation, a leak (proof/critical only)
 const muted = rgb(139, 147, 172); // #8B93AC
+const green = rgb(55, 201, 139); // #37C98B
+// Clickable links (OSC 8): modern terminals make them clickable, others show the text.
+// Off when piped, in CI, in tmux/screen, or into an agent.
+const LINKS = COLOR && !process.env.CI && !/^(screen|tmux)/.test(process.env.TERM ?? "");
+function link(text: string, url: string): string {
+  return LINKS ? `\u001b]8;;${url}\u001b\\${text}\u001b]8;;\u001b\\` : text;
+}
+/** The registry page for a catalogued package. */
+function registryUrl(eco: "npm" | "pypi", pkg: string): string {
+  return eco === "npm" ? `https://www.npmjs.com/package/${pkg}` : `https://pypi.org/project/${pkg}/`;
+}
 const faint = rgb(86, 94, 126); // #565E7E
 
 const fgc = rgb(238, 241, 250); // #EEF1FA

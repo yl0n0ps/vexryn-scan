@@ -132,7 +132,7 @@ export interface ServerEstimate {
   /** The tool list as the server sent it (live measurement only; never stored or displayed). */
   raw?: Array<{ name: string; description?: string; inputSchema?: unknown }>;
   /** Set when the figures come from the Vexryn catalogue: which package version they are for. */
-  catalog?: { package: string; version: string; exact: boolean };
+  catalog?: { package: string; version: string; exact: boolean; eco: "npm" | "pypi" };
 }
 
 /** One tool as declared by a server, with its measured token cost. */

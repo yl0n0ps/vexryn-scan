@@ -26,6 +26,28 @@ import { claudeCodeContext } from "./scan/claude.js";
 
 const VERSION = "0.3.0";
 
+/**
+ * A small branded spinner on stderr while an async step runs (a real terminal only);
+ * a plain line otherwise. Braille frames in brand blue, a green check on done.
+ */
+async function withSpinner<T>(label: string, run: () => Promise<T>): Promise<T> {
+  const tty = !!process.stderr.isTTY && process.env.NO_COLOR !== "1";
+  if (!tty) {
+    process.stderr.write(`  · ${label}\n`);
+    return run();
+  }
+  const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+  let i = 0;
+  const blue = (s: string) => `\u001b[38;2;74;144;255m${s}\u001b[0m`;
+  const timer = setInterval(() => process.stderr.write(`\r  ${blue(frames[i++ % frames.length])} ${label}`), 80);
+  try {
+    return await run();
+  } finally {
+    clearInterval(timer);
+    process.stderr.write(`\r  \u001b[38;2;55;201;139m✓\u001b[0m ${label}\u001b[K\n`);
+  }
+}
+
 async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;
 
@@ -78,8 +100,7 @@ async function runScan(args: string[]): Promise<number> {
     const store = await loadMeasured();
     const measured = new Map<string, ServerEstimate>();
     for (const [key, server] of unique) {
-      process.stderr.write(`  · introspecting ${server.name}…\n`);
-      const est = await introspectServer(server);
+      const est = await withSpinner(`introspecting ${server.name}…`, () => introspectServer(server));
       if (est.source === "introspect" && est.tools) {
         // Only a successful read replaces the remembered measurement.
         if (store[key]) est.drift = drift(store[key], est.tools);

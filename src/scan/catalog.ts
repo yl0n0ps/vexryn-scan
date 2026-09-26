@@ -82,6 +82,8 @@ export function isExactVersion(v: string | null): boolean {
 }
 
 export interface CatalogHit {
+  /** npm or PyPI. */
+  eco: "npm" | "pypi";
   /** npm name or PyPI name, for display. */
   package: string;
   /** The version the figures are for. */
@@ -113,6 +115,7 @@ export function lookup(spec: PackageSpec | null): CatalogHit | null {
   const pinned = isExactVersion(spec.version);
   const version = pinned ? spec.version! : entry.latest;
   return {
+    eco: spec.eco,
     package: spec.name,
     version,
     measured: entry.versions[version] ?? null,
@@ -130,7 +133,7 @@ export function estimateFromCatalog(hit: CatalogHit & { measured: CatalogVersion
     source: "catalog",
     tools: hit.measured.tools,
     measuredAt: hit.measured.measuredAt,
-    catalog: { package: hit.package, version: hit.version, exact: hit.exact },
+    catalog: { package: hit.package, version: hit.version, exact: hit.exact, eco: hit.eco },
   };
 }
 
