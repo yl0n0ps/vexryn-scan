@@ -50,7 +50,7 @@ its tools can do. It reads configs, never your code, and never runs a server.
 
 ## Status
 
-Early release — [`vexryn` on npm](https://www.npmjs.com/package/vexryn) (0.3.0). What's real today:
+Early release — [`vexryn` on npm](https://www.npmjs.com/package/vexryn) (0.4.0). What's real today:
 
 - **Every coding agent (agnostic):** finds and reads the MCP servers of Claude
   Code, Claude Desktop, Cursor, VS Code / GitHub Copilot (VS Code + CLI), Codex,
@@ -58,6 +58,11 @@ Early release — [`vexryn` on npm](https://www.npmjs.com/package/vexryn) (0.3.0
   from each one's own format (JSON, JSONC, TOML, YAML), in the repo and user-wide.
   Read-only. Paths and formats are documented, with sources, in
   `docs/research/2026-09-26-agent-matrix.md`.
+- **Every forge, every CI:** `vexryn ci` posts the review on the pull/merge
+  request — GitHub, GitLab, Forgejo / Gitea (Codeberg), Bitbucket Cloud, Azure
+  DevOps — as one comment it keeps up to date; `--strict` can block the merge;
+  `--json` feeds any other tool. One line per CI in
+  [docs/integrations.md](docs/integrations.md).
 - **User-wide configs (default):** also reads each agent app's global config —
   Claude Code `~/.claude.json` (user scope + this repo's local scope), Claude
   Desktop, Cursor `~/.cursor/mcp.json`, Windsurf, Gemini CLI, VS Code user
@@ -176,8 +181,9 @@ Static: files are read from git objects as data, never executed; a symlinked
 `CLAUDE.md` is followed one hop inside the repo, never outside. Every string
 from the repo is rendered inside a code span, so a hostile server name can't
 inject links or @mentions, and likely secrets in commands, URLs and hooks are
-masked. Exits 0 whatever it finds — it informs, it doesn't block (1 on a git
-error, 2 on a usage error).
+masked. Exits 0 whatever it finds — it informs — unless you pass `--strict`
+(exit 1 while a ⚠️ finding is open). `--json` prints the same review as data
+(1 on a git error, 2 on a usage error).
 
 **Exact rules, no AI judge.** On a server the change adds or modifies, the
 review states: a credential written in the file (named, never shown — use
@@ -192,8 +198,11 @@ user", reported as *contains the phrase*, never as malicious. An issue already
 present and unchanged is never repeated. `vexryn scan` shows the same server
 facts under each server.
 
-In CI, the GitHub Action posts it as a single comment it keeps up to date
-(on a fork PR, whose token is read-only, it writes to the job summary instead):
+In CI, `vexryn ci` posts it as a single comment it keeps up to date — on
+**GitHub, GitLab, Forgejo / Gitea, Bitbucket and Azure DevOps**, one line each
+([docs/integrations.md](docs/integrations.md)). It reviews only what the PR
+changes, skips a checkout that isn't the PR's code, and on a fork PR (read-only
+token) writes to the job log instead. On GitHub, the Action:
 
 ```yaml
 # .github/workflows/vexryn.yml
@@ -208,7 +217,8 @@ jobs:
       - uses: actions/checkout@v4   # pin to a commit SHA in real use
         with:
           fetch-depth: 2            # the merge commit + the base it compares to
-      - uses: yl0n0ps/vexryn-scan@main  # pin to a commit SHA in real use
+      - uses: yl0n0ps/vexryn-scan@v0.4.0
+        # with: { strict: true }    # fail the check on an open ⚠️ finding
 ```
 
 With the catalogue, a server the change adds says what it can do: *⚠️ MCP
@@ -248,6 +258,8 @@ Windsurf, Gemini CLI…).
 ```
 
 (From a checkout instead: `"command": "node", "args": ["<path>/vexryn-scan/dist/cli.js", "mcp"]`.)
+The exact snippet for Claude Code, VS Code / Copilot, Codex, OpenCode, Zed and
+Goose is in [docs/integrations.md](docs/integrations.md#any-coding-agent-vexryn-mcp).
 
 **Read-only by construction.** Nothing that edits a config (`wire`,
 `trim --write`), sits in a server's path (`wrap`) or launches servers
@@ -262,10 +274,10 @@ deliberate cost.
 
 ```bash
 npm test   # global configs, wire round-trip, proxy + usage + trim, Claude Code
-           # context, settings, git snapshots, diff review, the Action's comment
-           # script (fake gh), power classifier, remembered measurements + drift,
+           # context, settings, git snapshots, diff review, `vexryn ci` and each
+           # forge's comment API (local mock servers), --strict / --json, power classifier, remembered measurements + drift,
            # per-tool trim — all in temp dirs / a fake home (VEXRYN_HOME);
-           # your real configs are never touched, nothing reaches GitHub
+           # your real configs are never touched, nothing reaches any forge
 ```
 
 ## Develop

@@ -1,6 +1,6 @@
 {
   "name": "vexryn",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "See what your AI agent actually loads \u2014 any repo, any stack, no config.",
   "type": "module",
   "bin": {
@@ -27,7 +27,15 @@
     "mcp",
     "context",
     "developer-tools",
-    "cli"
+    "cli",
+    "code-review",
+    "security",
+    "ci",
+    "github-actions",
+    "gitlab-ci",
+    "bitbucket-pipelines",
+    "azure-devops",
+    "forgejo"
   ],
   "license": "Apache-2.0",
   "repository": {

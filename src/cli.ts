@@ -4,7 +4,8 @@
 //   vexryn scan [path] [--deep] [--html]
 //   vexryn wrap --name <server> -- <command...>
 //   vexryn usage
-//   vexryn diff [path] --base <ref> [--head <ref>]
+//   vexryn diff [path] --base <ref> [--head <ref>] [--strict] [--json]
+//   vexryn ci [path] [--strict]
 //   vexryn mcp
 
 import path from "node:path";
@@ -25,7 +26,7 @@ import { runMcp } from "./mcp/server.js";
 import { runCi, strictExit } from "./ci/run.js";
 import { claudeCodeContext } from "./scan/claude.js";
 
-const VERSION = "0.3.0";
+const VERSION = "0.4.0";
 
 /**
  * A small branded spinner on stderr while an async step runs (a real terminal only);
@@ -264,23 +265,31 @@ function printHelp(): void {
       "  vexryn — see what your AI agent actually loads, and uses.",
       "",
       "  Commands:",
-      "    scan [path] [--deep] [--html]   Report the load of each agent (repo + user-wide)",
+      "    scan [path] [--deep] [--html] [--json]",
+      "                                    Report the load of each agent (repo + user-wide)",
       "      --deep       Connect to your own servers: real tool cost, what tools can do,",
 "                   what changed since last time (remembered locally)",
       "      --html       Also write .vexryn/report.html",
       "      --no-global  Only this repo's configs (skip ~/.claude.json, Cursor, …)",
+      "      --json       The report as JSON, for other tools",
       "    wire [path]                     Route servers through the proxy (auto)",
       "    unwire [path]                   Undo wire (restore direct servers)",
       "    wrap --name <s> -- <command>    Proxy a server to count real tool usage",
       "    usage                           Show recorded tool usage",
       "    trim [path] [--write]           Suggest what to cut, based on usage",
-      "    diff [path] --base <ref> [--head <ref>]",
+      "    diff [path] --base <ref> [--head <ref>] [--strict] [--json]",
       "                                    Review agent-config changes (markdown, for a PR)",
+      "      --strict     Exit 1 while a ⚠️ finding is open (accept it in .vexryn.json)",
+      "      --json       The review as JSON",
+      "    ci [path] [--strict]            In CI: review the pull/merge request and keep one",
+      "                                    comment on it (GitHub, GitLab, Forgejo/Gitea,",
+      "                                    Bitbucket, Azure DevOps); token in VEXRYN_TOKEN",
       "    mcp                             Serve the load report, the review and a catalogue",
       "                                    lookup as read-only MCP tools, for your own agent",
       "",
       "  Any repo, any stack. scan is read-only & local; wire/wrap sit in the",
-      "  path locally to count real calls. Nothing is ever sent.",
+      "  path locally to count real calls. Nothing is ever sent, except the",
+      "  review comment `ci` posts to your own forge.",
       "",
     ].join("\n"),
   );
