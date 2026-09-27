@@ -22,6 +22,7 @@ import { wireConfigs, unwireConfigs, type WireChange } from "./wire/wire.js";
 import { computeTrim, renderTrim, writeTrimmed } from "./trim/trim.js";
 import { renderReview, reviewOf } from "./diff/review.js";
 import { runMcp } from "./mcp/server.js";
+import { runCi, strictExit } from "./ci/run.js";
 import { claudeCodeContext } from "./scan/claude.js";
 
 const VERSION = "0.3.0";
@@ -66,6 +67,7 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "unwire") return runWire(rest, "unwire");
   if (cmd === "trim") return runTrim(rest);
   if (cmd === "diff") return runDiff(rest);
+  if (cmd === "ci") return runCi(path.resolve(process.cwd(), rest.find((a) => !a.startsWith("-")) ?? "."), process.env, rest.includes("--strict"));
   if (cmd === "mcp") {
     await runMcp(VERSION); // serves until the client disconnects
     return 0;
@@ -253,15 +255,6 @@ async function runDiff(args: string[]): Promise<number> {
   const review = await reviewOf(path.resolve(process.cwd(), target), base, head);
   process.stdout.write(args.includes("--json") ? JSON.stringify(review, null, 2) + "\n" : renderReview(review));
   return strictExit(args.includes("--strict"), review.open);
-}
-
-/** `--strict`: open ⚠️ findings fail the run (exit 1); accepted ones don't. */
-function strictExit(strict: boolean, open: number): number {
-  if (!strict || open === 0) return 0;
-  process.stderr.write(
-    `vexryn: ${open} open finding${open === 1 ? "" : "s"} (--strict). Accept one by listing its vx- id in .vexryn.json on the base branch.\n`,
-  );
-  return 1;
 }
 
 function printHelp(): void {
