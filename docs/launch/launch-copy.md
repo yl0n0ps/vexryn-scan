@@ -34,11 +34,16 @@ Live demo review: https://github.com/yl0n0ps/vexryn-scan/pull/1
 > servers I measured once in a public GitHub Action (ephemeral VM, dummy
 > credentials), so a static scan can say it without launching anything.
 >
-> `npx vexryn scan` in any repo. There's also `vexryn diff` for a one-comment PR
-> review of a config change, and a read-only MCP mode so your own agent can ask.
+> `npx vexryn scan` in any repo. In CI, `npx vexryn ci` posts one review comment
+> on the pull/merge request and keeps it up to date — GitHub, GitLab, Forgejo /
+> Gitea, Bitbucket, Azure DevOps — with an optional `--strict` to block the merge
+> until someone accepts the risk. Any other CI gets markdown or `--json`. And a
+> read-only MCP mode so your own agent (any MCP client) can ask.
 >
 > Honest limits: instruction-file token counts are exact only for a subset of
-> agents; the catalogue covers ~40 servers today; proving a flagged risk is
+> agents; the catalogue covers ~40 servers today; the CI comment is proven live
+> on GitHub, and built to the documented APIs of the other forges (tested
+> against mocks, not yet on a live instance of each); proving a flagged risk is
 > actually exploitable is the next step, not built. Apache-2.0. Feedback very
 > welcome — especially whether the PR comment reads clearly.
 
@@ -65,10 +70,12 @@ Live demo review: https://github.com/yl0n0ps/vexryn-scan/pull/1
 >
 > `npx vexryn scan` — https://github.com/yl0n0ps/vexryn-scan
 >
-> It also reviews a PR (`vexryn diff`) as a single comment — real example:
+> In CI, one line (`npx vexryn ci`) reviews each pull/merge request as a single
+> comment — GitHub, GitLab, Forgejo/Gitea, Bitbucket or Azure DevOps — and can
+> block the merge with `--strict`. Real example:
 > https://github.com/yl0n0ps/vexryn-scan/pull/1
 >
-> It's early (v0.3, Apache-2.0). I'd love blunt feedback on whether the output
+> It's early (v0.4, Apache-2.0). I'd love blunt feedback on whether the output
 > is actually useful and whether the PR comment reads clearly.
 
 ---
@@ -94,9 +101,9 @@ Live demo review: https://github.com/yl0n0ps/vexryn-scan/pull/1
 > packages.
 
 **4/**
-> On a pull request, `vexryn diff` posts one comment: "new server `slack`
-> receives SLACK_BOT_TOKEN, unpinned · Claude Code may run `git push` without
-> asking · +2,300 tokens every session."
+> In CI, `npx vexryn ci` posts one comment on the PR: "new server `slack`
+> receives SLACK_BOT_TOKEN, unpinned · +2,300 tokens every session."
+> GitHub, GitLab, Forgejo, Bitbucket, Azure DevOps.
 >
 > Real example 👇 https://github.com/yl0n0ps/vexryn-scan/pull/1
 
@@ -111,7 +118,7 @@ Live demo review: https://github.com/yl0n0ps/vexryn-scan/pull/1
 ## One-liners / directories (npm keywords, Product Hunt tagline, awesome-mcp lists)
 
 > See what your AI coding agent actually loads — and what it can do. Any repo,
-> any stack, no config. 100% local.
+> any agent, any CI. 100% local.
 
 ## Submit to (free, high-signal)
 
