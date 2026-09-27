@@ -122,7 +122,7 @@ try {
   await a.list();
   await a.create(CHANGE);
   await a.update({ id: "88", body: "" }, CHANGE);
-  assert.deepEqual(m.log.map((r) => `${r.method} ${r.url}`), ["GET /2.0/repositories/ws/r/pullrequests/5/comments?pagelen=100", "POST /2.0/repositories/ws/r/pullrequests/5/comments", "PUT /2.0/repositories/ws/r/pullrequests/5/comments/88"]);
+  assert.deepEqual(m.log.map((r) => `${r.method} ${r.url}`), ["GET /2.0/repositories/ws/r/pullrequests/5/comments", "POST /2.0/repositories/ws/r/pullrequests/5/comments", "PUT /2.0/repositories/ws/r/pullrequests/5/comments/88"]);
   assert.equal(m.log[0].headers.authorization, "Bearer b");
   const raw = m.log[1].body.content.raw;
   assert.ok(raw.startsWith(MD_MARKER), "Bitbucket: markdown-only marker");
@@ -198,6 +198,9 @@ try {
   assert.equal((await publish(sa, CHANGE, false)).result, "posted", "someone else's marker comment can't silence the review");
   assert.deepEqual(writes(s.log).map((r) => r.method), ["PATCH", "POST"]);
 
+  ({ s, a: sa } = await sticky([{ id: 21, body: `${MARKER}\nnot yours`, user: { type: "User" } }], (req) => (req.method === "PATCH" ? [403, {}] : [422, {}])));
+  assert.match((await publish(sa, CHANGE, false)).error, /POST .* HTTP 422/, "the error shown is the last write's, not the refused update's");
+
   ({ s, a: sa } = await sticky([{ id: "../../x", body: CHANGE }, { id: "abc", body: CHANGE }]));
   await publish(sa, CHANGE, false);
   assert.deepEqual(writes(s.log).map((r) => [r.method, r.url]), [["POST", "/repos/o/r/issues/7/comments"]], "non-numeric ids are ignored");
@@ -222,7 +225,7 @@ try {
   s = await mock((req) => {
     if (req.method !== "GET") return [200, {}];
     if (req.url.includes("page=2")) return [200, { values: [{ id: 41, content: { raw: `${MD_MARKER}\nold` } }] }];
-    return [200, { values: [], next: `http://127.0.0.1:${new URL(s.url).port}/2.0/repositories/ws/r/pullrequests/5/comments?pagelen=100&page=2` }];
+    return [200, { values: [], next: `http://127.0.0.1:${new URL(s.url).port}/2.0/repositories/ws/r/pullrequests/5/comments?page=2` }];
   });
   servers.push(s);
   await publish(adapter({ ...bb, root: bb.root.replace("https://api.bitbucket.org", s.url) }), CHANGE, false);

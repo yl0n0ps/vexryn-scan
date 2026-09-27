@@ -21,9 +21,9 @@ import { runWrap } from "./proxy/wrap.js";
 import { loadUsage } from "./usage/store.js";
 import { wireConfigs, unwireConfigs, type WireChange } from "./wire/wire.js";
 import { computeTrim, renderTrim, writeTrimmed } from "./trim/trim.js";
-import { renderReview, reviewOf } from "./diff/review.js";
+import { renderReview, reviewOf, strictExit } from "./diff/review.js";
 import { runMcp } from "./mcp/server.js";
-import { runCi, strictExit } from "./ci/run.js";
+import { runCi } from "./ci/run.js";
 import { claudeCodeContext } from "./scan/claude.js";
 
 const VERSION = "0.4.0";
@@ -118,15 +118,12 @@ async function runScan(args: string[]): Promise<number> {
   }
 
   const report = assembleReport(root, deep, includesGlobal, configs, servers, claude, others);
-  if (json) {
-    process.stdout.write(JSON.stringify(report, null, 2) + "\n");
-    return 0;
-  }
-  process.stdout.write(renderText(report, { version: VERSION }));
+  // --json keeps stdout pure JSON: the html line goes to stderr.
+  process.stdout.write(json ? JSON.stringify(report, null, 2) + "\n" : renderText(report, { version: VERSION }));
 
   if (html) {
     const out = await writeHtml(report, root);
-    process.stdout.write(`  report written to ${path.relative(process.cwd(), out)}\n\n`);
+    (json ? process.stderr : process.stdout).write(`  report written to ${path.relative(process.cwd(), out)}\n\n`);
   }
   return 0;
 }

@@ -186,7 +186,7 @@ export function adapter(ctx: CiContext, fetchImpl: Fetch = fetch): Adapter {
       update: (c: Comment, md: string) => call("PUT", `${ctx.root}/${c.id}`, { body: md }),
     },
     bitbucket: {
-      list: () => pages(`${ctx.root}?pagelen=100`, (j) => (Array.isArray(j?.values) ? j.values.filter((c: any) => !c?.deleted) : []), (_r, j) => j?.next),
+      list: () => pages(ctx.root, (j) => (Array.isArray(j?.values) ? j.values.filter((c: any) => !c?.deleted) : []), (_r, j) => j?.next),
       map: (c: any): Comment => ({ id: String(c?.id), body: c?.content?.raw }),
       create: (md: string) => call("POST", ctx.root, { content: { raw: md } }),
       update: (c: Comment, md: string) => call("PUT", `${ctx.root}/${c.id}`, { content: { raw: md } }),
@@ -224,7 +224,7 @@ export async function publish(a: Adapter, markdown: string, empty: boolean): Pro
       await write();
       return true;
     } catch (e) {
-      error ??= e instanceof Error ? e.message : String(e);
+      error = e instanceof Error ? e.message : String(e); // the last write's error is the one that matters
       return false;
     }
   };

@@ -2,15 +2,12 @@
 // checkout → review → print → post ONE comment on the PR → `--strict` exit code.
 // Non-blocking by default: a CI config problem is a message and exit 0.
 
-import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
-import { promisify } from "node:util";
-import { isEmpty, renderReview, reviewOf } from "../diff/review.js";
-import { gitRoot, resolveRef } from "../diff/snapshot.js";
+import { isEmpty, renderReview, reviewOf, strictExit } from "../diff/review.js";
+import { git as gitRaw, gitRoot, resolveRef } from "../diff/snapshot.js";
 import { adapter, detect, publish, type CiContext } from "./forges.js";
 
-const run = promisify(execFile);
-const git = async (cwd: string, args: string[]) => (await run("git", args, { cwd })).stdout.trim();
+const git = async (cwd: string, args: string[]) => (await gitRaw(cwd, args)).toString("utf8").trim();
 const say = (s: string) => process.stdout.write(`vexryn: ${s}\n`);
 const warn = (s: string) => process.stderr.write(`vexryn: ${s}\n`);
 
@@ -28,7 +25,11 @@ export async function runCi(dir: string, env: NodeJS.ProcessEnv, strict: boolean
     return 0;
   }
 
-  const root = await gitRoot(dir);
+  const root = await gitRoot(dir).catch(() => null);
+  if (!root) {
+    say(`${ctx.label}: ${dir} is not a git checkout — nothing to review.`);
+    return 0;
+  }
   const base = await findBase(root, ctx);
   if ("skip" in base) {
     say(`${ctx.label}: ${base.skip}`);
@@ -42,7 +43,10 @@ export async function runCi(dir: string, env: NodeJS.ProcessEnv, strict: boolean
   if (!ctx.token) {
     warn(`no token to post this review on ${ctx.label} — ${ctx.tokenHint}. The review is printed above.`);
   } else {
-    const out = await publish(adapter(ctx), markdown, isEmpty(review));
+    // A CI env without a usable API URL fails here, as a message, never a crash.
+    const out = await Promise.resolve()
+      .then(() => publish(adapter(ctx), markdown, isEmpty(review)))
+      .catch((e) => ({ result: "failed" as const, error: e instanceof Error ? e.message : String(e) }));
     if (out.result === "skipped") say("no agent config change — nothing to post.");
     else if (out.result === "failed") {
       warn(`could not post the review on ${ctx.label} (${out.error ?? "refused"}) — it is printed above.`);
@@ -74,13 +78,4 @@ async function findBase(root: string, ctx: CiContext): Promise<{ sha: string } |
     if (mb) return { sha: mb };
   }
   return { skip: `can't find the pull request's base (${ctx.targets.join(", ") || "none given"}) in this checkout — ${ctx.fix}.` };
-}
-
-/** `--strict`: open ⚠️ findings fail the run (exit 1); accepted ones don't. */
-export function strictExit(strict: boolean, open: number): number {
-  if (!strict || open === 0) return 0;
-  process.stderr.write(
-    `vexryn: ${open} open finding${open === 1 ? "" : "s"} (--strict). Accept one by listing its vx- id in .vexryn.json on the base branch.\n`,
-  );
-  return 1;
 }

@@ -655,3 +655,12 @@ function plural(n: number): string {
 function posix(p: string): string {
   return p.split(path.sep).join("/");
 }
+
+/** `--strict`: open ⚠️ findings fail the run (exit 1); accepted ones don't. */
+export function strictExit(strict: boolean, open: number): number {
+  if (!strict || open === 0) return 0;
+  process.stderr.write(
+    `vexryn: ${open} open finding${open === 1 ? "" : "s"} (--strict). Accept one by listing its vx- id in .vexryn.json on the base branch.\n`,
+  );
+  return 1;
+}

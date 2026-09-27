@@ -182,6 +182,38 @@ try {
   assert.deepEqual(posted().map((p) => `${p.method} ${p.url}`), ["POST /org/P/_apis/git/repositories/rid/pullRequests/9/threads?api-version=7.1"]);
   assert.match(posted()[0].body.comments[0].content, /^\[\/\/\]: # \(vexryn-pr-review\)/);
 
+  // --- a CI env without a usable API URL / a dir that isn't a git checkout → message, exit 0
+  log.length = 0;
+  r = await vx({ ...glEnv, CI_API_V4_URL: "" });
+  assert.equal(r.code, 0, `non-blocking: ${r.err}`);
+  assert.match(r.err, /could not post/);
+  const notGit = path.join(tmp, "not-git");
+  mkdirSync(notGit);
+  r = await new Promise((resolve) => {
+    const p = spawn("node", [cli, "ci", notGit], { env: { ...base, ...glEnv } });
+    let out = "";
+    p.stdout.on("data", (d) => (out += d));
+    p.stderr.on("data", (d) => (out += d));
+    p.on("close", (code) => resolve({ code, out }));
+  });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /not a git checkout/);
+
+  // --- the Action's own step script (action.yml): strict input → --strict
+  log.length = 0;
+  const { parse } = await import("yaml");
+  const step = parse(readFileSync(path.resolve("action.yml"), "utf8")).runs.steps.find((s) => s.name === "Review agent config changes");
+  git("checkout", "-q", M);
+  r = await new Promise((resolve) => {
+    const p = spawn("bash", ["-eo", "pipefail", "-c", step.run], { cwd: repo, env: { ...base, ...gh(f1, m1), GITHUB_ACTION_PATH: path.resolve("."), STRICT: "true" } });
+    let out = "";
+    p.stdout.on("data", (d) => (out += d));
+    p.stderr.on("data", (d) => (out += d));
+    p.on("close", (code) => resolve({ code, out }));
+  });
+  assert.equal(r.code, 1, `strict input → --strict\n${r.out}`);
+  assert.equal(posted().length, 1, `the Action step posts the review: ${JSON.stringify(posted().map((p) => p.method + " " + p.url))}\n${r.out.slice(-600)}`);
+
   // --- no agent config change → nothing posted
   log.length = 0;
   git("checkout", "-q", f2);

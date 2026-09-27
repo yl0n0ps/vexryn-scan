@@ -8,7 +8,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -74,6 +74,9 @@ try {
   const report = JSON.parse(r.stdout);
   assert.ok(Array.isArray(report.agents) && report.agents.length >= 1, "scan json lists agents");
   assert.doesNotMatch(r.stdout, /\u001b/, "no terminal colors in json");
+  r = vx("scan", repo, "--json", "--html", "--no-global");
+  JSON.parse(r.stdout);
+  assert.ok(existsSync(path.join(repo, ".vexryn/report.html")), "--json --html still writes the html report");
 
   console.log("entries-check: all assertions passed");
 } finally {
