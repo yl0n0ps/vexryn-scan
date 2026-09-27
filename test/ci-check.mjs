@@ -11,11 +11,12 @@
 //  - no token → the review is printed, the hint says what to set, exit 0
 //  - not a PR → skip; unknown CI → exit 2; no change → nothing posted
 //  - --strict → exit 1 on an open finding, after posting
+//  - a refused write → the review lands in the job summary, exit 0, no token printed
 
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
 import http from "node:http";
-import { mkdtempSync, mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -39,12 +40,13 @@ function vx(env, ...args) {
 }
 
 const log = [];
+let refuse = false; // true → every write is refused (a fork PR's read-only token)
 const api = http.createServer((req, res) => {
   let raw = "";
   req.on("data", (c) => (raw += c));
   req.on("end", () => {
     log.push({ method: req.method, url: req.url, auth: req.headers.authorization ?? req.headers["private-token"], body: raw ? JSON.parse(raw) : undefined });
-    res.writeHead(req.method === "GET" ? 200 : 201, { "content-type": "application/json" });
+    res.writeHead(req.method === "GET" ? 200 : refuse ? 403 : 201, { "content-type": "application/json" });
     res.end(req.method === "GET" ? (req.url.includes("/threads") ? '{"value":[]}' : "[]") : "{}");
   });
 });
@@ -107,6 +109,17 @@ try {
   assert.equal(r.code, 1, "strict blocks an open finding");
   assert.equal(posted().length, 1, "…after posting the review");
   assert.match(r.err, /open finding/);
+
+  // --- write refused (fork PR) → the review goes to the job summary, exit 0
+  log.length = 0;
+  refuse = true;
+  const summary = path.join(tmp, "summary.md");
+  r = await vx(gh(f1, m1, { GITHUB_STEP_SUMMARY: summary }));
+  refuse = false;
+  assert.equal(r.code, 0, "non-blocking");
+  assert.match(r.err, /could not post the review on .*HTTP 403/);
+  assert.doesNotMatch(r.err + r.out, /tok\b/, "the token is never printed");
+  onlyPr(readFileSync(summary, "utf8"));
 
   // --- pull_request_target: the checkout is the base branch, not the PR
   log.length = 0;
