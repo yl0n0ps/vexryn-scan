@@ -2,7 +2,8 @@
 // `vexryn mcp` through a REAL MCP client (the official SDK), against a FAKE
 // home (VEXRYN_HOME) so the real user configs are never read. Asserts:
 //  - exactly two tools, both read-only: the load report and the config review;
-//    nothing that edits configs (wire/trim/wrap) or launches servers (--deep)
+//    nothing that edits configs (wire/trim/wrap), launches servers (--deep)
+//    or posts to a forge (ci)
 //  - the load report reads the repo and, by default, the user's own configs
 //  - the review compares a base ref to the working tree, as `vexryn diff`
 //  - a path outside the directory the agent launched Vexryn in is refused
@@ -41,7 +42,7 @@ try {
   const { tools } = await client.listTools();
   assert.deepEqual(tools.map((t) => t.name).sort(), ["agent_config_review", "agent_load_report", "mcp_server_lookup"], "three read-only tools, no more");
   const spec = JSON.stringify(tools);
-  for (const forbidden of ["wire", "trim", "wrap", "deep", "write"]) assert.ok(!spec.includes(forbidden), `nothing named ${forbidden} exposed`);
+  for (const forbidden of ["wire", "trim", "wrap", "deep", "write", "post"]) assert.ok(!spec.includes(forbidden), `nothing named ${forbidden} exposed`);
   for (const t of tools) assert.match(t.description, /read-only/i, `${t.name} says it is read-only`);
 
   let res = await client.callTool({ name: "agent_load_report", arguments: { path: "fixtures/sample-repo", includeGlobal: false } });

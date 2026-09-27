@@ -4,7 +4,8 @@
 //   vexryn scan [path] [--deep] [--html]
 //   vexryn wrap --name <server> -- <command...>
 //   vexryn usage
-//   vexryn diff [path] --base <ref> [--head <ref>]
+//   vexryn diff [path] --base <ref> [--head <ref>] [--strict] [--json]
+//   vexryn ci [path] [--strict]
 //   vexryn mcp
 
 import path from "node:path";
@@ -20,11 +21,34 @@ import { runWrap } from "./proxy/wrap.js";
 import { loadUsage } from "./usage/store.js";
 import { wireConfigs, unwireConfigs, type WireChange } from "./wire/wire.js";
 import { computeTrim, renderTrim, writeTrimmed } from "./trim/trim.js";
-import { reviewRepo } from "./diff/review.js";
+import { renderReview, reviewOf, strictExit } from "./diff/review.js";
 import { runMcp } from "./mcp/server.js";
+import { runCi } from "./ci/run.js";
 import { claudeCodeContext } from "./scan/claude.js";
 
-const VERSION = "0.3.0";
+const VERSION = "0.4.0";
+
+/**
+ * A small branded spinner on stderr while an async step runs (a real terminal only);
+ * a plain line otherwise. Braille frames in brand blue, a green check on done.
+ */
+async function withSpinner<T>(label: string, run: () => Promise<T>): Promise<T> {
+  const tty = !!process.stderr.isTTY && process.env.NO_COLOR !== "1";
+  if (!tty) {
+    process.stderr.write(`  · ${label}\n`);
+    return run();
+  }
+  const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+  let i = 0;
+  const blue = (s: string) => `\u001b[38;2;74;144;255m${s}\u001b[0m`;
+  const timer = setInterval(() => process.stderr.write(`\r  ${blue(frames[i++ % frames.length])} ${label}`), 80);
+  try {
+    return await run();
+  } finally {
+    clearInterval(timer);
+    process.stderr.write(`\r  \u001b[38;2;55;201;139m✓\u001b[0m ${label}\u001b[K\n`);
+  }
+}
 
 async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;
@@ -44,6 +68,7 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "unwire") return runWire(rest, "unwire");
   if (cmd === "trim") return runTrim(rest);
   if (cmd === "diff") return runDiff(rest);
+  if (cmd === "ci") return runCi(path.resolve(process.cwd(), rest.find((a) => !a.startsWith("-")) ?? "."), process.env, rest.includes("--strict"));
   if (cmd === "mcp") {
     await runMcp(VERSION); // serves until the client disconnects
     return 0;
@@ -57,6 +82,7 @@ async function main(argv: string[]): Promise<number> {
 async function runScan(args: string[]): Promise<number> {
   const deep = args.includes("--deep");
   const html = args.includes("--html");
+  const json = args.includes("--json");
   const includesGlobal = !args.includes("--no-global");
   const target = args.find((a) => !a.startsWith("-")) ?? ".";
   const root = path.resolve(process.cwd(), target);
@@ -78,8 +104,7 @@ async function runScan(args: string[]): Promise<number> {
     const store = await loadMeasured();
     const measured = new Map<string, ServerEstimate>();
     for (const [key, server] of unique) {
-      process.stderr.write(`  · introspecting ${server.name}…\n`);
-      const est = await introspectServer(server);
+      const est = await withSpinner(`introspecting ${server.name}…`, () => introspectServer(server));
       if (est.source === "introspect" && est.tools) {
         // Only a successful read replaces the remembered measurement.
         if (store[key]) est.drift = drift(store[key], est.tools);
@@ -93,11 +118,12 @@ async function runScan(args: string[]): Promise<number> {
   }
 
   const report = assembleReport(root, deep, includesGlobal, configs, servers, claude, others);
-  process.stdout.write(renderText(report));
+  // --json keeps stdout pure JSON: the html line goes to stderr.
+  process.stdout.write(json ? JSON.stringify(report, null, 2) + "\n" : renderText(report, { version: VERSION }));
 
   if (html) {
     const out = await writeHtml(report, root);
-    process.stdout.write(`  report written to ${path.relative(process.cwd(), out)}\n\n`);
+    (json ? process.stderr : process.stdout).write(`  report written to ${path.relative(process.cwd(), out)}\n\n`);
   }
   return 0;
 }
@@ -220,12 +246,13 @@ async function runDiff(args: string[]): Promise<number> {
   const base = value("--base");
   const head = value("--head");
   if (!base || bad) {
-    process.stderr.write("usage: vexryn diff [path] --base <ref> [--head <ref>]   (head defaults to the working tree)\n");
+    process.stderr.write("usage: vexryn diff [path] --base <ref> [--head <ref>] [--strict] [--json]   (head defaults to the working tree)\n");
     return 2;
   }
   const target = args.find((a, i) => !a.startsWith("-") && args[i - 1] !== "--base" && args[i - 1] !== "--head") ?? ".";
-  process.stdout.write(await reviewRepo(path.resolve(process.cwd(), target), base, head));
-  return 0;
+  const review = await reviewOf(path.resolve(process.cwd(), target), base, head);
+  process.stdout.write(args.includes("--json") ? JSON.stringify(review, null, 2) + "\n" : renderReview(review));
+  return strictExit(args.includes("--strict"), review.open);
 }
 
 function printHelp(): void {
@@ -235,23 +262,31 @@ function printHelp(): void {
       "  vexryn — see what your AI agent actually loads, and uses.",
       "",
       "  Commands:",
-      "    scan [path] [--deep] [--html]   Report the load of each agent (repo + user-wide)",
+      "    scan [path] [--deep] [--html] [--json]",
+      "                                    Report the load of each agent (repo + user-wide)",
       "      --deep       Connect to your own servers: real tool cost, what tools can do,",
 "                   what changed since last time (remembered locally)",
       "      --html       Also write .vexryn/report.html",
       "      --no-global  Only this repo's configs (skip ~/.claude.json, Cursor, …)",
+      "      --json       The report as JSON, for other tools",
       "    wire [path]                     Route servers through the proxy (auto)",
       "    unwire [path]                   Undo wire (restore direct servers)",
       "    wrap --name <s> -- <command>    Proxy a server to count real tool usage",
       "    usage                           Show recorded tool usage",
       "    trim [path] [--write]           Suggest what to cut, based on usage",
-      "    diff [path] --base <ref> [--head <ref>]",
+      "    diff [path] --base <ref> [--head <ref>] [--strict] [--json]",
       "                                    Review agent-config changes (markdown, for a PR)",
+      "      --strict     Exit 1 while a ⚠️ finding is open (accept it in .vexryn.json)",
+      "      --json       The review as JSON",
+      "    ci [path] [--strict]            In CI: review the pull/merge request and keep one",
+      "                                    comment on it (GitHub, GitLab, Forgejo/Gitea,",
+      "                                    Bitbucket, Azure DevOps); token in VEXRYN_TOKEN",
       "    mcp                             Serve the load report, the review and a catalogue",
       "                                    lookup as read-only MCP tools, for your own agent",
       "",
       "  Any repo, any stack. scan is read-only & local; wire/wrap sit in the",
-      "  path locally to count real calls. Nothing is ever sent.",
+      "  path locally to count real calls. Nothing is ever sent, except the",
+      "  review comment `ci` posts to your own forge.",
       "",
     ].join("\n"),
   );

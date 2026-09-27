@@ -127,14 +127,20 @@ export function loadPercent(tokens: number): number {
  * `forAgent`: the text goes into an AI agent's context (the MCP tool), so third-party
  * free text — trap phrases, deprecation notices — is replaced by counts.
  */
-export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}): string {
+export function renderText(report: LoadReport, opts: { forAgent?: boolean; version?: string } = {}): string {
   const { configs, agents, totals, deep, includesGlobal } = report;
   const lines: string[] = [];
   const mode = deep ? "MCP measured live" : "static read";
 
-  lines.push("");
-  lines.push("  vexryn · agent load report");
-  lines.push("");
+  const head = banner(opts.version);
+  if (head.length) for (const b of head) lines.push(b);
+  else if (!COLOR) {
+    // Piped/CI/agent: a plain, parseable header. In a terminal with the banner suppressed
+    // (a recording that draws its own intro) we print nothing here.
+    lines.push("");
+    lines.push("  vexryn · agent load report");
+    lines.push("");
+  }
 
   if (configs.length === 0 && agents.length === 0 && report.subprojects.length === 0) {
     lines.push("  No agent configs found. Nothing to scan here.");
@@ -149,6 +155,7 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}
       `, ${totals.serverCount} MCP server${plural(totals.serverCount)}` +
       ` across ${agents.length} agent${plural(agents.length)} (${mode})`,
   );
+  for (const v of verdict(report)) lines.push(v);
   lines.push("");
 
   if (agents.length === 0) {
@@ -161,14 +168,14 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}
     const nothingMeasured = a.context.length === 0 && a.unmeasuredServers === a.servers.length;
     const tools =
       a.servers.length === 0 ? "" : a.unmeasuredServers === a.servers.length ? ", tools not measured" : `, ${a.toolCount} tool${plural(a.toolCount)}`;
-    lines.push(`  ${a.client.toUpperCase()}  — ${a.servers.length} server${plural(a.servers.length)}${tools}`);
+    lines.push("  " + bold(`${a.client.toUpperCase()}  — ${a.servers.length} server${plural(a.servers.length)}${tools}`));
     lines.push(
       nothingMeasured
         ? `  ${dim("░".repeat(24))}  load not measured — run --deep`
         : `  ${bar(pct)}  ~${pct}%   ~${a.approxTokens.toLocaleString("en-US")} of ` +
             `${CONTEXT_WINDOW_TOKENS.toLocaleString("en-US")} tokens up front`,
     );
-    for (const c of agentWarnings(a)) lines.push(`  ⚠ ${c}`);
+    for (const c of agentWarnings(a)) lines.push("  " + warnColor(c));
     if (a.hasUsage && a.toolCount > 0) {
       lines.push(`  You actually used ${a.usedToolCount} of ${a.toolCount} tools.`);
     }
@@ -189,8 +196,8 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}
       const where = `${s.fromRelPath} · ${s.scope}` + source(s);
       lines.push(`    ${padEnd(s.name, 20)} ${padEnd(renderServerCost(s), 34)} ${dim(where)}`);
       const notes = serverNotes(s, opts.forAgent);
-      if (notes.can.length) lines.push(`      can: ${notes.can.join(", ")}`);
-      for (const w of notes.warnings) lines.push(`      ⚠ ${w}`);
+      if (notes.can.length) lines.push(`      ${muted("can:")} ${violet(notes.can.join(", "))}`);
+      for (const w of notes.warnings) lines.push(`      ${warnColor(w)}`);
     }
     lines.push("");
   }
@@ -224,6 +231,13 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean } = {}
   }
   lines.push("  Honest note: this counts what your configs make the agent load. Not counted:");
   lines.push("  the agent's own system prompt, hook output, and your conversation as it grows.");
+  if (COLOR) {
+    lines.push("");
+    lines.push(
+      "  " + green("★ ") + muted("star ") + link("github.com/yl0n0ps/vexryn-scan", "https://github.com/yl0n0ps/vexryn-scan") +
+        muted("   ·   ") + fgc("vexryn diff") + muted(" reviews the change in your next PR"),
+    );
+  }
   lines.push("");
   return lines.join("\n");
 }
@@ -244,7 +258,10 @@ export function serverNotes(s: McpServer, forAgent = false): { can: string[]; wa
 /** Where a server's figures come from, for the location column. */
 export function source(s: McpServer): string {
   const e = s.estimate;
-  if (e?.catalog) return ` · catalog ${plain(e.catalog.package)}@${plain(e.catalog.version)} ${e.measuredAt?.slice(0, 10)}${e.catalog.exact ? "" : ", not pinned"}`;
+  if (e?.catalog) {
+    const pkg = link(`${plain(e.catalog.package)}@${plain(e.catalog.version)}`, registryUrl(e.catalog.eco, e.catalog.package));
+    return ` · catalog ${pkg} ${e.measuredAt?.slice(0, 10)}${e.catalog.exact ? "" : ", not pinned"}`;
+  }
   return e?.measuredAt ? ` · measured ${e.measuredAt.slice(0, 10)}` : "";
 }
 
@@ -299,10 +316,108 @@ export function fmtTokens(n: number): string {
   return n < 1000 ? `${n}` : `${Math.round(n / 1000)}k`;
 }
 
+// Vexryn identity (docs/brand): dark navy ground, brand blue #4A90FF, agentic violet
+// #C46BFF, coral #FF5A4E for proof/critical ONLY, amber #E6B23C for a config fact.
+// Colour in a real terminal (or FORCE_COLOR for recording), never when piped, in tests, or into an agent.
+const COLOR = (!!process.stdout.isTTY || process.env.FORCE_COLOR === "1") && !process.env.NO_COLOR && process.env.VEXRYN_NO_COLOR !== "1";
+const rgb = (r: number, g: number, b: number) => (s: string) => (COLOR ? `\u001b[38;2;${r};${g};${b}m${s}\u001b[0m` : s);
+const sgr = (open: string) => (s: string) => (COLOR ? `\u001b[${open}m${s}\u001b[0m` : s);
+const bold = sgr("1");
+const blue = rgb(74, 144, 255); // #4A90FF — primary, the brand
+const violet = rgb(196, 107, 255); // #C46BFF — agentic-IA accent: what a tool CAN do
+const brand = blue;
+const warn = rgb(230, 178, 60); // #E6B23C — a config fact worth a look
+const danger = rgb(255, 90, 78); // #FF5A4E — a secret, a deprecation, a leak (proof/critical only)
+const muted = rgb(139, 147, 172); // #8B93AC
+const green = rgb(55, 201, 139); // #37C98B
+// Clickable links (OSC 8): modern terminals make them clickable, others show the text.
+// Off when piped, in CI, in tmux/screen, or into an agent.
+const LINKS = COLOR && !process.env.CI && !/^(screen|tmux)/.test(process.env.TERM ?? "");
+function link(text: string, url: string): string {
+  return LINKS ? `\u001b]8;;${url}\u001b\\${text}\u001b]8;;\u001b\\` : text;
+}
+/** The registry page for a catalogued package. */
+function registryUrl(eco: "npm" | "pypi", pkg: string): string {
+  return eco === "npm" ? `https://www.npmjs.com/package/${pkg}` : `https://pypi.org/project/${pkg}/`;
+}
+const faint = rgb(86, 94, 126); // #565E7E
+
+const fgc = rgb(238, 241, 250); // #EEF1FA
+
+/** The Vexryn banner: the woven-X mark (a blue stroke through a broken one) + the wordmark. TTY only. */
+// The wordmark as a giant gradient logo (oh-my-logo, ANSI Shadow), shown at the top of
+// a scan in a real terminal. Baked in (no runtime dependency); the per-column blue→violet
+// gradient is applied in code so NO_COLOR yields plain art.
+const LOGO = [
+  "██╗   ██╗███████╗██╗  ██╗██████╗ ██╗   ██╗███╗   ██╗",
+  "██║   ██║██╔════╝╚██╗██╔╝██╔══██╗╚██╗ ██╔╝████╗  ██║",
+  "██║   ██║█████╗   ╚███╔╝ ██████╔╝ ╚████╔╝ ██╔██╗ ██║",
+  "╚██╗ ██╔╝██╔══╝   ██╔██╗ ██╔══██╗  ╚██╔╝  ██║╚██╗██║",
+  " ╚████╔╝ ███████╗██╔╝ ██╗██║  ██║   ██║   ██║ ╚████║",
+  "  ╚═══╝  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═══╝",
+];
+const LOGO_W = 52;
+
+/** One logo line with a per-column blue→violet gradient (spaces stay blank). */
+function gradientLine(line: string): string {
+  if (!COLOR) return "  " + line;
+  let s = "  ";
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === " ") { s += " "; continue; }
+    const t = i / (LOGO_W - 1);
+    const r = Math.round(74 + (196 - 74) * t);
+    const g = Math.round(144 + (107 - 144) * t);
+    s += `\u001b[38;2;${r};${g};255m${ch}`;
+  }
+  return s + "\u001b[0m";
+}
+
+/** The Vexryn banner: the giant gradient wordmark (wide terminals) or a compact one. TTY only. */
+export function banner(version?: string): string[] {
+  if (!COLOR || process.env.VEXRYN_NO_BANNER === "1") return [];
+  const cols = process.stdout.columns ?? 80;
+  const ver = version ? faint(`v${version}`) : "";
+  const tagline = muted("see what your agent loads, and what it can do");
+  if (cols < LOGO_W + 4) {
+    const word = bold(fgc("ve") + blue("x") + fgc("ryn"));
+    return ["", `  ${word}${ver ? "   " + ver : ""}   ${muted("· " + "see what your agent loads")}`, ""];
+  }
+  return ["", ...LOGO.map(gradientLine), `  ${tagline}${ver ? "    " + ver : ""}`, ""];
+}
+
+/** A ⚠ line is coral when it names a secret/credential/deprecation/leak; amber otherwise. */
+
+/** A ⚠ line is red when it names a secret, a credential, a deprecation or a leak; amber otherwise. */
+function warnColor(text: string): string {
+  return /\b(secret|credential|deprecat|send them out|run a command)\b/i.test(text) ? danger(`⚠ ${text}`) : warn(`⚠ ${text}`);
+}
+
+// (banner defined above)
+
+/**
+ * The headline: the few facts that decide whether a reader keeps reading. Most severe
+ * first, at most four lines, only the ones that are true. Powers/risks, never token math.
+ */
+function verdict(report: LoadReport): string[] {
+  const lines: string[] = [];
+  const servers = report.agents.flatMap((a) => a.servers);
+  const combos = new Set(report.agents.flatMap((a) => agentWarnings(a)));
+  for (const c of combos) lines.push("  " + danger(bold(`⚠ ${c}`)));
+  const secrets = servers.filter((s) => (s.literalSecrets ?? []).length > 0).length;
+  if (secrets) lines.push("  " + danger(`${secrets} secret${plural(secrets)} written in plain text in a config file.`));
+  const deprecated = servers.filter((s) => s.deprecated).length;
+  if (deprecated) lines.push("  " + warn(`${deprecated} server${plural(deprecated)} run${deprecated === 1 ? "s" : ""} a package its publisher has deprecated.`));
+  const powers = new Set(servers.flatMap((s) => powerLabels((s.estimate?.tools ?? []).map((t) => t.power))));
+  if (powers.size) lines.push("  " + muted("Across your agents, tools can: ") + violet([...powers].join(", ")) + muted("."));
+  return lines.length ? ["", ...lines] : [];
+}
+
 function bar(pct: number): string {
   const width = 24;
   const filled = Math.max(0, Math.min(width, Math.round((pct / 100) * width)));
-  return "█".repeat(filled) + "░".repeat(width - filled);
+  const half = Math.ceil(filled / 2);
+  return blue("█".repeat(half)) + violet("█".repeat(filled - half)) + faint("░".repeat(width - filled));
 }
 
 function plural(n: number): string {
@@ -320,5 +435,5 @@ function padEnd(s: string, n: number): string {
 }
 
 function dim(s: string): string {
-  return `\u001b[2m${s}\u001b[0m`;
+  return COLOR ? `\u001b[2m${s}\u001b[0m` : s;
 }

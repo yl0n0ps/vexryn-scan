@@ -28,16 +28,17 @@ export function renderHtml(report: LoadReport): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vexryn Load Report</title>
+<title>vexryn — agent load report</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDY0IDY0IiBmaWxsPSJub25lIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IlZleHJ5biI+CiAgPCEtLSBGYXZpY29uOiBuYXZ5IGdyb3VuZCBmb3IgdGFiIGNvbnRyYXN0LCB0aGlja2VyIHN0cm9rZXMgZm9yIHRpbnkgc2l6ZXMuIC0tPgogIDxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE0IiBmaWxsPSIjMEEwRTI3Ii8+CiAgPHBhdGggZD0iTTUwIDE0IEwzOS41IDI0LjUgTTI0LjUgMzkuNSBMMTQgNTAiIHN0cm9rZT0iI0VFRjFGQSIgc3Ryb2tlLXdpZHRoPSIxMCIvPgogIDxwYXRoIGQ9Ik0xNCAxNCBMNTAgNTAiIHN0cm9rZT0iIzRBOTBGRiIgc3Ryb2tlLXdpZHRoPSIxMCIvPgo8L3N2Zz4K">
 <style>
-  :root{--bg:#0b0f14;--surface:#121922;--line:#233040;--ink:#e7ecf2;--muted:#8695a6;
-    --brand:#37d7c4;--warn:#f0b23e;--crit:#f0656b;--mono:ui-monospace,SFMono-Regular,Menlo,monospace;
-    --sans:system-ui,-apple-system,Segoe UI,sans-serif;color-scheme:dark;}
+  :root{--bg:#0A0E27;--surface:#141A33;--elevated:#1A2140;--line:#262E4D;--ink:#EEF1FA;--muted:#8B93AC;--faint:#565E7E;
+    --brand:#4A90FF;--violet:#C46BFF;--warn:#E6B23C;--crit:#FF5A4E;--green:#37C98B;--mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:'Space Grotesk',system-ui,-apple-system,Segoe UI,sans-serif;color-scheme:dark;}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5}
   .wrap{max-width:900px;margin:0 auto;padding:32px 20px 64px}
   .brand{font-family:var(--mono);font-weight:600;display:flex;align-items:center;gap:9px;font-size:16px}
-  .dot{width:9px;height:9px;border-radius:50%;background:var(--brand)}
+  .dot{width:9px;height:9px;border-radius:2px;background:linear-gradient(135deg,var(--brand),var(--violet));transform:rotate(45deg)}
   h1{font-size:26px;letter-spacing:-.02em;margin:20px 0 4px}
   h2{font-size:17px;margin:0 0 2px}
   .sub{color:var(--muted);margin:0 0 24px;font-size:14px}
@@ -49,7 +50,7 @@ export function renderHtml(report: LoadReport): string {
   .v{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:8px 0 0;font-variant-numeric:tabular-nums}
   .v small{font-size:15px;color:var(--muted);font-weight:600}
   .track{height:14px;border-radius:7px;background:#0f151c;border:1px solid var(--line);margin:12px 0 6px;overflow:hidden}
-  .fill{height:100%;background:var(--warn)}
+  .fill{height:100%;background:linear-gradient(90deg,var(--brand),var(--violet))}
   .meta{color:var(--muted);font-size:13px;margin:0}
   .used{color:var(--brand);font-size:13px;margin:4px 0 0}
   .table-wrap{overflow-x:auto;margin-top:10px}
@@ -63,15 +64,15 @@ export function renderHtml(report: LoadReport): string {
   .foot{color:var(--muted);font-size:12px;font-family:var(--mono);margin-top:28px}
   .note td{padding-top:0;border-bottom:1px solid var(--line);font-size:12px}
   tr.has-note td{border-bottom:none}
-  .can{color:var(--brand);font-family:var(--mono);margin:0}
+  .can{color:var(--violet);font-family:var(--mono);margin:0}
   .warn{color:var(--warn);margin:2px 0 0}
   .pill{display:inline-block;font-family:var(--mono);font-size:11px;padding:3px 9px;border-radius:100px;
-    background:#123028;color:var(--brand)}
+    background:rgba(74,144,255,0.14);color:var(--brand)}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="brand"><span class="dot"></span>vexryn</div>
+  <div class="brand"><span class="dot"></span>ve<span style="color:var(--brand)">x</span>ryn</div>
   <h1>Agent load report</h1>
   <p class="sub">${configs.length} config${plural(configs.length)} · ${totals.serverCount} MCP server${plural(totals.serverCount)} · ${agents.length} agent${plural(agents.length)} · <span class="pill">${mode}</span></p>
 

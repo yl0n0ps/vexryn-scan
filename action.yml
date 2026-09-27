@@ -2,7 +2,13 @@ name: Vexryn agent config review
 description: >-
   Comments on a pull request with what its AI-agent config changes let the
   agent do and load. Static read of the config files — nothing from the PR is
-  executed, nothing is sent anywhere but the comment. Non-blocking.
+  executed, nothing is sent anywhere but the comment. Non-blocking unless
+  `strict: true`.
+inputs:
+  strict:
+    description: "Fail the check while a ⚠️ finding is open (accept one in .vexryn.json on the base branch)."
+    required: false
+    default: "false"
 runs:
   using: composite
   steps:
@@ -16,7 +22,9 @@ runs:
     - name: Review agent config changes
       shell: bash
       env:
-        GH_TOKEN: ${{ github.token }}
-        REPO: ${{ github.repository }}
-        PR: ${{ github.event.pull_request.number }}
-      run: bash "$GITHUB_ACTION_PATH/scripts/pr-review.sh"
+        VEXRYN_TOKEN: ${{ github.token }}
+        STRICT: ${{ inputs.strict }}
+      # Same command as every other CI: `vexryn ci` finds the PR, reviews it, keeps one comment up to date.
+      run: |
+        if [ "$STRICT" = "true" ]; then set -- --strict; fi
+        node "$GITHUB_ACTION_PATH/dist/cli.js" ci . "$@"

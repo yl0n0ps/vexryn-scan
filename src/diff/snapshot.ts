@@ -169,7 +169,7 @@ async function workingTreeReader(root: string): Promise<FileReader> {
   };
 }
 
-async function git(cwd: string, args: string[]): Promise<Buffer> {
+export async function git(cwd: string, args: string[]): Promise<Buffer> {
   const { stdout } = await run("git", args, { cwd, maxBuffer: MAX_BUFFER, encoding: "buffer" });
   return stdout;
 }

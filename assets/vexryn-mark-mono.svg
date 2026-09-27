@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64" fill="none" role="img" aria-label="Vexryn (monochrome)">
+  <!-- Single-colour version: inherits `currentColor`. Use for stamps, print, one-ink contexts. -->
+  <path d="M48 16 L38.5 25.5 M25.5 38.5 L16 48" stroke="currentColor" stroke-width="8.5"/>
+  <path d="M16 16 L48 48" stroke="currentColor" stroke-width="8.5"/>
+</svg>
