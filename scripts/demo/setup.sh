@@ -27,5 +27,6 @@ JSON
 export VEXRYN_HOME="$VX_DEMO/home"   # no user-wide config of this machine is read
 export BASH_SILENCE_DEPRECATION_WARNING=1
 export PS1='\[\e[38;2;139;147;172m\]\W\[\e[0m\] \[\e[38;2;74;144;255m\]❯\[\e[0m\] '
-npx -y vexryn --version >/dev/null 2>&1   # warm the npx cache for this exact spec: no install prompt on camera
+export npm_config_yes=true                    # npx never stops to ask on camera
+npx vexryn --version >/dev/null 2>&1         # warm the npx cache with the published version
 cd "$VX_DEMO/acme-app"
