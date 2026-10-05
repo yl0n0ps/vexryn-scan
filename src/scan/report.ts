@@ -145,7 +145,7 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean; versi
   if (configs.length === 0 && agents.length === 0 && report.subprojects.length === 0) {
     lines.push("  No agent configs found. Nothing to scan here.");
     lines.push("");
-    return lines.join("\n");
+    return lines.flatMap(fit).join("\n");
   }
 
   const globalCount = configs.filter((c) => c.scope === "global").length;
@@ -194,7 +194,10 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean; versi
     }
     for (const s of a.servers) {
       const where = `${s.fromRelPath} · ${s.scope}` + source(s);
-      lines.push(`    ${padEnd(s.name, 20)} ${padEnd(renderServerCost(s), 34)} ${dim(where)}`);
+      const head = `    ${padEnd(s.name, 20)} ${padEnd(renderServerCost(s), 34)}`;
+      // Too wide for the terminal: the location goes on its own line instead of wrapping mid-word.
+      if (WIDTH && visible(head) + 1 + visible(where) > WIDTH) lines.push(head.trimEnd(), `      ${dim(where)}`);
+      else lines.push(`${head} ${dim(where)}`);
       const notes = serverNotes(s, opts.forAgent);
       if (notes.can.length) lines.push(`      ${muted("can:")} ${violet(notes.can.join(", "))}`);
       for (const w of notes.warnings) lines.push(`      ${warnColor(w)}`);
@@ -239,7 +242,7 @@ export function renderText(report: LoadReport, opts: { forAgent?: boolean; versi
     );
   }
   lines.push("");
-  return lines.join("\n");
+  return lines.flatMap(fit).join("\n");
 }
 
 /** Dangerous combinations across an agent's known tools (combos.ts). */
@@ -430,8 +433,39 @@ function truncate(s: string, n: number): string {
 
 /** Pad by visible width (ANSI escapes don't take columns). */
 function padEnd(s: string, n: number): string {
-  const visible = s.replace(/\u001b\[[0-9;]*m/g, "").length;
-  return visible >= n ? s : s + " ".repeat(n - visible);
+  const v = visible(s);
+  return v >= n ? s : s + " ".repeat(n - v);
+}
+
+/** Columns a string takes: colors and link escapes take none. */
+function visible(s: string): number {
+  return s.replace(/\u001b\[[0-9;]*m/g, "").replace(/\u001b\]8;;[^\u001b]*\u001b\\/g, "").length;
+}
+
+/**
+ * The terminal's width when there is one to fit (a TTY, or COLUMNS set); 0 when piped,
+ * so tests, files and the MCP report keep their layout.
+ */
+const WIDTH = Number(process.env.COLUMNS) || (process.stdout.isTTY ? (process.stdout.columns ?? 0) : 0);
+
+/**
+ * Fit one report line to WIDTH: break between words, continuation indented 2 more
+ * than the line. Never cuts a word or a link; a color simply carries over.
+ */
+function fit(line: string): string[] {
+  if (!WIDTH || visible(line) <= WIDTH) return [line];
+  const lead = line.match(/^ */)![0].length;
+  const out: string[] = [];
+  let cur = "";
+  let indent = lead;
+  for (const word of line.slice(lead).split(" ")) {
+    if (cur && indent + visible(cur) + 1 + visible(word) > WIDTH) {
+      out.push(" ".repeat(indent) + cur);
+      cur = word;
+      indent = lead + 2;
+    } else if (cur || word) cur = cur ? `${cur} ${word}` : word;
+  }
+  return [...out, " ".repeat(indent) + cur];
 }
 
 function dim(s: string): string {
