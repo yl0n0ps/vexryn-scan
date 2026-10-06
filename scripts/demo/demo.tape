@@ -1,5 +1,6 @@
 # The README demo: a real terminal, a real shell, the real published `npx vexryn`.
-# Typed with a human rhythm (uneven speed, pauses, one typo fixed).
+# Typed with a human rhythm (uneven speed, pauses, one typo fixed). First run of a new
+# user: npx asks to install, gets a "y", downloads for real — the loading time is real.
 # Record from the repo root:  vhs scripts/demo/demo.tape   → assets/scan.gif
 
 Output assets/scan.gif
@@ -10,7 +11,7 @@ Set FontFamily "Menlo"
 Set FontSize 14
 Set LineHeight 1.1
 Set Width 1240
-Set Height 1060
+Set Height 1110
 Set Padding 26
 Set Margin 0
 Set WindowBar Colorful
@@ -39,10 +40,17 @@ Sleep 140ms
 Type@85ms " scan"
 Sleep 700ms
 Enter
+# first run: npx asks before installing — read it, answer y, then npm really downloads
+Wait+Screen@60s /Ok to proceed/
+Sleep 1.3s
+Type@150ms "y"
+Sleep 350ms
+Enter
 Wait
 Sleep 6.5s
 
 # --- scene 2: another project, measured live → the spinner, what tools can do
+# (`-y` this time: npx asked once already; it answers yes up front)
 Ctrl+L
 Sleep 900ms
 Type@90ms "cd ../ag"
@@ -54,7 +62,7 @@ Type@100ms "ents-lab"
 Sleep 300ms
 Enter
 Sleep 700ms
-Type@80ms "npx vexryn scan"
+Type@80ms "npx -y vexryn scan"
 Sleep 250ms
 Type@140ms " --deep"
 Sleep 650ms
