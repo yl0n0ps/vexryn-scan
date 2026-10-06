@@ -11,7 +11,7 @@ Set FontFamily "Menlo"
 Set FontSize 14
 Set LineHeight 1.1
 Set Width 1240
-Set Height 1110
+Set Height 1190
 Set Padding 26
 Set Margin 0
 Set WindowBar Colorful
