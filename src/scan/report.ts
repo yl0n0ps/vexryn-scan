@@ -127,12 +127,12 @@ export function loadPercent(tokens: number): number {
  * `forAgent`: the text goes into an AI agent's context (the MCP tool), so third-party
  * free text — trap phrases, deprecation notices — is replaced by counts.
  */
-export function renderText(report: LoadReport, opts: { forAgent?: boolean; version?: string } = {}): string {
+export function renderText(report: LoadReport, opts: { forAgent?: boolean; version?: string; banner?: boolean } = {}): string {
   const { configs, agents, totals, deep, includesGlobal } = report;
   const lines: string[] = [];
   const mode = deep ? "MCP measured live" : "static read";
 
-  const head = banner(opts.version);
+  const head = opts.banner === false ? [] : banner(opts.version);
   if (head.length) for (const b of head) lines.push(b);
   else if (!COLOR) {
     // Piped/CI/agent: a plain, parseable header. In a terminal with the banner suppressed
@@ -404,16 +404,46 @@ function warnColor(text: string): string {
  */
 function verdict(report: LoadReport): string[] {
   const lines: string[] = [];
-  const servers = report.agents.flatMap((a) => a.servers);
-  const combos = new Set(report.agents.flatMap((a) => agentWarnings(a)));
+  const { combos, secrets, deprecated, powers } = findings(report);
   for (const c of combos) lines.push("  " + danger(bold(`⚠ ${c}`)));
-  const secrets = servers.filter((s) => (s.literalSecrets ?? []).length > 0).length;
   if (secrets) lines.push("  " + danger(`${secrets} secret${plural(secrets)} written in plain text in a config file.`));
-  const deprecated = servers.filter((s) => s.deprecated).length;
   if (deprecated) lines.push("  " + warn(`${deprecated} server${plural(deprecated)} run${deprecated === 1 ? "s" : ""} a package its publisher has deprecated.`));
-  const powers = new Set(servers.flatMap((s) => powerLabels((s.estimate?.tools ?? []).map((t) => t.power))));
-  if (powers.size) lines.push("  " + muted("Across your agents, tools can: ") + violet([...powers].join(", ")) + muted("."));
+  if (powers.length) lines.push("  " + muted("Across your agents, tools can: ") + violet(powers.join(", ")) + muted("."));
   return lines.length ? ["", ...lines] : [];
+}
+
+/** What the headline is built from — the verdict and the live checklist say the same thing. */
+function findings(report: LoadReport) {
+  const servers = report.agents.flatMap((a) => a.servers);
+  return {
+    servers,
+    combos: [...new Set(report.agents.flatMap((a) => agentWarnings(a)))],
+    secrets: servers.filter((s) => (s.literalSecrets ?? []).length > 0).length,
+    deprecated: servers.filter((s) => s.deprecated).length,
+    powers: [...new Set(servers.flatMap((s) => powerLabels((s.estimate?.tools ?? []).map((t) => t.power))))],
+  };
+}
+
+/**
+ * The checklist a terminal shows while the report is put together: [what it is doing,
+ * what it found]. Every result is real; only the pace is for the reader.
+ */
+export function scanSteps(report: LoadReport): Array<{ doing: string; found: string; alert?: boolean }> {
+  const { servers, combos, secrets, deprecated, powers } = findings(report);
+  if (report.totals.serverCount === 0) return [];
+  const n = report.totals.serverCount;
+  const live = servers.filter((s) => s.estimate?.source === "introspect").length;
+  const known = servers.filter((s) => s.estimate?.source === "catalog").length;
+  const risks = [
+    combos.length ? `${combos.length} dangerous combination${plural(combos.length)}` : "",
+    secrets ? `${secrets} secret${plural(secrets)} written in plain text` : "",
+    deprecated ? `${deprecated} deprecated package${plural(deprecated)}` : "",
+  ].filter(Boolean);
+  return [
+    { doing: "Reading MCP servers…", found: `${n} MCP server${plural(n)}` + (live ? `, ${live} measured live` : known ? `, ${known} in the Vexryn catalogue` : "") },
+    { doing: "Working out what their tools can do…", found: powers.length ? `${powers.length} kind${plural(powers.length)} of power found` : "no power recognized yet" },
+    { doing: "Checking for risks…", found: risks.length ? risks.join(" · ") : "nothing risky found", alert: risks.length > 0 },
+  ];
 }
 
 function bar(pct: number): string {

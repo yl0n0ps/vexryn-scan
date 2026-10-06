@@ -15,7 +15,8 @@ import { parseServers } from "./scan/parse.js";
 import { attachLocal, collectStatic } from "./scan/collect.js";
 import { drift, loadMeasured, measuredKey, saveMeasured } from "./scan/measured.js";
 import { introspectServer } from "./scan/introspect.js";
-import { assembleReport, inSubproject, renderText } from "./scan/report.js";
+import { setTimeout as sleep } from "node:timers/promises";
+import { assembleReport, banner, inSubproject, renderText, scanSteps } from "./scan/report.js";
 import { writeHtml } from "./scan/html.js";
 import { runWrap } from "./proxy/wrap.js";
 import { loadUsage } from "./usage/store.js";
@@ -26,13 +27,18 @@ import { runMcp } from "./mcp/server.js";
 import { runCi } from "./ci/run.js";
 import { claudeCodeContext } from "./scan/claude.js";
 
-const VERSION = "0.4.1";
+const VERSION = "0.4.2";
 
 /**
  * A small branded spinner on stderr while an async step runs (a real terminal only);
- * a plain line otherwise. Braille frames in brand blue, a green check on done.
+ * a plain line otherwise. Braille frames in brand blue, then a green check with what
+ * the step found (`done`). `minMs`: the least time it shows, so a fast step can be read.
  */
-async function withSpinner<T>(label: string, run: () => Promise<T>): Promise<T> {
+async function withSpinner<T>(
+  label: string,
+  run: () => Promise<T>,
+  opts: { done?: (r: T) => string; minMs?: number; alert?: boolean } = {},
+): Promise<T> {
   const tty = !!process.stderr.isTTY && process.env.NO_COLOR !== "1";
   if (!tty) {
     process.stderr.write(`  · ${label}\n`);
@@ -42,11 +48,31 @@ async function withSpinner<T>(label: string, run: () => Promise<T>): Promise<T> 
   let i = 0;
   const blue = (s: string) => `\u001b[38;2;74;144;255m${s}\u001b[0m`;
   const timer = setInterval(() => process.stderr.write(`\r  ${blue(frames[i++ % frames.length])} ${label}`), 80);
+  let result: T | undefined;
   try {
-    return await run();
+    [result] = await Promise.all([run(), sleep(opts.minMs ?? 0)]);
+    return result;
   } finally {
     clearInterval(timer);
-    process.stderr.write(`\r  \u001b[38;2;55;201;139m✓\u001b[0m ${label}\u001b[K\n`);
+    const text = result !== undefined && opts.done ? opts.done(result) : label;
+    // A step that found a risk ends on a coral ⚠, never a green check.
+    const mark = opts.alert ? "\u001b[38;2;255;90;78m⚠" : "\u001b[38;2;55;201;139m✓";
+    process.stderr.write(`\r  ${mark}\u001b[0m ${text}\u001b[K\n`);
+  }
+}
+
+/**
+ * A real terminal a person is watching: the scan is paced (logo, checklist, report
+ * line by line) instead of dumped at once. Never in CI, a pipe, a file or --json.
+ */
+const LIVE =
+  !!process.stdout.isTTY && !!process.stderr.isTTY && !process.env.CI && !process.env.NO_COLOR && process.env.VEXRYN_NO_COLOR !== "1";
+
+/** Print lines one after the other, `ms` apart. */
+async function unroll(lines: string[], ms: number): Promise<void> {
+  for (const l of lines) {
+    process.stdout.write(l + "\n");
+    await sleep(ms);
   }
 }
 
@@ -83,11 +109,25 @@ async function runScan(args: string[]): Promise<number> {
   const deep = args.includes("--deep");
   const html = args.includes("--html");
   const json = args.includes("--json");
+  const live = LIVE && !json;
   const includesGlobal = !args.includes("--no-global");
   const target = args.find((a) => !a.startsWith("-")) ?? ".";
   const root = path.resolve(process.cwd(), target);
 
-  const { configs, servers, claude, others } = await collectStatic(root, includesGlobal);
+  // Live: the logo answers at once, then the real read runs under a spinner.
+  if (live) await unroll(banner(VERSION), 45);
+  const read = () => collectStatic(root, includesGlobal);
+  const { configs, servers, claude, others } = live
+    ? await withSpinner("Reading your agent configs…", read, {
+        minMs: 700,
+        done: (c) => {
+          const agents = [...new Set(c.configs.map((f) => f.client))];
+          return c.configs.length
+            ? `Read ${c.configs.length} agent config${c.configs.length === 1 ? "" : "s"} — ${agents.join(", ")}`
+            : "No agent config here";
+        },
+      })
+    : await read();
 
   if (deep && servers.length > 0) {
     // The same server is often declared for several agents: launch it once.
@@ -118,8 +158,14 @@ async function runScan(args: string[]): Promise<number> {
   }
 
   const report = assembleReport(root, deep, includesGlobal, configs, servers, claude, others);
-  // --json keeps stdout pure JSON: the html line goes to stderr.
-  process.stdout.write(json ? JSON.stringify(report, null, 2) + "\n" : renderText(report, { version: VERSION }));
+  if (live) {
+    // Each check shows what it really found; the report then unrolls instead of landing in one block.
+    for (const st of scanSteps(report)) await withSpinner(st.doing, async () => st.found, { minMs: 450, done: (f) => f, alert: st.alert });
+    await unroll(["", ...renderText(report, { version: VERSION, banner: false }).split("\n")], 18);
+  } else {
+    // --json keeps stdout pure JSON: the html line goes to stderr.
+    process.stdout.write(json ? JSON.stringify(report, null, 2) + "\n" : renderText(report, { version: VERSION }));
+  }
 
   if (html) {
     const out = await writeHtml(report, root);
