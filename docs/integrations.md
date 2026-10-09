@@ -6,8 +6,8 @@ with the token you give it.
 
 | Entry | For | Command |
 |---|---|---|
-| **CI comment** | GitHub, GitLab, Forgejo / Gitea (Codeberg), Bitbucket Cloud, Azure DevOps | `npx -y vexryn@0.4.0 ci` |
-| **Any other CI** (Jenkins, CircleCI, Buildkite, Woodpecker, TeamCity…) | markdown, JSON, exit code | `npx -y vexryn@0.4.0 diff --base <base> --head HEAD [--strict] [--json]` |
+| **CI comment** | GitHub, GitLab, Forgejo / Gitea (Codeberg), Bitbucket Cloud, Azure DevOps | `npx -y vexryn@0.5.0 ci` |
+| **Any other CI** (Jenkins, CircleCI, Buildkite, Woodpecker, TeamCity…) | markdown, JSON, exit code | `npx -y vexryn@0.5.0 diff --base <base> --head HEAD [--strict] [--json]` |
 | **Any coding agent** | a read-only MCP server | `npx -y vexryn mcp` |
 
 ## One line in your CI: `vexryn ci`
@@ -23,6 +23,7 @@ comment on the PR up to date. With no token it just prints the review.
 - **Safe on forks and odd checkouts.** A checkout that isn't the PR's code
   (`pull_request_target`) is skipped, a history too shallow gets a message with
   the exact fix for your CI, a refused comment goes to the job log/summary.
+- **Teams.** Set `VEXRYN_ORG_TOKEN` in CI and `vexryn ci` also sends the review — facts only, never code or secrets — to Vexryn Cloud, where your organisation sees every agent-config change and the inventory it implies.
 
 ### GitHub
 
@@ -61,7 +62,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npx -y vexryn@0.4.0 ci
+      - run: npx -y vexryn@0.5.0 ci
         env:
           VEXRYN_TOKEN: ${{ github.token }}
 ```
@@ -80,7 +81,7 @@ vexryn:
   variables:
     GIT_DEPTH: "0"
   script:
-    - npx -y vexryn@0.4.0 ci
+    - npx -y vexryn@0.5.0 ci
 ```
 
 ### Bitbucket Cloud
@@ -99,7 +100,7 @@ pipelines:
           name: Vexryn agent config review
           image: node:22
           script:
-            - npx -y vexryn@0.4.0 ci
+            - npx -y vexryn@0.5.0 ci
 ```
 
 ### Azure DevOps (Azure Repos)
@@ -115,7 +116,7 @@ pool:
 steps:
   - checkout: self
     fetchDepth: 0
-  - script: npx -y vexryn@0.4.0 ci
+  - script: npx -y vexryn@0.5.0 ci
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 ```
@@ -126,9 +127,9 @@ Review against the merge-base, keep the markdown, post it with your own tool —
 or read the JSON:
 
 ```bash
-npx -y vexryn@0.4.0 diff --base "$(git merge-base origin/main HEAD)" --head HEAD --strict > vexryn-review.md
-npx -y vexryn@0.4.0 diff --base "$(git merge-base origin/main HEAD)" --head HEAD --json   # {powers, loads, changed, unreviewed, accepted, open}
-npx -y vexryn@0.4.0 scan --json --no-global                                               # the full load report
+npx -y vexryn@0.5.0 diff --base "$(git merge-base origin/main HEAD)" --head HEAD --strict > vexryn-review.md
+npx -y vexryn@0.5.0 diff --base "$(git merge-base origin/main HEAD)" --head HEAD --json   # {powers, loads, changed, unreviewed, accepted, open}
+npx -y vexryn@0.5.0 scan --json --no-global                                               # the full load report
 ```
 
 `--json` output is stable in spirit but may still change before 1.0.

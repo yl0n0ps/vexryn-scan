@@ -50,7 +50,7 @@ its tools can do. It reads configs, never your code, and never runs a server.
 
 ## Status
 
-Early release — [`vexryn` on npm](https://www.npmjs.com/package/vexryn) (0.4.0). What's real today:
+Early release — [`vexryn` on npm](https://www.npmjs.com/package/vexryn) (0.5.0). What's real today:
 
 - **Every coding agent (agnostic):** finds and reads the MCP servers of Claude
   Code, Claude Desktop, Cursor, VS Code / GitHub Copilot (VS Code + CLI), Codex,
@@ -217,9 +217,11 @@ jobs:
       - uses: actions/checkout@v4   # pin to a commit SHA in real use
         with:
           fetch-depth: 2            # the merge commit + the base it compares to
-      - uses: yl0n0ps/vexryn-scan@v0.4.0
+      - uses: yl0n0ps/vexryn-scan@v0.5.0
         # with: { strict: true }    # fail the check on an open ⚠️ finding
 ```
+
+**Teams.** Set `VEXRYN_ORG_TOKEN` in CI and `vexryn ci` also sends the review — facts only, never code or secrets — to Vexryn Cloud, where your organisation sees every agent-config change and the inventory it implies.
 
 With the catalogue, a server the change adds says what it can do: *⚠️ MCP
 server `slack` can send messages to external recipients — 8 tools (Vexryn

@@ -27,7 +27,7 @@ import { runMcp } from "./mcp/server.js";
 import { runCi } from "./ci/run.js";
 import { claudeCodeContext } from "./scan/claude.js";
 
-const VERSION = "0.4.2";
+const VERSION = "0.5.0";
 
 /**
  * A small branded spinner on stderr while an async step runs (a real terminal only);

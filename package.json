@@ -1,10 +1,17 @@
 {
   "name": "vexryn",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "See what your AI agent actually loads \u2014 any repo, any stack, no config.",
   "type": "module",
   "bin": {
     "vexryn": "dist/cli.js"
+  },
+  "exports": {
+    "./events": {
+      "types": "./dist/cloud/events.d.ts",
+      "default": "./dist/cloud/events.js"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
@@ -18,7 +25,7 @@
     "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
     "dev": "node --loader tsx src/cli.ts",
     "scan": "npm run build && node dist/cli.js scan",
-    "test": "npm run build && node test/global-check.mjs && node test/wire-check.mjs && node test/proxy-check.mjs && node test/context-check.mjs && node test/snapshot-check.mjs && node test/settings-check.mjs && node test/diff-check.mjs && node test/diff-edge-check.mjs && node test/mcp-check.mjs && node test/rules-check.mjs && node test/diff-rules-check.mjs && node test/powers-check.mjs && node test/measured-check.mjs && node test/deep-check.mjs && node test/combos-check.mjs && node test/catalog-check.mjs && node test/catalog-use-check.mjs && node test/instructions-check.mjs && node test/formats-check.mjs && node test/discover-agents-check.mjs && node test/instructions-agents-check.mjs && node test/all-agents-check.mjs && node test/entries-check.mjs && node test/ci-forges-check.mjs && node test/ci-check.mjs && node test/wrap-check.mjs && node test/live-check.mjs && node test/events-check.mjs && node test/ci-cloud-check.mjs",
+    "test": "npm run build && node test/global-check.mjs && node test/wire-check.mjs && node test/proxy-check.mjs && node test/context-check.mjs && node test/snapshot-check.mjs && node test/settings-check.mjs && node test/diff-check.mjs && node test/diff-edge-check.mjs && node test/mcp-check.mjs && node test/rules-check.mjs && node test/diff-rules-check.mjs && node test/powers-check.mjs && node test/measured-check.mjs && node test/deep-check.mjs && node test/combos-check.mjs && node test/catalog-check.mjs && node test/catalog-use-check.mjs && node test/instructions-check.mjs && node test/formats-check.mjs && node test/discover-agents-check.mjs && node test/instructions-agents-check.mjs && node test/all-agents-check.mjs && node test/entries-check.mjs && node test/ci-forges-check.mjs && node test/ci-check.mjs && node test/wrap-check.mjs && node test/live-check.mjs && node test/events-check.mjs && node test/ci-cloud-check.mjs && node test/exports-check.mjs",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
