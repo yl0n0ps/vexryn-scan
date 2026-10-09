@@ -98,12 +98,16 @@ Tests assert the event schema is closed (unknown keys rejected server-side) and 
 
 ## 6. Rules
 
-Rules are one JSON document per organisation, edited in the dashboard, versioned (every change is an audit event), fetched by the CLI with the org token. Vocabulary compatible with GitHub's enterprise managed settings, extended:
+Rules are one JSON document per organisation, edited in the dashboard, versioned (every change is an audit event), fetched by the CLI with the org token. The allow/deny lists use **exactly GitHub's field names and shapes** (`copilot/managed-settings.json`), so a company's existing list is imported unchanged; Vexryn adds a `name` matcher and the sections GitHub has no equivalent for:
 
 ```jsonc
 {
-  "allowedMcpServers": [ { "name": "github" }, { "command": "npx -y @modelcontextprotocol/server-filesystem" }, { "url": "https://mcp.internal.example.com/*" } ],
-  "deniedMcpServers":  [ { "name": "shell" } ],
+  "allowedMcpServers": [
+    { "serverUrl": "https://mcp.internal.example.com/*" },
+    { "serverCommand": ["npx", "-y", "@modelcontextprotocol/server-filesystem"] },
+    { "name": "github" }
+  ],
+  "deniedMcpServers": [ { "serverCommand": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/"] } ],
   "deniedPowers": [ "shell.exec" ],
   "deniedCombinations": [ "web+files+send" ],
   "require": { "pinnedVersions": "block", "noLiteralSecrets": "block", "noDeprecated": "warn", "knownInCatalog": "warn" },
@@ -111,7 +115,7 @@ Rules are one JSON document per organisation, edited in the dashboard, versioned
 }
 ```
 
-Semantics (same as GitHub's where they overlap): a deny entry wins over an allow entry; when `allowedMcpServers` is non-empty, any server matching none of its entries is *not allowed*; matchers are by `name`, `command` (prefix match on the launch command, args joined) or `url` (glob on the URL). Each `require` value is `"block"`, `"warn"` or `"off"`. Outcomes per finding: **block** (CI exit 1, comment names the rule), **warn** (comment only), **allow**. An accepted exception (section 7) turns a block into *accepted* for that finding id in that repo.
+Semantics, the same as GitHub's where they overlap: a server matching any `deniedMcpServers` entry is blocked; when `allowedMcpServers` is present, a server matching none of its entries is blocked; `serverUrl` is a glob on the server's URL; `serverCommand` matches when the config's command followed by its args starts with the array (so the filesystem entry above with `/` matches only a root-wide launch); `name` is an exact match on the server's name in the config. Each `require` value is `"block"`, `"warn"` or `"off"`. Outcomes per finding: **block** (CI exit 1, comment names the rule), **warn** (comment only), **allow**. An accepted exception (section 7) turns a block into *accepted* for that finding id in that repo. The dashboard refuses to save an invalid document; a CLI that receives one it cannot parse applies no rules and says so in the comment (it never blocks on a malformed policy, unlike GitHub).
 
 Without an org token, `vexryn ci` behaves exactly as today (no rules, non-blocking unless `--strict`). A local `.vexryn.json` keeps working for accepted findings without the cloud.
 
