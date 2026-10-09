@@ -76,6 +76,11 @@ export async function reviewRepo(dir: string, base: string, head?: string): Prom
 
 /** The review as data (what `--json` and `--strict` read). */
 export async function reviewOf(dir: string, base: string, head?: string): Promise<Review> {
+  return (await reviewAndHead(dir, base, head)).review;
+}
+
+/** The review plus the head side's servers (what the cloud event is built from). */
+export async function reviewAndHead(dir: string, base: string, head?: string): Promise<{ review: Review; headServers: McpServer[] }> {
   const root = await gitRoot(dir);
   const baseSha = await resolveRef(root, base);
   const headSha = head ? await resolveRef(root, head) : null;
@@ -83,7 +88,8 @@ export async function reviewOf(dir: string, base: string, head?: string): Promis
   try {
     sides.push(await snapshot(root, baseSha));
     sides.push(await snapshot(root, headSha));
-    return compare(await readSnapshot(sides[0]), await readSnapshot(sides[1]));
+    const [b, h] = [await readSnapshot(sides[0]), await readSnapshot(sides[1])];
+    return { review: compare(b, h), headServers: h.servers };
   } finally {
     for (const s of sides) await fs.rm(s.dir, { recursive: true, force: true });
   }

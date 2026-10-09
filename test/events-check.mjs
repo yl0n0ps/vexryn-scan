@@ -56,6 +56,19 @@ try {
   assert.equal(bad((e) => (e.outcome = "panic")).ok, false, "enum");
   assert.equal(validateReviewEvent(null).ok, false);
   assert.equal(validateReviewEvent("{}").ok, false);
+
+  // --- reviewAndHead: the review AND the head side's servers, from a git repo
+  const { reviewAndHead } = await import(path.resolve("dist/diff/review.js"));
+  const { execFileSync } = await import("node:child_process");
+  const repo = path.join(tmp, "repo");
+  const git = (...a) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...a], { cwd: repo, encoding: "utf8" }).trim();
+  git("init", "-q", "-b", "main");
+  git("add", "-A"); git("commit", "-q", "-m", "head");
+  const base = git("rev-parse", "HEAD");
+  const { review: r2, headServers } = await reviewAndHead(repo, base);
+  assert.equal(r2.open, 0, "no change between HEAD and the working tree");
+  assert.deepEqual(headServers.map((s) => s.name).sort(), ["docs", "files", "slack"], "the head side's servers come back");
+  assert.equal(headServers.find((s) => s.name === "slack").literalSecrets?.[0], "SLACK_BOT_TOKEN");
   console.log("events-check: all assertions passed");
 } finally {
   rmSync(tmp, { recursive: true, force: true });
