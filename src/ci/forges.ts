@@ -25,6 +25,10 @@ export interface CiContext {
   prHead?: string;
   /** How to fetch enough history on this CI. */
   fix: string;
+  /** The repository as the forge names it (owner/name, workspace/slug, project path). */
+  repo: string;
+  /** This CI run's page, when the CI says it. */
+  runUrl?: string;
 }
 
 export type Detected = CiContext | { label: string; skip: string } | null;
@@ -56,6 +60,8 @@ export function detect(env: NodeJS.ProcessEnv, readEvent = readJson): Detected {
       targets: [pr.base?.sha].filter(Boolean),
       prHead: pr.head?.sha,
       fix: "check out with `fetch-depth: 2` (actions/checkout) or more",
+      repo: env.GITHUB_REPOSITORY ?? "",
+      runUrl: env.GITHUB_RUN_ID ? `${server}/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}` : undefined,
     };
   }
 
@@ -74,6 +80,8 @@ export function detect(env: NodeJS.ProcessEnv, readEvent = readJson): Detected {
       targets: [env.CI_MERGE_REQUEST_TARGET_BRANCH_SHA, env.CI_MERGE_REQUEST_DIFF_BASE_SHA].filter((t): t is string => !!t),
       prHead: env.CI_MERGE_REQUEST_SOURCE_BRANCH_SHA || undefined,
       fix: "set `GIT_DEPTH: 0` in the job's variables",
+      repo: env.CI_PROJECT_PATH ?? env.CI_PROJECT_ID ?? "",
+      runUrl: env.CI_JOB_URL || undefined,
     };
   }
 
@@ -91,6 +99,7 @@ export function detect(env: NodeJS.ProcessEnv, readEvent = readJson): Detected {
       targets: env.BITBUCKET_PR_DESTINATION_BRANCH ? [`origin/${env.BITBUCKET_PR_DESTINATION_BRANCH}`] : [],
       prHead: env.BITBUCKET_COMMIT || undefined,
       fix: "set `clone: depth: full` in bitbucket-pipelines.yml",
+      repo: `${env.BITBUCKET_WORKSPACE ?? ""}/${env.BITBUCKET_REPO_SLUG ?? ""}`,
     };
   }
 
@@ -113,6 +122,7 @@ export function detect(env: NodeJS.ProcessEnv, readEvent = readJson): Detected {
       targets: target ? [`origin/${target}`] : [],
       prHead: env.SYSTEM_PULLREQUEST_SOURCECOMMITID || undefined,
       fix: "add `- checkout: self` with `fetchDepth: 0`",
+      repo: env.BUILD_REPOSITORY_NAME ?? env.BUILD_REPOSITORY_ID ?? "",
     };
   }
   return null;

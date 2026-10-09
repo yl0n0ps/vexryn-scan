@@ -94,7 +94,7 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "unwire") return runWire(rest, "unwire");
   if (cmd === "trim") return runTrim(rest);
   if (cmd === "diff") return runDiff(rest);
-  if (cmd === "ci") return runCi(path.resolve(process.cwd(), rest.find((a) => !a.startsWith("-")) ?? "."), process.env, rest.includes("--strict"));
+  if (cmd === "ci") return runCi(path.resolve(process.cwd(), rest.find((a) => !a.startsWith("-")) ?? "."), process.env, rest.includes("--strict"), VERSION);
   if (cmd === "mcp") {
     await runMcp(VERSION); // serves until the client disconnects
     return 0;
@@ -327,6 +327,7 @@ function printHelp(): void {
       "    ci [path] [--strict]            In CI: review the pull/merge request and keep one",
       "                                    comment on it (GitHub, GitLab, Forgejo/Gitea,",
       "                                    Bitbucket, Azure DevOps); token in VEXRYN_TOKEN",
+      "      VEXRYN_ORG_TOKEN  Also send the review to Vexryn Cloud (facts only, never code or secrets)",
       "    mcp                             Serve the load report, the review and a catalogue",
       "                                    lookup as read-only MCP tools, for your own agent",
       "",

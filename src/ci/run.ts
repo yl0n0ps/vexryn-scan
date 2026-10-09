@@ -3,15 +3,17 @@
 // Non-blocking by default: a CI config problem is a message and exit 0.
 
 import fs from "node:fs/promises";
-import { isEmpty, renderReview, reviewOf, strictExit } from "../diff/review.js";
+import { isEmpty, renderReview, reviewAndHead, strictExit } from "../diff/review.js";
 import { git as gitRaw, gitRoot, resolveRef } from "../diff/snapshot.js";
 import { adapter, detect, publish, type CiContext } from "./forges.js";
+import { buildReviewEvent } from "../cloud/events.js";
+import { DEFAULT_CLOUD_URL, postReview } from "../cloud/client.js";
 
 const git = async (cwd: string, args: string[]) => (await gitRaw(cwd, args)).toString("utf8").trim();
 const say = (s: string) => process.stdout.write(`vexryn: ${s}\n`);
 const warn = (s: string) => process.stderr.write(`vexryn: ${s}\n`);
 
-export async function runCi(dir: string, env: NodeJS.ProcessEnv, strict: boolean): Promise<number> {
+export async function runCi(dir: string, env: NodeJS.ProcessEnv, strict: boolean, version: string): Promise<number> {
   const ctx = detect(env);
   if (!ctx) {
     warn(
@@ -36,7 +38,7 @@ export async function runCi(dir: string, env: NodeJS.ProcessEnv, strict: boolean
     return 0;
   }
 
-  const review = await reviewOf(root, base.sha, "HEAD");
+  const { review, headServers } = await reviewAndHead(root, base.sha, "HEAD");
   const markdown = renderReview(review);
   process.stdout.write(markdown);
 
@@ -52,6 +54,17 @@ export async function runCi(dir: string, env: NodeJS.ProcessEnv, strict: boolean
       warn(`could not post the review on ${ctx.label} (${out.error ?? "refused"}) — it is printed above.`);
       if (env.GITHUB_STEP_SUMMARY) await fs.appendFile(env.GITHUB_STEP_SUMMARY, markdown).catch(() => {});
     } else say(`review comment ${out.result} on ${ctx.label}, pull request #${ctx.pr}.`);
+  }
+  // Teams: the same review, as facts only, to Vexryn Cloud. Never changes the comment or the exit code.
+  if (env.VEXRYN_ORG_TOKEN) {
+    const event = buildReviewEvent({
+      cli: version, forge: ctx.forge, forgeHost: ctx.label, repo: ctx.repo, pr: ctx.pr,
+      baseSha: base.sha, headSha: ctx.prHead ?? (await git(root, ["rev-parse", "HEAD"])), runUrl: ctx.runUrl,
+      outcome: review.open === 0 ? "clean" : strict ? "block" : "warn", review, headServers,
+    });
+    const sent = await postReview(event, { url: env.VEXRYN_CLOUD_URL || DEFAULT_CLOUD_URL, token: env.VEXRYN_ORG_TOKEN });
+    if (sent.ok) say("review sent to Vexryn Cloud.");
+    else warn(`could not send the review to Vexryn Cloud (${sent.error}) — the comment above is unaffected.`);
   }
   return strictExit(strict, review.open);
 }
